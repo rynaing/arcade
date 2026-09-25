@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Berrybrook — a cozy little world</title>
+<style>
+/* ============================================================
+   BERRYBROOK — an original kid-friendly virtual world game
+   All art is inline CSS/SVG, all music is WebAudio-generated.
+   No external assets, no libraries, no backend.
+   ============================================================ */
+:root{
+  --pink:#ffd9e8; --peach:#ffe8c9; --mint:#cdeccf; --sky:#cfe6ff;
+  --lav:#e3d6fb; --lemon:#fff3c4; --ink:#4a3f55; --ink-soft:#6f6280;
+  --berry:#e2548b; --berry-dark:#b93a6d; --grass:#8fd694; --grass-dark:#5cb85c;
+  --card:#ffffff; --gold:#f5b942;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:"Trebuchet MS","Comic Sans MS","Chalkboard SE","Segoe UI",system-ui,sans-serif;
+  background:linear-gradient(180deg,var(--sky) 0%,#e9f3ff 45%,var(--mint) 100%);
+  color:var(--ink); touch-action:manipulation; user-select:none; -webkit-user-select:none;
+  min-height:100vh; display:flex; flex-direction:column;
+}
+
+/* ---------- Top bar (coins, buddy, music, reset) ---------- */
+#topbar{
+  display:flex; align-items:center; gap:10px; padding:8px 12px;
+  background:rgba(255,255,255,.85); backdrop-filter:blur(4px);
+  border-bottom:3px solid var(--pink); position:sticky; top:0; z-index:50;
+}
+#topbar.hidden{display:none;}
+#coin-purse{
+  display:flex; align-items:center; gap:6px; background:var(--lemon);
+  border:2px solid var(--gold); border-radius:999px; padding:6px 14px;
+  font-weight:bold; font-size:18px; min-height:44px;
+}
+#buddy-chip{display:flex; align-items:center; gap:8px; font-weight:bold; font-size:16px;}
+#buddy-chip svg{width:40px;height:56px;}
+.spacer{flex:1;}
+.icon-btn{
+  min-width:44px; min-height:44px; border-radius:14px; border:2px solid var(--lav);
+  background:#fff; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.icon-btn:active{transform:scale(.93);}
+#reset-link{font-size:12px; color:var(--ink-soft); background:none; border:none; text-decoration:underline; cursor:pointer; padding:10px;}
+
+/* ---------- Screens & transitions ---------- */
+main{flex:1; position:relative; overflow:hidden;}
+.screen{
+  display:none; position:absolute; inset:0; overflow-y:auto; padding:16px 14px 90px;
+  animation:screenIn .35s ease;
+}
+.screen.active{display:block;}
+@keyframes screenIn{from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:none;}}
+.scene-card{
+  background:var(--card); border-radius:24px; border:3px solid #fff;
+  box-shadow:0 6px 0 rgba(0,0,0,.06); padding:18px; max-width:640px; margin:0 auto;
+}
+h1{font-size:30px; margin:6px 0 12px; text-align:center; color:var(--berry-dark);}
+h2{font-size:22px; margin:8px 0; color:var(--berry-dark);}
+p.hint{text-align:center; color:var(--ink-soft); font-size:15px; margin:6px 0 14px;}
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:52px; min-width:44px; padding:12px 26px; font-size:18px; font-weight:bold;
+  font-family:inherit; color:#fff; background:var(--berry); border:none; border-radius:999px;
+  box-shadow:0 4px 0 var(--berry-dark); cursor:pointer;
+}
+.btn:active{transform:translateY(3px); box-shadow:0 1px 0 var(--berry-dark);}
+.btn.green{background:var(--grass-dark); box-shadow:0 4px 0 #3d8b40;}
+.btn.green:active{box-shadow:0 1px 0 #3d8b40;}
+.btn.gold{background:var(--gold); box-shadow:0 4px 0 #c98a1e; color:#5a3d00;}
+.btn.gold:active{box-shadow:0 1px 0 #c98a1e;}
+.btn:disabled{opacity:.5; cursor:default;}
+.back-row{display:flex; justify-content:center; margin-top:18px;}
+.option-grid{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:10px 0;}
+.pick{
+  min-width:52px; min-height:52px; border-radius:16px; border:3px solid #e8e2f2;
+  background:#fff; cursor:pointer; font-size:15px; font-weight:bold; font-family:inherit;
+  padding:8px 12px; color:var(--ink);
+}
+.pick.selected{border-color:var(--berry); background:var(--pink); box-shadow:0 0 0 3px var(--pink);}
+.swatch{width:52px; height:52px; padding:0;}
+.creator-section{margin:14px 0; text-align:center;}
+.creator-section h3{margin:6px 0; font-size:17px; color:var(--ink-soft);}
+#avatar-preview{display:flex; justify-content:center; margin:8px 0;}
+#avatar-preview svg{width:120px; height:168px; filter:drop-shadow(0 4px 0 rgba(0,0,0,.08));}
+#buddy-name{
+  font-size:20px; padding:12px 16px; border-radius:16px; border:3px solid var(--lav);
+  width:80%; max-width:320px; text-align:center; font-family:inherit; min-height:52px;
+}
+
+/* ---------- Town map ---------- */
+#town-map{position:relative; max-width:640px; margin:0 auto;}
+.map-loc{
+  position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center;
+  background:none; border:none; cursor:pointer; font-family:inherit; padding:8px;
+}
+.map-loc .pin{
+  width:72px; height:72px; border-radius:50%; background:#fff; border:4px solid var(--berry);
+  display:flex; align-items:center; justify-content:center; font-size:34px;
+  box-shadow:0 4px 0 rgba(0,0,0,.1);
+}
+.map-loc:active .pin{transform:scale(.92);}
+.map-loc .lbl{
+  margin-top:6px; background:#fff; border-radius:999px; padding:4px 12px;
+  font-weight:bold; font-size:14px; border:2px solid var(--lav); white-space:nowrap;
+}
+
+/* ---------- Scene art & NPCs ---------- */
+.scene-art{border-radius:18px; overflow:hidden; margin-bottom:12px; position:relative;}
+.scene-art svg{display:block; width:100%; height:auto;}
+.npc{
+  position:absolute; transform:translate(-50%,-100%); background:none; border:none; cursor:pointer; padding:6px;
+}
+.npc .npc-face{
+  width:64px; height:64px; border-radius:50%; border:4px solid #fff; display:flex;
+  align-items:center; justify-content:center; font-size:36px; background:var(--peach);
+  box-shadow:0 3px 0 rgba(0,0,0,.12);
+}
+.npc:active .npc-face{transform:scale(.9);}
+.npc .npc-name{
+  margin-top:4px; background:#fff; border-radius:999px; padding:2px 10px; font-size:13px;
+  font-weight:bold; border:2px solid var(--lav); white-space:nowrap;
+}
+.hidden-kite{position:absolute; background:none; border:none; cursor:pointer; padding:10px; opacity:.9;}
+
+/* ---------- Speech bubble ---------- */
+#speech{
+  position:fixed; left:50%; transform:translateX(-50%) translateY(-8px); top:76px; z-index:80;
+  background:#fff; border:3px solid var(--berry); border-radius:18px; padding:12px 18px;
+  font-size:17px; font-weight:bold; max-width:88%; text-align:center; opacity:0; pointer-events:none;
+  transition:opacity .2s, transform .2s; box-shadow:0 6px 0 rgba(0,0,0,.08);
+}
+#speech.show{opacity:1; transform:translateX(-50%) translateY(0);}
+#speech .who{color:var(--berry-dark); font-size:14px; display:block; margin-bottom:2px;}
+
+/* ---------- Toast ---------- */
+#toast{
+  position:fixed; left:50%; transform:translateX(-50%) translateY(20px); bottom:26px; z-index:90;
+  background:var(--ink); color:#fff; border-radius:999px; padding:12px 24px; font-size:16px; font-weight:bold;
+  opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; max-width:92%; text-align:center;
+}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+/* ---------- Arcade games ---------- */
+.game-card{background:var(--lav); border-radius:18px; padding:16px; margin:12px 0; text-align:center;}
+.game-card h3{margin:4px 0 8px; font-size:20px;}
+#rope-area{display:none; text-align:center;}
+#rope-track{
+  position:relative; width:90px; height:320px; margin:12px auto; background:linear-gradient(180deg,#bfe3ff,#e8f7ff);
+  border:4px solid #8fb8dd; border-radius:16px; overflow:hidden;
+}
+#rope-line{position:absolute; left:50%; top:0; bottom:0; width:6px; background:#a9805e; transform:translateX(-50%);}
+#rope-buddy{position:absolute; left:50%; transform:translateX(-50%); font-size:34px; transition:bottom .3s;}
+#rope-marker{
+  position:absolute; left:4px; right:4px; height:26px; border-radius:10px; background:var(--berry);
+  border:3px solid #fff; box-shadow:0 2px 0 rgba(0,0,0,.15);
+}
+#rope-zone{position:absolute; left:4px; right:4px; border-radius:10px; background:rgba(92,184,92,.45); border:3px dashed #2f7d32;}
+#rope-progress{font-size:20px; font-weight:bold; margin:8px 0;}
+#memory-area{display:none;}
+#memory-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:420px; margin:12px auto;}
+.mcard{
+  aspect-ratio:1; border:none; border-radius:16px; cursor:pointer; font-size:0; padding:0;
+  background:linear-gradient(135deg,var(--berry),var(--berry-dark)); position:relative;
+  box-shadow:0 4px 0 rgba(0,0,0,.12); min-height:44px;
+}
+.mcard .face{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; border-radius:16px;}
+.mcard .front{background:linear-gradient(135deg,var(--berry),var(--berry-dark)); color:#fff; font-size:30px;}
+.mcard .backB{background:#fff; transform:rotateY(90deg);}
+.mcard.flipped .front{transform:rotateY(90deg);}
+.mcard.flipped .backB{transform:rotateY(0);}
+.mcard .face{transition:transform .25s;}
+.mcard.matched{outline:4px solid var(--gold); cursor:default;}
+.mcard svg{width:52%; height:52%;}
+
+/* ---------- Store & house ---------- */
+.shop-item{
+  display:flex; align-items:center; gap:14px; background:#fff; border:3px solid var(--peach);
+  border-radius:18px; padding:10px 14px; margin:10px 0;
+}
+.shop-item svg{width:64px; height:64px; flex:none;}
+.shop-item .info{flex:1;}
+.shop-item .info b{font-size:17px;}
+.shop-item .price{font-weight:bold; color:#8a6d00; font-size:16px;}
+#house-grid{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:8px; max-width:440px; margin:12px auto;
+  background:#f3e9d2; border:6px solid #d9b98a; border-radius:14px; padding:10px;
+}
+.cell{
+  aspect-ratio:1; border:2px dashed #c8a86b; border-radius:10px; background:rgba(255,255,255,.5);
+  cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; min-height:44px;
+}
+.cell svg{width:88%; height:88%;}
+.cell:active{transform:scale(.95);}
+#inventory-bar{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:10px 0; min-height:70px;}
+.inv-item{
+  width:64px; height:64px; border-radius:14px; border:3px solid var(--lav); background:#fff; cursor:pointer; padding:4px;
+}
+.inv-item svg{width:100%; height:100%;}
+.inv-item.selected{border-color:var(--berry); background:var(--pink); box-shadow:0 0 0 3px var(--pink);}
+.inv-empty{color:var(--ink-soft); font-style:italic;}
+
+/* ---------- Quest board ---------- */
+.quest{
+  display:flex; gap:12px; align-items:flex-start; background:#fff; border:3px solid var(--lemon);
+  border-radius:16px; padding:12px; margin:10px 0;
+}
+.quest .stamp{
+  flex:none; width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:26px; border:3px dashed #c9bfa5; color:#c9bfa5; background:#faf7ef;
+}
+.quest.done .stamp{border:3px solid var(--grass-dark); color:#fff; background:var(--grass-dark);}
+.quest .qtext{flex:1;}
+.quest .qtext b{font-size:16px;}
+.quest .qreward{font-size:14px; color:#8a6d00; font-weight:bold;}
+.quest.done{opacity:.85; border-color:var(--grass-dark);}
+#quest-board-wrap{display:none;}
+
+/* ---------- Confetti (CSS only) ---------- */
+.confetti{position:fixed; top:-20px; z-index:99; pointer-events:none; animation:fall linear forwards;}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg);}}
+
+@media (max-width:420px){
+  h1{font-size:24px;}
+  #buddy-chip span.bname{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ======= TOP BAR ======= -->
+<header id="topbar" class="hidden">
+  <div id="coin-purse" title="Your Berry Coins">🫐 <span id="coin-count">0</span></div>
+  <div id="buddy-chip"><span id="buddy-avatar"></span><span class="bname" id="buddy-name-top"></span></div>
+  <div class="spacer"></div>
+  <button id="music-toggle" class="icon-btn" title="Music on/off" aria-label="Toggle music">🎵</button>
+  <button id="reset-link" title="Start over">start over</button>
+</header>
+
+<main>
+<!-- ======= SCREEN: AVATAR CREATOR ======= -->
+<section id="screen-creator" class="screen">
+  <div class="scene-card">
+    <h1>🫐 Welcome to Berrybrook!</h1>
+    <p class="hint">First, let's make your buddy — the little friend who'll explore Berrybrook with you.</p>
+    <div id="avatar-preview"></div>
+
+    <div class="creator-section"><h3>Skin tone</h3><div class="option-grid" id="pick-skin"></div></div>
+    <div class="creator-section"><h3>Hair style</h3><div class="option-grid" id="pick-hair"></div></div>
+    <div class="creator-section"><h3>Hair color</h3><div class="option-grid" id="pick-haircolor"></div></div>
+    <div class="creator-section"><h3>Shirt color</h3><div class="option-grid" id="pick-shirt"></div></div>
+    <div class="creator-section"><h3>Pants color</h3><div class="option-grid" id="pick-pants"></div></div>
+
+    <div class="creator-section">
+      <h3>Buddy's name</h3>
+      <input id="buddy-name" maxlength="16" placeholder="e.g. Pip" autocomplete="off">
+    </div>
+    <div style="text-align:center; margin-top:16px;">
+      <button class="btn green" id="start-adventure">Start my adventure! 🌈</button>
+    </div>
+  </div>
+</section>
+
+<!-- ======= SCREEN: TOWN MAP ======= -->
+<section id="screen-town" class="screen">
+  <div class="scene-card" style="text-align:center;">
+    <h1>Berrybrook Town Map</h1>
+    <p class="hint">Tap a place to visit it!</p>
+  </div>
+  <div id="town-map">
+    <svg viewBox="0 0 640 560" style="width:100%; height:auto; border-radius:20px;" aria-hidden="true">
+      <rect width="640" height="560" rx="20" fill="#bfe8c0"/>
+      <ellipse cx="320" cy="480" rx="300" ry="80" fill="#a5dba8"/>
+      <path d="M120 60 Q 200 140 160 240 T 200 420" stroke="#e8d8a8" stroke-width="44" fill="none" stroke-linecap="round"/>
+      <path d="M160 240 Q 320 240 470 200" stroke="#e8d8a8" stroke-width="44" fill="none" stroke-linecap="round"/>
+      <ellipse cx="500" cy="430" rx="110" ry="70" fill="#9fd0f5"/>
+      <ellipse cx="500" cy="430" rx="86" ry="52" fill="#bfe0fa"/>
+      <g><rect x="250" y="120" width="70" height="50" rx="6" fill="#fff"/><polygon points="250,120 285,95 320,120" fill="#e2548b"/><rect x="278" y="140" width="16" height="30" fill="#a9805e"/></g>
+      <g><rect x="380" y="300" width="80" height="55" rx="6" fill="#fff"/><polygon points="380,300 420,270 460,300" fill="#7c5cd6"/><circle cx="420" cy="325" r="10" fill="#ffe08a"/></g>
+      <g><rect x="90" y="330" width="70" height="50" rx="6" fill="#fff"/><polygon points="90,330 125,305 160,330" fill="#5cb85c"/><rect x="118" y="350" width="14" height="30" fill="#a9805e"/></g>
+      <g><circle cx="140" cy="120" r="26" fill="#7ccf7c"/><rect x="134" y="140" width="12" height="26" fill="#8a6239"/></g>
+      <g><circle cx="540" cy="110" r="30" fill="#7ccf7c"/><rect x="533" y="134" width="14" height="30" fill="#8a6239"/></g>
+      <g><circle cx="470" cy="90" r="20" fill="#8fd694"/><rect x="464" y="106" width="12" height="24" fill="#8a6239"/></g>
+      <g fill="#fff"><circle cx="120" cy="80" r="22"/><circle cx="145" cy="72" r="18"/><circle cx="100" cy="74" r="16"/></g>
+      <g fill="#fff"><circle cx="520" cy="200" r="20"/><circle cx="543" cy="193" r="16"/></g>
+    </svg>
+    <button class="map-loc" data-goto="square" style="left:50%; top:27%;"><span class="pin">⛲</span><span class="lbl">Town Square</span></button>
+    <button class="map-loc" data-goto="arcade" style="left:66%; top:62%;"><span class="pin">🕹️</span><span class="lbl">Arcade</span></button>
+    <button class="map-loc" data-goto="house" style="left:25%; top:68%;"><span class="pin">🏠</span><span class="lbl">My House</span></button>
+    <button class="map-loc" data-goto="store" style="left:38%; top:47%;"><span class="pin">🏪</span><span class="lbl">General Store</span></button>
+    <button class="map-loc" data-goto="lake" style="left:78%; top:80%;"><span class="pin">🌊</span><span class="lbl">Lake</span></button>
+  </div>
+</section>
+
+<!-- ======= SCREEN: TOWN SQUARE ======= -->
+<section id="screen-square" class="screen">
+  <div class="scene-card">
+    <h1>Town Square</h1>
+    <div class="scene-art">
+      <svg viewBox="0 0 600 300" aria-hidden="true">
+        <rect width="600" height="300" fill="#cfe8ff"/>
+        <rect y="200" width="600" height="100" fill="#a5dba8"/>
+        <g fill="#fff"><ellipse cx="120" cy="60" rx="40" ry="18"/><ellipse cx="480" cy="50" rx="46" ry="20"/></g>
+        <ellipse cx="300" cy="240" rx="90" ry="26" fill="#9fd0f5"/>
+        <ellipse cx="300" cy="236" rx="70" ry="18" fill="#bfe0fa"/>
+        <rect x="286" y="150" width="28" height="80" fill="#cfd6e4"/>
+        <ellipse cx="300" cy="150" rx="34" ry="14" fill="#dbe2f0"/>
+        <rect x="292" y="90" width="16" height="60" fill="#cfd6e4"/>
+        <circle cx="300" cy="84" r="10" fill="#9fd0f5"/>
+        <g><rect x="80" y="150" width="90" height="60" rx="8" fill="#fff"/><polygon points="80,150 125,120 170,150" fill="#e2548b"/><rect x="115" y="175" width="20" height="35" fill="#a9805e"/><circle cx="125" cy="140" r="9" fill="#ffe08a"/></g>
+        <g><rect x="430" y="150" width="90" height="60" rx="8" fill="#fff"/><polygon points="430,150 475,120 520,150" fill="#7c5cd6"/><rect x="465" y="175" width="20" height="35" fill="#a9805e"/></g>
+        <g><circle cx="200" cy="230" r="18" fill="#ff9ec4"/><circle cx="400" cy="235" r="18" fill="#ffb3d9"/><circle cx="500" cy="240" r="14" fill="#ff9ec4"/></g>
+        <rect x="0" y="0" width="600" height="300" fill="none"/>
+      </svg>
+      <button class="npc" id="npc-marigold" style="left:50%; top:62%;"><span class="npc-face">🌼</span><span class="npc-name">Marigold</span></button>
+    </div>
+    <p class="hint">Say hi to Marigold the flower seller! Check the Quest Board for errands.</p>
+    <div style="text-align:center; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+      <button class="btn gold" id="open-quests">📋 Quest Board</button>
+    </div>
+    <div id="quest-board-wrap">
+      <h2>📋 Quest Board</h2>
+      <div id="quest-list"></div>
+    </div>
+    <div class="back-row"><button class="btn back-btn">🗺️ Back to Town</button></div>
+  </div>
+</section>
+
+<!-- ======= SCREEN: ARCADE ======= -->
+<section id="screen-arcade" class="screen">
+  <div class="scene-card">
+    <h1>Starlight Arcade</h1>
+    <div class="scene-art">
+      <svg viewBox="0 0 600 220" aria-hidden="true">
+        <rect width="600" height="220" fill="#3b2f5e"/>
+        <rect y="170" width="600" height="50" fill="#2c2347"/>
+        <g><rect x="60" y="60" width="90" height="110" rx="10" fill="#e2548b"/><rect x="72" y="74" width="66" height="50" rx="6" fill="#9fe8ff"/><circle cx="105" cy="150" r="10" fill="#fff"/></g>
+        <g><rect x="200" y="60" width="90" height="110" rx="10" fill="#7c5cd6"/><rect x="212" y="74" width="66" height="50" rx="6" fill="#fff3c4"/><circle cx="245" cy="150" r="10" fill="#fff"/></g>
+        <g><rect x="340" y="60" width="90" height="110" rx="10" fill="#5cb85c"/><rect x="352" y="74" width="66" height="50" rx="6" fill="#ffc4d6"/><circle cx="385" cy="150" r="10" fill="#fff"/></g>
+        <g><rect x="480" y="60" width="90" height="110" rx="10" fill="#f5b942"/><rect x="492" y="74" width="66" height="50" rx="6" fill="#cfe6ff"/><circle cx="525" cy="150" r="10" fill="#fff"/></g>
+        <g fill="#ffe08a"><circle cx="150" cy="30" r="4"/><circle cx="300" cy="22" r="4"/><circle cx="450" cy="34" r="4"/><circle cx="520" cy="26" r="4"/><circle cx="80" cy="26" r="4"/></g>
+      </svg>
+      <button class="npc" id="npc-dex" style="left:50%; top:88%;"><span class="npc-face">🤖</span><span class="npc-name">Dex</span></button>
+    </div>
+    <p class="hint">Dex runs the arcade. Win a game to earn Berry Coins!</p>
+
+    <div id="game-menu">
+      <div class="game-card">
+        <h3>🧗 Rope Climb</h3>
+        <p>Tap CLIMB when the pink marker is inside the green zone. 5 climbs wins!</p>
+        <button class="btn" data-game="rope">Play Rope Climb</button>
+      </div>
+      <div class="game-card">
+        <h3>🃏 Berry Match</h3>
+        <p>Flip the cards and match all 6 pairs!</p>
+        <button class="btn" data-game="memory">Play Berry Match</button>
+      </div>
+    </div>
+
+    <div id="rope-area">
+      <h2>🧗 Rope Climb</h2>
+      <div id="rope-progress">Climbs: 0 / 5</div>
+      <div id="rope-track">
+        <div id="rope-line"></div>
+        <div id="rope-zone"></div>
+        <div id="rope-marker"></div>
+        <div id="rope-buddy">🧗</div>
+      </div>
+      <button class="btn green" id="rope-climb-btn" style="font-size:22px; padding:14px 44px;">CLIMB!</button>
+      <div style="margin-top:10px;"><button class="btn quit-game">Quit game</button></div>
+    </div>
+
+    <div id="memory-area">
+      <h2>🃏 Berry Match</h2>
+      <p class="hint">Pairs found: <b id="memory-score">0</b> / 6</p>
+      <div id="memory-grid"></div>
+      <div style="margin-top:10px;"><button class="btn quit-game">Quit game</button></div>
+    </div>
+
+    <div class="back-row"><button class="btn back-btn">🗺️ Back to Town</button></div>
+  </div>
+</section>
+
+<!-- ======= SCREEN: MY HOUSE ======= -->
+<section id="screen-house" class="screen">
+  <div class="scene-card">
+    <h1>My House</h1>
+    <div class="scene-art">
+      <svg viewBox="0 0 600 200" aria-hidden="true">
+        <rect width="600" height="200" fill="#ffe8c9"/>
+        <rect y="150" width="600" height="50" fill="#e8c9a0"/>
+        <rect x="230" y="30" width="140" height="120" fill="#fff" rx="8"/>
+        <polygon points="220,34 300,-6 380,34" fill="#e2548b"/>
+        <rect x="280" y="90" width="40" height="60" fill="#a9805e" rx="4"/>
+        <rect x="250" y="60" width="34" height="30" fill="#9fd0f5" rx="4"/>
+        <rect x="316" y="60" width="34" height="30" fill="#9fd0f5" rx="4"/>
+        <g><circle cx="120" cy="120" r="20" fill="#7ccf7c"/><rect x="114" y="134" width="12" height="24" fill="#8a6239"/></g>
+      </svg>
+      <button class="npc" id="npc-miso" style="left:30%; top:80%;"><span class="npc-face">🐱</span><span class="npc-name">Miso</span></button>
+    </div>
+    <p class="hint">Tap a moving-box item, then tap a floor square to place it. Tap placed furniture to pick it back up.</p>
+    <h2>📦 Moving box</h2>
+    <div id="inventory-bar"></div>
+    <h2>🛋️ My room</h2>
+    <div id="house-grid"></div>
+    <div class="back-row"><button class="btn back-btn">🗺️ Back to Town</button></div>
+  </div>
+</section>
+
+<!-- ======= SCREEN: GENERAL STORE ======= -->
+<section id="screen-store" class="screen">
+  <div class="scene-card">
+    <h1>Berry General Store</h1>
+    <div class="scene-art">
+      <svg viewBox="0 0 600 220" aria-hidden="true">
+        <rect width="600" height="220" fill="#ffe8c9"/>
+        <rect y="170" width="600" height="50" fill="#e8c9a0"/>
+        <rect x="170" y="50" width="260" height="120" rx="10" fill="#fff"/>
+        <rect x="150" y="30" width="300" height="34" rx="10" fill="#e2548b"/>
+        <rect x="180" y="86" width="60" height="44" fill="#9fd0f5" rx="6"/>
+        <rect x="250" y="86" width="60" height="44" fill="#9fd0f5" rx="6"/>
+        <rect x="320" y="86" width="60" height="44" fill="#9fd0f5" rx="6"/>
+        <rect x="270" y="120" width="60" height="50" fill="#a9805e" rx="6"/>
+        <g><circle cx="90" cy="120" r="22" fill="#7ccf7c"/><rect x="84" y="136" width="12" height="26" fill="#8a6239"/></g>
+        <g><circle cx="520" cy="120" r="22" fill="#7ccf7c"/><rect x="514" y="136" width="12" height="26" fill="#8a6239"/></g>
+      </svg>
+      <button class="npc" id="npc-barnaby" style="left:50%; top:80%;"><span class="npc-face">🧑‍🌾</span><span class="npc-name">Barnaby</span></button>
+    </div>
+    <p class="hint">Barnaby sells cozy furniture for your house. Bought items go into your moving box!</p>
+    <div id="shop-list"></div>
+    <div class="back-row"><button class="btn back-btn">🗺️ Back to Town</button></div>
+  </div>
+</section>
+
+<!-- ======= SCREEN: LAKE ======= -->
+<section id="screen-lake" class="screen">
+  <div class="scene-card">
+    <h1>Giggleberry Lake</h1>
+    <div class="scene-art">
+      <svg viewBox="0 0 600 300" aria-hidden="true">
+        <rect width="600" height="300" fill="#cfe8ff"/>
+        <g fill="#fff"><ellipse cx="140" cy="50" rx="42" ry="18"/><ellipse cx="460" cy="40" rx="48" ry="20"/></g>
+        <rect y="150" width="600" height="150" fill="#9fd0f5"/>
+        <rect y="150" width="600" height="150" fill="#bfe0fa" opacity=".6"/>
+        <ellipse cx="200" cy="210" rx="60" ry="12" fill="#8fc3ef" opacity=".8"/>
+        <ellipse cx="420" cy="250" rx="70" ry="14" fill="#8fc3ef" opacity=".8"/>
+        <g><rect x="60" y="120" width="14" height="70" fill="#5cb85c"/><rect x="80" y="110" width="14" height="80" fill="#6fd074"/><rect x="100" y="125" width="14" height="65" fill="#5cb85c"/></g>
+        <g><rect x="500" y="115" width="14" height="75" fill="#5cb85c"/><rect x="520" y="125" width="14" height="65" fill="#6fd074"/></g>
+        <g><circle cx="300" cy="235" r="14" fill="#ffb3d9"/><path d="M300 249 l0 14" stroke="#e2548b" stroke-width="3"/><circle cx="295" cy="232" r="2.5" fill="#4a3f55"/><circle cx="305" cy="232" r="2.5" fill="#4a3f55"/></g>
+        <g><circle cx="380" cy="200" r="10" fill="#ffe08a"/><circle cx="377" cy="198" r="2" fill="#4a3f55"/><circle cx="383" cy="198" r="2" fill="#4a3f55"/></g>
+        <g><circle cx="150" cy="260" r="12" fill="#ffd9e8"/><circle cx="147" cy="258" r="2" fill="#4a3f55"/><circle cx="153" cy="258" r="2" fill="#4a3f55"/></g>
+        <g><ellipse cx="90" cy="190" rx="26" ry="10" fill="#a9805e"/><circle cx="108" cy="184" r="8" fill="#c49a6c"/><circle cx="110" cy="182" r="1.6" fill="#4a3f55"/><path d="M112 186 l8 -2 l-8 -2 z" fill="#f5b942"/></g>
+      </svg>
+      <button class="npc" id="npc-willa" style="left:50%; top:52%;"><span class="npc-face">🧙‍♀️</span><span class="npc-name">Willa</span></button>
+      <!-- The lost kite hides among the reeds on the left -->
+      <button class="hidden-kite" id="lost-kite" style="left:8%; top:44%;" title="Something shiny in the reeds...">
+        <svg viewBox="0 0 60 60" width="44" height="44"><polygon points="30,4 54,30 30,56 6,30" fill="#e2548b"/><polygon points="30,4 54,30 30,30" fill="#ff9ec4"/><line x1="30" y1="4" x2="30" y2="56" stroke="#fff" stroke-width="2"/><line x1="6" y1="30" x2="54" y2="30" stroke="#fff" stroke-width="2"/><path d="M30 56 q -6 8 -2 14 q 5 -3 4 -8" stroke="#a9805e" stroke-width="2" fill="none"/></svg>
+      </button>
+    </div>
+    <p class="hint">Willa the Lake Keeper watches over the water. Some say a lost kite is tangled in the reeds…</p>
+    <div class="back-row"><button class="btn back-btn">🗺️ Back to Town</button></div>
+  </div>
+</section>
+</main>
+
+<div id="speech" role="status"></div>
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   BERRYBROOK game logic — all original code & art.
+   ============================================================ */
+
+/* ---------- tiny DOM helpers ---------- */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+/* ---------- persistent save ---------- */
+const SAVE_KEY = "berrybrook_save_v1";
+const DEFAULT_STATE = {
+  avatar: null,            // {skin, hair, hairColor, shirt, pants, name}
+  coins: 0,
+  inventory: [],           // array of furniture ids (moving box)
+  layout: {},              // {cellIndex: furnitureId}
+  quests: {},              // {questId: "done"}
+  musicOn: true,
+  kiteFound: false,
+  talked: {}               // {npcId: true}
+};
+
+let state = loadState();
+function loadState(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return structuredClone(DEFAULT_STATE);
+    const parsed = JSON.parse(raw);
+    // merge with defaults so new fields never break old saves
+    return Object.assign(structuredClone(DEFAULT_STATE), parsed);
+  }catch(e){ return structuredClone(DEFAULT_STATE); }
+}
+function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){} }
+
+/* ============================================================
+   AVATAR — SVG buddy builder (original art)
+   ============================================================ */
+const SKINS  = ["#ffe0c2","#f5c9a0","#e0a878","#b97a4e","#7a4e2e"];
+const HAIRS  = ["short","long","curly","spiky"];
+const HAIR_COLORS = ["#3a2a1e","#7a4e2e","#e8a33d","#e2548b","#7c5cd6"];
+const SHIRTS = ["#e2548b","#5cb85c","#7c5cd6","#f5b942","#4aa8de","#ff8c42"];
+const PANTS  = ["#4a6fa5","#6b4a8a","#3f7d5d","#8a6239","#4a3f55"];
+
+const draft = { skin:SKINS[0], hair:"short", hairColor:HAIR_COLORS[0], shirt:SHIRTS[0], pants:PANTS[0] };
+
+function hairSVG(style, color){
+  // drawn to fit a head circle centered at (50,40) radius 18
+  switch(style){
+    case "short":
+      return `<path d="M32 38 Q32 18 50 18 Q68 18 68 38 Q62 30 56 32 Q50 24 44 32 Q38 30 32 38 Z" fill="${color}"/>`;
+    case "long":
+      return `<path d="M32 38 Q32 18 50 18 Q68 18 68 38 L70 78 Q64 74 62 66 L62 44 Q56 36 50 36 Q44 36 38 44 L38 66 Q36 74 30 78 Z" fill="${color}"/>`;
+    case "curly":
+      return `<g fill="${color}"><circle cx="36" cy="30" r="9"/><circle cx="46" cy="22" r="10"/><circle cx="58" cy="24" r="9"/><circle cx="66" cy="32" r="8"/><circle cx="40" cy="38" r="8"/><circle cx="60" cy="38" r="8"/></g>`;
+    case "spiky":
+      return `<polygon points="32,40 34,20 42,28 46,12 52,26 60,14 60,30 68,24 66,40 50,30" fill="${color}"/>`;
+  }
+  return "";
+}
+
+function avatarSVG(a, w){
+  return `<svg viewBox="0 0 100 140" width="${w||120}" height="${(w||120)*1.4}" aria-label="Your buddy">
+    <rect x="36" y="96" width="11" height="30" rx="5" fill="${a.pants}"/>
+    <rect x="53" y="96" width="11" height="30" rx="5" fill="${a.pants}"/>
+    <rect x="32" y="120" width="17" height="10" rx="5" fill="#6b4a8a"/>
+    <rect x="51" y="120" width="17" height="10" rx="5" fill="#6b4a8a"/>
+    <rect x="28" y="58" width="44" height="44" rx="14" fill="${a.shirt}"/>
+    <rect x="22" y="62" width="10" height="26" rx="5" fill="${a.skin}"/>
+    <rect x="68" y="62" width="10" height="26" rx="5" fill="${a.skin}"/>
+    <circle cx="50" cy="40" r="18" fill="${a.skin}"/>
+    ${hairSVG(a.hair, a.hairColor)}
+    <circle cx="43" cy="40" r="2.6" fill="#4a3f55"/>
+    <circle cx="57" cy="40" r="2.6" fill="#4a3f55"/>
+    <path d="M43 50 Q50 56 57 50" stroke="#4a3f55" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <circle cx="37" cy="46" r="3" fill="#ffb3d9" opacity=".7"/>
+    <circle cx="63" cy="46" r="3" fill="#ffb3d9" opacity=".7"/>
+  </svg>`;
+}
+
+/* ---------- creator screen ---------- */
+function buildCreator(){
+  const mk = (el, items, key, isSwatch) => {
+    const host = $(el); host.innerHTML = "";
+    items.forEach((val,i) => {
+      const b = document.createElement("button");
+      b.className = "pick" + (isSwatch ? " swatch" : "");
+      b.type = "button";
+      if(isSwatch) b.style.background = val;
+      else b.textContent = (key==="hair") ? val[0].toUpperCase()+val.slice(1) : val;
+      b.setAttribute("aria-label", (key==="hair"? val+" hair" : val));
+      const isSel = () => draft[key] === val;
+      const paint = () => b.classList.toggle("selected", isSel());
+      b.addEventListener("click", () => { draft[key] = val; $$(el+" .pick").forEach(x=>x.classList.remove("selected")); paint(); renderPreview(); });
+      paint(); host.appendChild(b);
+    });
+  };
+  mk("#pick-skin", SKINS, "skin", true);
+  mk("#pick-hair", HAIRS, "hair", false);
+  mk("#pick-haircolor", HAIR_COLORS, "hairColor", true);
+  mk("#pick-shirt", SHIRTS, "shirt", true);
+  mk("#pick-pants", PANTS, "pants", true);
+  renderPreview();
+}
+function renderPreview(){ $("#avatar-preview").innerHTML = avatarSVG(draft); }
+
+$("#start-adventure").addEventListener("click", () => {
+  const name = $("#buddy-name").value.trim().slice(0,16) || "Pip";
+  state.avatar = Object.assign({}, draft, { name });
+  state.coins = 20; // starter Berry Coins
+  save(); applyTopbar(); showScreen("screen-town");
+  toast(`Welcome to Berrybrook, ${name}! 🌈 You got 20 Berry Coins!`);
+  startMusic();
+});
+
+/* ============================================================
+   SCREENS, TOP BAR, SPEECH, TOAST
+   ============================================================ */
+function showScreen(id){
+  $$(".screen").forEach(s => s.classList.remove("active"));
+  $("#"+id).classList.add("active");
+  $("main").scrollTop = 0;
+  window.scrollTo(0,0);
+}
+$$(".back-btn").forEach(b => b.addEventListener("click", () => showScreen("screen-town")));
+$$(".map-loc").forEach(b => b.addEventListener("click", () => showScreen("screen-"+b.dataset.goto)));
+
+function applyTopbar(){
+  $("#coin-count").textContent = state.coins;
+  if(state.avatar){
+    $("#buddy-avatar").innerHTML = avatarSVG(state.avatar, 30);
+    $("#buddy-name-top").textContent = state.avatar.name;
+  }
+}
+function addCoins(n){
+  state.coins += n; save(); applyTopbar();
+  // pop animation on the purse
+  const p = $("#coin-purse"); p.style.transform = "scale(1.15)";
+  setTimeout(()=>p.style.transform="", 180);
+}
+/* spendCoins returns true if the player could afford it */
+function spendCoins(n){
+  if(state.coins < n) return false;
+  state.coins -= n; save(); applyTopbar(); return true;
+}
+
+let speechTimer = null;
+function say(who, line){
+  const el = $("#speech");
+  el.innerHTML = `<span class="who">${who} says:</span>${line}`;
+  el.classList.add("show");
+  clearTimeout(speechTimer);
+  speechTimer = setTimeout(()=>el.classList.remove("show"), 3200);
+}
+let toastTimer = null;
+function toast(msg){
+  const el = $("#toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove("show"), 2800);
+}
+
+/* ---------- NPC dialogue ---------- */
+const NPC_LINES = {
+  marigold: ["Marigold","Welcome to the Square, sweetpea! The Quest Board has little errands if you'd like to help out. 🌼"],
+  dex: ["Dex","Beep boop! Win a game and I'll shower you in Berry Coins. The rope climb is my favorite! 🕹️"],
+  miso: ["Miso","Mrrp! (That's cat for 'decorate our house, it's so empty in here!') 🐱"],
+  barnaby: ["Barnaby","Howdy! Finest furniture in Berrybrook, all priced in Berry Coins. The plant is very popular. 🪴"],
+  willa: ["Willa","Shhh… the lake likes quiet hellos. Oh! Have you seen a little red kite? It blew away in yesterday's breeze… 🪁"]
+};
+function talkTo(id){
+  const [who,line] = NPC_LINES[id];
+  say(who,line);
+  state.talked[id] = true; save();
+  if(id==="willa") completeQuest("q_hello"); // "Say hello to the Lake Keeper"
+}
+["marigold","dex","miso","barnaby","willa"].forEach(id => {
+  $("#npc-"+id).addEventListener("click", ()=>talkTo(id));
+});
+
+/* ---------- lost kite (hidden at the lake) ---------- */
+$("#lost-kite").addEventListener("click", () => {
+  if(state.kiteFound){ say("Willa","That's my kite, safe and sound — thank you again! 🪁"); return; }
+  state.kiteFound = true; save();
+  $("#lost-kite").style.display = "none";
+  say("Willa","My kite!! You found it tangled in the reeds! You're a true Berrybrook hero! 🪁");
+  confetti();
+  completeQuest("q_kite");
+});
+function paintKite(){ if(state.kiteFound) $("#lost-kite").style.display = "none"; }
+
+/* ============================================================
+   QUESTS
+   ============================================================ */
+const QUESTS = [
+  { id:"q_hello", text:"Say hello to Willa the Lake Keeper at the Lake", reward:10 },
+  { id:"q_plant", text:"Buy a plant at the General Store", reward:15 },
+  { id:"q_arcade", text:"Win one arcade game (Rope Climb or Berry Match)", reward:25 },
+  { id:"q_decor", text:"Place 3 furniture items in your house", reward:20 },
+  { id:"q_kite", text:"Find the lost kite at the Lake", reward:15 }
+];
+function renderQuests(){
+  const host = $("#quest-list"); host.innerHTML = "";
+  QUESTS.forEach(q => {
+    const done = state.quests[q.id] === "done";
+    const d = document.createElement("div");
+    d.className = "quest" + (done ? " done" : "");
+    d.innerHTML = `<div class="stamp">${done ? "★" : "?"}</div>
+      <div class="qtext"><b>${q.text}</b><br><span class="qreward">Reward: ${q.reward} 🫐 Berry Coins</span></div>`;
+    host.appendChild(d);
+  });
+}
+function completeQuest(id){
+  if(state.quests[id] === "done") return;
+  const q = QUESTS.find(x=>x.id===id);
+  state.quests[id] = "done";
+  addCoins(q.reward); // addCoins saves
+  renderQuests();
+  confetti();
+  toast(`Quest complete! +${q.reward} Berry Coins! 🎉`);
+}
+$("#open-quests").addEventListener("click", () => {
+  const w = $("#quest-board-wrap");
+  const open = w.style.display === "block";
+  w.style.display = open ? "none" : "block";
+  if(!open) renderQuests();
+});
+
+/* ---------- tiny CSS confetti ---------- */
+function confetti(){
+  const colors = ["#e2548b","#f5b942","#5cb85c","#7c5cd6","#4aa8de"];
+  for(let i=0;i<24;i++){
+    const c = document.createElement("div");
+    c.className = "confetti";
+    c.style.left = Math.random()*100 + "vw";
+    c.style.background = colors[i % colors.length];
+    const s = 8 + Math.random()*8;
+    c.style.width = s+"px"; c.style.height = s*0.6+"px";
+    c.style.borderRadius = "3px";
+    c.style.animationDuration = (1.6 + Math.random()*1.4) + "s";
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 3200);
+  }
+}
+
+/* ============================================================
+   ARCADE — game menu wiring
+   ============================================================ */
+$$("#game-menu [data-game]").forEach(b => b.addEventListener("click", () => {
+  $("#game-menu").style.display = "none";
+  if(b.dataset.game === "rope"){ $("#rope-area").style.display = "block"; startRope(); }
+  else { $("#memory-area").style.display = "block"; startMemory(); }
+}));
+$$(".quit-game").forEach(b => b.addEventListener("click", () => {
+  stopRope(); $("#rope-area").style.display = "none"; $("#memory-area").style.display = "none";
+  $("#game-menu").style.display = "block";
+}));
+function arcadeWin(gameName, coins){
+  stopRope();
+  addCoins(coins);
+  confetti();
+  toast(`You won ${gameName}! +${coins} Berry Coins! 🏆`);
+  completeQuest("q_arcade");
+  setTimeout(()=>{ $("#rope-area").style.display="none"; $("#memory-area").style.display="none"; $("#game-menu").style.display="block"; }, 1200);
+}
+
+/* ---------- Rope Climb: timing / reflex game ---------- */
+let rope = null;
+function startRope(){
+  stopRope();
+  const track = $("#rope-track"), marker = $("#rope-marker"), zone = $("#rope-zone"), buddy = $("#rope-buddy");
+  const TRACK_H = 320, MARK_H = 26;
+  rope = { y: 0, dir: 1, speed: 2.2, climbs: 0, zoneY: 0, zoneH: 70, running: true, raf: 0 };
+  const placeZone = () => {
+    rope.zoneH = Math.max(46, 80 - rope.climbs*6);
+    rope.zoneY = 10 + Math.random()*(TRACK_H - rope.zoneH - 20);
+    zone.style.top = rope.zoneY+"px"; zone.style.height = rope.zoneH+"px";
+  };
+  const paint = () => {
+    $("#rope-progress").textContent = `Climbs: ${rope.climbs} / 5`;
+    buddy.style.bottom = (8 + rope.climbs*(TRACK_H-70)/5) + "px";
+  };
+  placeZone(); paint();
+  const tick = () => {
+    if(!rope || !rope.running) return;
+    rope.y += rope.dir * rope.speed;
+    if(rope.y >= TRACK_H - MARK_H){ rope.y = TRACK_H - MARK_H; rope.dir = -1; }
+    if(rope.y <= 0){ rope.y = 0; rope.dir = 1; }
+    marker.style.top = rope.y + "px";
+    rope.raf = requestAnimationFrame(tick);
+  };
+  tick();
+  $("#rope-climb-btn").onclick = () => {
+    if(!rope || !rope.running) return;
+    const center = rope.y + MARK_H/2;
+    if(center >= rope.zoneY && center <= rope.zoneY + rope.zoneH){
+      rope.climbs++; rope.speed += 0.55; placeZone(); paint();
+      if(rope.climbs >= 5){ rope.running = false; arcadeWin("Rope Climb", 10); }
+    } else {
+      // a miss just wobbles the marker — kid-friendly, no punishment
+      marker.style.background = "#c9a0b4";
+      setTimeout(()=>{ if(rope) marker.style.background = ""; }, 150);
+    }
+  };
+}
+function stopRope(){
+  if(rope){ rope.running = false; cancelAnimationFrame(rope.raf); rope = null; }
+}
+
+/* ---------- Berry Match: 12-card memory game ---------- */
+const ICONS = {
+  berry:  c => `<svg viewBox="0 0 40 40"><circle cx="20" cy="24" r="11" fill="${c}"/><path d="M20 13 q2 -7 9 -9 q-1 7 -9 9" fill="#5cb85c"/><circle cx="16" cy="21" r="2.4" fill="#fff" opacity=".7"/></svg>`,
+  sun:    c => `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="9" fill="${c}"/><g stroke="${c}" stroke-width="3" stroke-linecap="round"><line x1="20" y1="4" x2="20" y2="9"/><line x1="20" y1="31" x2="20" y2="36"/><line x1="4" y1="20" x2="9" y2="20"/><line x1="31" y1="20" x2="36" y2="20"/><line x1="9" y1="9" x2="12" y2="12"/><line x1="28" y1="28" x2="31" y2="31"/><line x1="31" y1="9" x2="28" y2="12"/><line x1="12" y1="28" x2="9" y2="31"/></g></svg>`,
+  fish:   c => `<svg viewBox="0 0 40 40"><ellipse cx="17" cy="20" rx="10" ry="7" fill="${c}"/><polygon points="27,20 36,13 36,27" fill="${c}"/><circle cx="13" cy="18" r="1.8" fill="#fff"/></svg>`,
+  flower: c => `<svg viewBox="0 0 40 40"><g fill="${c}"><circle cx="20" cy="10" r="6"/><circle cx="29" cy="20" r="6"/><circle cx="20" cy="30" r="6"/><circle cx="11" cy="20" r="6"/></g><circle cx="20" cy="20" r="5" fill="#f5b942"/></svg>`,
+  star:   c => `<svg viewBox="0 0 40 40"><polygon points="20,4 24,15 36,15 26,22 30,34 20,27 10,34 14,22 4,15 16,15" fill="${c}"/></svg>`,
+  shroom: c => `<svg viewBox="0 0 40 40"><path d="M6 20 Q20 4 34 20 Q20 24 6 20" fill="${c}"/><rect x="16" y="20" width="8" height="12" rx="3" fill="#fff"/><circle cx="15" cy="15" r="2.4" fill="#fff"/><circle cx="25" cy="14" r="2" fill="#fff"/></svg>`
+};
+const ICON_KEYS = Object.keys(ICONS);
+const ICON_COLORS = { berry:"#e2548b", sun:"#f5b942", fish:"#4aa8de", flower:"#ff9ec4", star:"#b678e0", shroom:"#e2545c" };
+let mem = null;
+function startMemory(){
+  const grid = $("#memory-grid"); grid.innerHTML = "";
+  const deck = ICON_KEYS.concat(ICON_KEYS).map(k => ({key:k}));
+  for(let i=deck.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
+  mem = { first:null, lock:false, found:0 };
+  $("#memory-score").textContent = "0";
+  deck.forEach(card => {
+    const b = document.createElement("button");
+    b.className = "mcard"; b.type = "button"; b.setAttribute("aria-label","Memory card");
+    b.innerHTML = `<span class="face front">🫐</span><span class="face backB">${ICONS[card.key](ICON_COLORS[card.key])}</span>`;
+    b.addEventListener("click", () => flipCard(b, card.key));
+    grid.appendChild(b);
+  });
+}
+function flipCard(btn, key){
+  if(!mem || mem.lock || btn.classList.contains("flipped")) return;
+  btn.classList.add("flipped");
+  if(!mem.first){ mem.first = {btn, key}; return; }
+  const first = mem.first; mem.first = null;
+  if(first.key === key){
+    mem.lock = true;
+    setTimeout(()=>{
+      first.btn.classList.add("matched"); btn.classList.add("matched");
+      mem.found++; $("#memory-score").textContent = mem.found;
+      mem.lock = false;
+      if(mem.found >= 6) arcadeWin("Berry Match", 15);
+    }, 350);
+  } else {
+    mem.lock = true;
+    setTimeout(()=>{ first.btn.classList.remove("flipped"); btn.classList.remove("flipped"); mem.lock = false; }, 750);
+  }
+}
+
+/* ============================================================
+   FURNITURE — store, moving box, house grid
+   ============================================================ */
+const FURNITURE = {
+  plant:  { name:"Potted Plant", price:15, svg:`<svg viewBox="0 0 64 64"><path d="M32 44 q-14 -4 -16 -20 q10 2 14 8 q0 -12 8 -18 q2 12 -2 18 q8 -6 14 -4 q-4 12 -18 16" fill="#5cb85c"/><path d="M24 44 h16 l-3 14 h-10 z" fill="#e2548b"/></svg>` },
+  rug:    { name:"Cozy Rug", price:20, svg:`<svg viewBox="0 0 64 64"><ellipse cx="32" cy="34" rx="26" ry="18" fill="#ff9ec4"/><ellipse cx="32" cy="34" rx="18" ry="12" fill="#ffd9e8"/><ellipse cx="32" cy="34" rx="9" ry="6" fill="#e2548b"/></svg>` },
+  lamp:   { name:"Sunny Lamp", price:30, svg:`<svg viewBox="0 0 64 64"><path d="M22 26 L42 26 L36 10 L28 10 Z" fill="#fff3c4" stroke="#f5b942" stroke-width="3"/><rect x="30" y="26" width="4" height="22" fill="#a9805e"/><ellipse cx="32" cy="52" rx="10" ry="4" fill="#a9805e"/><circle cx="32" cy="18" r="4" fill="#ffe08a"/></svg>` },
+  poster: { name:"Berry Poster", price:25, svg:`<svg viewBox="0 0 64 64"><rect x="14" y="8" width="36" height="48" rx="4" fill="#fff" stroke="#7c5cd6" stroke-width="3"/><circle cx="32" cy="28" r="10" fill="#e2548b"/><path d="M32 18 q2 -6 8 -7" stroke="#5cb85c" stroke-width="3" fill="none"/><text x="32" y="50" text-anchor="middle" font-size="10" fill="#7c5cd6" font-weight="bold">YAY!</text></svg>` },
+  bed:    { name:"Comfy Bed", price:50, svg:`<svg viewBox="0 0 64 64"><rect x="8" y="30" width="48" height="18" rx="6" fill="#7c5cd6"/><rect x="8" y="22" width="10" height="28" rx="4" fill="#5c439e"/><rect x="14" y="24" width="18" height="10" rx="5" fill="#fff"/><rect x="12" y="48" width="4" height="8" fill="#5c439e"/><rect x="48" y="48" width="4" height="8" fill="#5c439e"/></svg>` }
+};
+const GRID_CELLS = 16;
+let selectedInv = -1; // index into state.inventory, -1 = none selected
+
+function renderShop(){
+  const host = $("#shop-list"); host.innerHTML = "";
+  Object.entries(FURNITURE).forEach(([id,f]) => {
+    const row = document.createElement("div");
+    row.className = "shop-item";
+    const canAfford = state.coins >= f.price;
+    row.innerHTML = `${f.svg}<div class="info"><b>${f.name}</b><br><span class="price">🫐 ${f.price} Berry Coins</span></div>`;
+    const btn = document.createElement("button");
+    btn.className = "btn gold"; btn.textContent = "Buy";
+    btn.disabled = !canAfford;
+    btn.addEventListener("click", () => buyFurniture(id));
+    row.appendChild(btn); host.appendChild(row);
+  });
+}
+function buyFurniture(id){
+  const f = FURNITURE[id];
+  if(!spendCoins(f.price)){ toast("Not enough Berry Coins yet! 🫐"); return; }
+  state.inventory.push(id); save();
+  renderShop(); renderInventory();
+  toast(`${f.name} added to your moving box! 📦`);
+  if(id === "plant") completeQuest("q_plant");
+}
+
+function renderInventory(){
+  const bar = $("#inventory-bar"); bar.innerHTML = "";
+  if(state.inventory.length === 0){
+    bar.innerHTML = `<span class="inv-empty">Empty — buy furniture at the General Store!</span>`;
+  }
+  state.inventory.forEach((id, idx) => {
+    const b = document.createElement("button");
+    b.className = "inv-item" + (idx === selectedInv ? " selected" : "");
+    b.type = "button"; b.title = FURNITURE[id].name; b.setAttribute("aria-label", FURNITURE[id].name);
+    b.innerHTML = FURNITURE[id].svg;
+    b.addEventListener("click", () => {
+      selectedInv = (selectedInv === idx) ? -1 : idx; // tap again to deselect
+      renderInventory();
+    });
+    bar.appendChild(b);
+  });
+}
+
+function renderHouse(){
+  const grid = $("#house-grid"); grid.innerHTML = "";
+  for(let i=0;i<GRID_CELLS;i++){
+    const cell = document.createElement("button");
+    cell.className = "cell"; cell.type = "button";
+    const itemId = state.layout[i];
+    if(itemId && FURNITURE[itemId]){
+      cell.innerHTML = FURNITURE[itemId].svg;
+      cell.title = FURNITURE[itemId].name + " (tap to pick up)";
+      cell.setAttribute("aria-label", FURNITURE[itemId].name + ", tap to pick up");
+    } else {
+      cell.setAttribute("aria-label", "Empty floor square");
+    }
+    cell.addEventListener("click", () => tapCell(i));
+    grid.appendChild(cell);
+  }
+}
+function tapCell(i){
+  const occupied = state.layout[i];
+  if(selectedInv >= 0 && !occupied){
+    // place selected inventory item
+    const id = state.inventory.splice(selectedInv, 1)[0];
+    selectedInv = -1;
+    state.layout[i] = id; save();
+    renderInventory(); renderHouse();
+    if(Object.keys(state.layout).length >= 3) completeQuest("q_decor");
+  } else if(selectedInv >= 0 && occupied){
+    toast("That spot is taken — pick another square!");
+  } else if(occupied){
+    // pick furniture back up into the moving box
+    const id = state.layout[i];
+    delete state.layout[i];
+    state.inventory.push(id); save();
+    renderInventory(); renderHouse();
+    toast(`${FURNITURE[id].name} picked up! 📦`);
+  } else {
+    toast("Pick an item from your moving box first! 📦");
+  }
+}
+
+/* ============================================================
+   MUSIC — gentle WebAudio loop (original simple melody)
+   ============================================================ */
+let audioCtx = null, musicTimer = null, musicStep = 0;
+// A soft, cheerful original melody in C major (frequencies in Hz)
+const MELODY = [523.25, 587.33, 659.25, 587.33, 523.25, 440, 392, 440, 523.25, 659.25, 783.99, 659.25, 523.25, 0, 392, 0];
+function startMusic(){
+  if(!state.musicOn) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === "suspended") audioCtx.resume();
+  }catch(e){ return; }
+  if(musicTimer) return;
+  musicStep = 0;
+  const playNote = () => {
+    if(!state.musicOn) return;
+    const f = MELODY[musicStep % MELODY.length];
+    musicStep++;
+    if(f > 0 && audioCtx){
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "triangle"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.08, audioCtx.currentTime + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.42);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.45);
+    }
+  };
+  playNote();
+  musicTimer = setInterval(playNote, 460);
+}
+function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer = null; } }
+function paintMusicBtn(){ $("#music-toggle").textContent = state.musicOn ? "🎵" : "🔇"; }
+$("#music-toggle").addEventListener("click", () => {
+  state.musicOn = !state.musicOn; save(); paintMusicBtn();
+  if(state.musicOn) startMusic(); else stopMusic();
+  toast(state.musicOn ? "Music on 🎵" : "Music off 🔇");
+});
+
+/* ============================================================
+   RESET & INIT
+   ============================================================ */
+$("#reset-link").addEventListener("click", () => {
+  if(confirm("Start over? This erases your buddy, coins, house, and quests.")){
+    localStorage.removeItem(SAVE_KEY);
+    location.reload();
+  }
+});
+
+function init(){
+  buildCreator();
+  paintMusicBtn(); paintKite(); renderShop(); renderInventory(); renderHouse(); renderQuests();
+  if(state.avatar){
+    // returning player — skip the creator
+    $("#topbar").classList.remove("hidden");
+    applyTopbar();
+    showScreen("screen-town");
+    if(state.musicOn){
+      // browsers require a gesture before audio; start on first tap
+      const kick = () => { startMusic(); document.removeEventListener("pointerdown", kick); };
+      document.addEventListener("pointerdown", kick);
+    }
+  } else {
+    showScreen("screen-creator");
+  }
+}
+init();
+</script>
+</body>
+</html>
