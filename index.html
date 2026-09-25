@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mossbell Arcade — Free Games for the Whole Couch</title>
+<meta name="description" content="Mossbell Arcade: a kid-friendly hub of free party and solo games. No sign-up, no ads, just play.">
+<style>
+  :root{
+    --cream:#fdf8ef; --ink:#3d3448; --muted:#8a7f95;
+    --pink:#ff7ba9; --pink-deep:#e0548b; --lav:#b79df0; --mint:#8fd6a8;
+    --sun:#ffc46b; --sky:#9ecdf2; --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Trebuchet MS","Segoe UI",-apple-system,sans-serif;
+    background:
+      radial-gradient(circle at 12% 18%, #ffe9f2 0 90px, transparent 91px),
+      radial-gradient(circle at 88% 12%, #e9f6ec 0 110px, transparent 111px),
+      radial-gradient(circle at 82% 88%, #e6ecfd 0 100px, transparent 101px),
+      radial-gradient(circle at 8% 82%, #fff3d9 0 80px, transparent 81px),
+      var(--cream);
+    color:var(--ink); min-height:100vh;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:36px 20px 60px}
+  header{text-align:center;margin-bottom:28px}
+  .logo{width:84px;height:84px;margin:0 auto 10px;filter:drop-shadow(0 6px 10px rgba(224,84,139,.25))}
+  h1{font-size:2.4rem;letter-spacing:-1px;color:#4a3a5e}
+  h1 .arcade{color:var(--pink-deep)}
+  .tagline{color:var(--muted);font-size:1.02rem;margin-top:6px}
+  .pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+  .pill{font-size:.78rem;font-weight:700;background:#fff;border:2px solid #f0e4d4;
+        padding:6px 14px;border-radius:999px;color:#7a6a85}
+  .section-label{font-size:.85rem;font-weight:700;text-transform:uppercase;
+        letter-spacing:2px;color:var(--muted);margin:26px 4px 12px}
+  .card{display:flex;gap:14px;align-items:center;background:var(--card);
+        border-radius:22px;padding:16px 18px;margin-bottom:14px;text-decoration:none;
+        color:inherit;border:3px solid transparent;
+        box-shadow:0 6px 18px rgba(90,70,110,.10);
+        transition:transform .15s ease, box-shadow .15s ease}
+  .card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(90,70,110,.16)}
+  .card.featured{border-color:var(--pink);background:linear-gradient(180deg,#fff,#fff5f9)}
+  .art{flex:0 0 64px;width:64px;height:64px;border-radius:18px;
+        display:flex;align-items:center;justify-content:center}
+  .info{flex:1;min-width:0}
+  .info h2{font-size:1.15rem;margin-bottom:3px}
+  .info p{font-size:.92rem;color:var(--muted);line-height:1.4;margin-bottom:8px}
+  .badges{display:flex;gap:6px;flex-wrap:wrap}
+  .badge{font-size:.7rem;font-weight:800;padding:4px 11px;border-radius:999px;
+        text-transform:uppercase;letter-spacing:.6px}
+  .b-solo{background:#dff3e6;color:#237a44}
+  .b-party{background:#e7e0fb;color:#5740a8}
+  .b-new{background:var(--pink);color:#fff}
+  .play{flex:0 0 auto;background:var(--pink-deep);color:#fff;font-weight:800;
+        font-size:.95rem;padding:11px 22px;border-radius:999px;
+        box-shadow:0 4px 12px rgba(224,84,139,.4)}
+  .card:hover .play{background:var(--pink)}
+  footer{text-align:center;color:var(--muted);font-size:.85rem;margin-top:34px;line-height:1.7}
+  footer .shrooms{font-size:1.3rem;letter-spacing:6px}
+  @media (max-width:480px){
+    h1{font-size:1.9rem}
+    .play{padding:9px 16px;font-size:.85rem}
+    .art{flex-basis:54px;width:54px;height:54px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <svg class="logo" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+      <ellipse cx="50" cy="90" rx="30" ry="6" fill="#e8dcc8"/>
+      <path d="M50 8C28 8 12 26 12 44c0 5 4 8 9 8h58c5 0 9-3 9-8C88 26 72 8 50 8z" fill="#ff7ba9"/>
+      <circle cx="32" cy="32" r="6" fill="#fff"/>
+      <circle cx="56" cy="24" r="4.5" fill="#fff"/>
+      <circle cx="70" cy="38" r="5" fill="#fff"/>
+      <rect x="40" y="50" width="20" height="32" rx="9" fill="#f7ecd9"/>
+      <circle cx="45" cy="64" r="2.5" fill="#d9bd93"/>
+      <circle cx="55" cy="70" r="2.5" fill="#d9bd93"/>
+      <circle cx="16" cy="78" r="8" fill="#8fd6a8"/>
+      <circle cx="86" cy="76" r="6" fill="#b79df0"/>
+    </svg>
+    <h1>Mossbell <span class="arcade">Arcade</span></h1>
+    <p class="tagline">Free games for the whole couch. No sign-up, no ads — just pick a game and play.</p>
+    <div class="pills">
+      <span class="pill">Free forever</span>
+      <span class="pill">Kid-friendly</span>
+      <span class="pill">Couch, TV &amp; phone</span>
+    </div>
+  </header>
+
+  <div class="section-label">Start playing</div>
+
+  <a class="card featured" href="./mossbell-grove.html">
+    <div class="art" style="background:linear-gradient(135deg,#ffd9e8,#cdb4f2)">
+      <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+        <path d="M50 8C28 8 12 26 12 44c0 5 4 8 9 8h58c5 0 9-3 9-8C88 26 72 8 50 8z" fill="#ff7ba9"/>
+        <circle cx="32" cy="32" r="6" fill="#fff"/><circle cx="56" cy="24" r="4.5" fill="#fff"/><circle cx="70" cy="38" r="5" fill="#fff"/>
+        <rect x="40" y="50" width="20" height="32" rx="9" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="info">
+      <h2>Mossbell Grove</h2>
+      <p>Defend the cozy mushroom forest from grumbly critters in this tower-defense adventure.</p>
+      <div class="badges"><span class="badge b-solo">Solo</span><span class="badge b-new">New</span></div>
+    </div>
+    <span class="play">Play</span>
+  </a>
+
+  <a class="card" href="https://rynaing.github.io/game-night/">
+    <div class="art" style="background:linear-gradient(135deg,#ffe9b8,#ffb35d)">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" stroke="#b36a00" stroke-width="2.4"/>
+        <path d="M9.5 9.2c.3-1.4 1.3-2.2 2.7-2.2 1.5 0 2.6 1 2.6 2.3 0 1.9-2.4 2-2.4 3.7" stroke="#b36a00" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="12.2" cy="16.8" r="1.5" fill="#b36a00"/>
+      </svg>
+    </div>
+    <div class="info">
+      <h2>Trivia</h2>
+      <p>Answer fun questions on the big screen and buzz in from your phone.</p>
+      <div class="badges"><span class="badge b-party">Party</span></div>
+    </div>
+    <span class="play">Play</span>
+  </a>
+
+  <a class="card" href="https://rynaing.github.io/game-night/">
+    <div class="art" style="background:linear-gradient(135deg,#c8f0d4,#7fd6a4)">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3" y="3" width="8" height="8" rx="2" fill="#237a44"/>
+        <rect x="13" y="3" width="8" height="8" rx="2" fill="#237a44" opacity=".6"/>
+        <rect x="3" y="13" width="8" height="8" rx="2" fill="#237a44" opacity=".6"/>
+        <rect x="13" y="13" width="8" height="8" rx="2" fill="#237a44"/>
+      </svg>
+    </div>
+    <div class="info">
+      <h2>Common Threads</h2>
+      <p>Find the 4 secret word groups hiding among 16 words.</p>
+      <div class="badges"><span class="badge b-party">Party</span><span class="badge b-solo">Solo</span></div>
+    </div>
+    <span class="play">Play</span>
+  </a>
+
+  <a class="card" href="https://rynaing.github.io/game-night/">
+    <div class="art" style="background:linear-gradient(135deg,#d6e9ff,#8fb8f5)">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h10" stroke="#2b4d9e" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="info">
+      <h2>Anagrams</h2>
+      <p>Unscramble the letters before time runs out.</p>
+      <div class="badges"><span class="badge b-party">Party</span></div>
+    </div>
+    <span class="play">Play</span>
+  </a>
+
+  <a class="card" href="https://rynaing.github.io/game-night/">
+    <div class="art" style="background:linear-gradient(135deg,#f3d9ff,#c99df5)">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="4" fill="#6a3fb5"/>
+        <circle cx="16" cy="16" r="4" fill="#6a3fb5" opacity=".55"/>
+      </svg>
+    </div>
+    <div class="info">
+      <h2>Most Likely To</h2>
+      <p>Vote on silly questions about your friends and family.</p>
+      <div class="badges"><span class="badge b-party">Party</span></div>
+    </div>
+    <span class="play">Play</span>
+  </a>
+
+  <footer>
+    <div class="shrooms">🍄🌿🍄</div>
+    Free forever &middot; Kid-friendly<br>
+    Made with love in the Mossbell Grove
+  </footer>
+
+</div>
+</body>
+</html>
