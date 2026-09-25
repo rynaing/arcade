@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Swordplay Isle — A Pirate Point-and-Click Adventure</title>
+<style>
+/* ============================================================
+   SWORDPLAY ISLE — single-file point-and-click adventure
+   All art is inline SVG/CSS. No external assets.
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --navy:#0b2a4a; --deep:#071d33; --sand:#e8c97a; --parch:#f7e8c3;
+  --wood:#8a5a2b; --wood-d:#5f3c1a; --gold:#f4b942; --sea:#1e7f9e;
+  --ink:#2b1d0e; --red:#c0392b; --green:#2e8b57;
+}
+html,body{height:100%}
+body{
+  font-family:"Trebuchet MS","Segoe UI",Verdana,Geneva,sans-serif;
+  background:radial-gradient(ellipse at 50% 0%,#124a7c 0%,var(--deep) 70%);
+  color:var(--ink); min-height:100%; display:flex; align-items:center; justify-content:center;
+  padding:10px; touch-action:manipulation; user-select:none; -webkit-user-select:none;
+}
+h1,h2,h3,.pirate{font-family:Georgia,"Times New Roman",serif; letter-spacing:.5px}
+button{font-family:inherit; cursor:pointer}
+
+/* ---------- App frame ---------- */
+#app{width:100%;max-width:1120px;position:relative}
+.panel{
+  background:linear-gradient(180deg,#fbf3dc,#f1dfae);
+  border:4px solid var(--wood-d); border-radius:14px;
+  box-shadow:0 10px 40px rgba(0,0,0,.55), inset 0 0 60px rgba(138,90,43,.15);
+}
+
+/* ---------- Title screen ---------- */
+#title-screen{padding:34px 30px 28px;text-align:center;position:relative;overflow:hidden}
+#title-screen .flag-wave{font-size:44px;letter-spacing:12px;animation:bob 3s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+#title-screen h1{font-size:clamp(38px,7vw,72px);color:var(--navy);text-shadow:2px 2px 0 var(--gold);margin:6px 0 2px}
+#title-screen .sub{font-style:italic;color:#6b4a1f;margin-bottom:14px;font-size:clamp(14px,2.4vw,19px)}
+#title-screen .story{
+  max-width:640px;margin:0 auto 20px;text-align:left;line-height:1.55;font-size:15px;
+  background:rgba(255,255,255,.45);border:2px dashed var(--wood);border-radius:10px;padding:14px 16px;
+}
+#title-screen .story b{color:var(--navy)}
+.title-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.btn{
+  background:linear-gradient(180deg,var(--gold),#d9941e);border:3px solid var(--wood-d);
+  border-radius:10px;padding:12px 26px;font-size:18px;font-weight:bold;color:#3a2408;
+  box-shadow:0 4px 0 var(--wood-d);transition:transform .08s;
+}
+.btn:hover{filter:brightness(1.06)} .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--wood-d)}
+.btn.secondary{background:linear-gradient(180deg,#cfe3ee,#9fc3d8)}
+.btn.ghost{background:none;border:2px solid var(--wood);box-shadow:none;font-size:14px;padding:8px 16px}
+#howto{display:none;max-width:640px;margin:0 auto 16px;text-align:left;font-size:14px;line-height:1.6;
+  background:rgba(255,255,255,.5);border-radius:10px;padding:12px 16px}
+#howto kbd{background:#fff;border:1px solid #999;border-bottom-width:3px;border-radius:5px;padding:1px 7px;font-family:inherit}
+.tiny{font-size:12px;color:#7a5c2e;margin-top:10px}
+
+/* ---------- Game layout ---------- */
+#game{display:none;flex-direction:column;gap:8px}
+#hud{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;flex-wrap:wrap;
+}
+#hud .game-title{font-family:Georgia,serif;font-weight:bold;color:var(--navy);font-size:20px;margin-right:auto}
+#trials{display:flex;gap:8px;flex-wrap:wrap}
+.trial{
+  font-size:12.5px;background:#fff8e6;border:2px solid var(--wood);border-radius:20px;
+  padding:4px 10px;white-space:nowrap;
+}
+.trial.done{background:#dff5d8;border-color:var(--green)}
+.trial .box{font-weight:bold}
+#parrot-btn{
+  font-size:26px;background:linear-gradient(180deg,#bfe8a8,#7cc46a);border:3px solid #2c5c1e;
+  border-radius:50%;width:52px;height:52px;line-height:1;box-shadow:0 3px 0 #2c5c1e;flex:none;
+}
+#parrot-btn:active{transform:translateY(2px);box-shadow:none}
+#menu-btn{font-size:13px;padding:8px 12px}
+
+/* ---------- Scene ---------- */
+#scene-wrap{position:relative;border:4px solid var(--wood-d);border-radius:12px;overflow:hidden;background:#000;
+  box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.scene{display:none;position:relative}
+.scene.active{display:block}
+.scene svg{display:block;width:100%;height:auto}
+#scene-label{
+  position:absolute;top:8px;left:12px;background:rgba(7,29,51,.78);color:#ffe9b0;
+  font-family:Georgia,serif;font-size:17px;padding:5px 14px;border-radius:20px;border:2px solid var(--gold);
+  pointer-events:none;z-index:5;
+}
+/* hotspots */
+.hotspot{cursor:pointer;outline:none}
+.hotspot .hl{fill:rgba(255,255,255,0);stroke:rgba(255,233,122,0);stroke-width:4;transition:fill .15s,stroke .15s}
+.hotspot:hover .hl,.hotspot:focus .hl,.hotspot.kb .hl{fill:rgba(255,240,170,.22);stroke:#ffe97a;stroke-dasharray:12 7}
+.hotspot .hs-icon{font-size:34px;text-anchor:middle;dominant-baseline:middle;pointer-events:none;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+.hotspot .hs-icon.pulse{animation:pulse 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+/* nav arrows */
+.nav-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);z-index:6;
+  background:rgba(7,29,51,.72);color:#ffe9b0;border:2px solid var(--gold);border-radius:12px;
+  font-size:15px;padding:10px 8px;line-height:1.25;max-width:110px;
+}
+.nav-arrow .arr{font-size:26px;display:block}
+.nav-arrow.left{left:8px}.nav-arrow.right{right:8px}
+.nav-arrow:hover{background:rgba(20,60,100,.9)}
+.nav-arrow small{display:block;font-size:10.5px;opacity:.85}
+
+/* ---------- Status bar ---------- */
+#statusbar{
+  background:#0d2438;color:#ffe9b0;border:3px solid var(--wood-d);border-radius:10px;
+  padding:8px 14px;font-size:15px;min-height:42px;font-style:italic;
+}
+#statusbar b{color:var(--gold);font-style:normal}
+
+/* ---------- Inventory ---------- */
+#inventory-bar{
+  display:flex;align-items:center;gap:8px;padding:8px 12px;min-height:86px;flex-wrap:wrap;
+}
+#inventory-bar .inv-label{font-family:Georgia,serif;font-weight:bold;color:var(--navy);font-size:16px;margin-right:4px}
+.inv-item{
+  background:#fffdf4;border:3px solid var(--wood);border-radius:10px;width:74px;height:70px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-size:26px;position:relative;transition:transform .1s;
+}
+.inv-item small{font-size:9.5px;line-height:1.1;text-align:center;color:#5a3d15;font-weight:bold}
+.inv-item:hover{transform:translateY(-3px)}
+.inv-item.selected{border-color:var(--red);background:#ffe9e2;box-shadow:0 0 12px rgba(192,57,43,.6)}
+.inv-item:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#inv-empty{color:#8a6a35;font-style:italic;font-size:14px}
+
+/* ---------- Verb menu ---------- */
+#verb-menu{
+  position:absolute;z-index:30;display:none;background:#fff8e6;border:3px solid var(--wood-d);
+  border-radius:12px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.5);min-width:170px;
+}
+#verb-menu .vm-title{font-size:12px;font-weight:bold;color:#6b4a1f;padding:2px 8px 6px;text-align:center}
+#verb-menu button{
+  display:block;width:100%;text-align:left;background:none;border:none;border-radius:8px;
+  padding:9px 12px;font-size:15px;
+}
+#verb-menu button:hover,#verb-menu button:focus-visible{background:#ffe9b0;outline:2px solid var(--gold)}
+#verb-menu .vm-x{position:absolute;top:-12px;right:-12px;width:28px;height:28px;border-radius:50%;
+  background:var(--red);color:#fff;border:2px solid #7c2318;font-weight:bold;padding:0}
+
+/* ---------- Dialogue box ---------- */
+#dialogue{
+  display:none;background:linear-gradient(180deg,#fffdf4,#f5e8c4);border:4px solid var(--wood-d);
+  border-radius:12px;padding:14px 18px;position:relative;box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+#dialogue .speaker{font-family:Georgia,serif;font-weight:bold;color:var(--navy);font-size:18px;margin-bottom:6px}
+#dialogue .speaker .who-tag{font-size:11px;background:var(--navy);color:#ffe9b0;border-radius:10px;padding:2px 9px;margin-left:8px;vertical-align:middle;font-family:inherit}
+#dialogue .dlg-text{font-size:16px;line-height:1.55;margin-bottom:10px;min-height:44px}
+#dialogue .dlg-opts{display:flex;flex-direction:column;gap:6px}
+#dialogue .dlg-opts button{
+  text-align:left;background:#fff;border:2px solid var(--wood);border-radius:8px;padding:9px 12px;font-size:15px;
+}
+#dialogue .dlg-opts button:hover,#dialogue .dlg-opts button:focus-visible{background:#ffe9b0;border-color:var(--gold);outline:2px solid var(--gold)}
+#dialogue .dlg-x{position:absolute;top:8px;right:10px;background:none;border:none;font-size:20px;color:#7a5c2e}
+
+/* ---------- Duel modal ---------- */
+#duel-modal{
+  display:none;position:fixed;inset:0;z-index:50;background:rgba(4,16,30,.88);
+  align-items:center;justify-content:center;padding:14px;
+}
+#duel-modal.open{display:flex}
+#duel-card{
+  width:100%;max-width:640px;background:linear-gradient(180deg,#fdf6df,#f0dca8);
+  border:5px solid var(--wood-d);border-radius:16px;padding:20px 22px;text-align:center;
+  box-shadow:0 14px 50px rgba(0,0,0,.6);
+}
+#duel-card h2{color:var(--navy);margin-bottom:4px}
+#duel-score{display:flex;justify-content:center;gap:26px;margin:10px 0;font-size:15px;font-weight:bold}
+.pips{letter-spacing:4px;font-size:22px}
+#duel-insult{
+  font-family:Georgia,serif;font-style:italic;font-size:20px;color:#7c2318;background:#fff;
+  border:2px dashed var(--wood);border-radius:10px;padding:14px;margin:10px 0;line-height:1.45;
+}
+#duel-insult .bess{font-style:normal;font-weight:bold;font-size:13px;display:block;margin-bottom:6px;color:var(--navy)}
+#duel-opts{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+#duel-opts button{
+  background:#fff;border:2px solid var(--navy);border-radius:10px;padding:11px 12px;font-size:15.5px;text-align:left;
+}
+#duel-opts button:hover:not(:disabled),#duel-opts button:focus-visible{background:#d7ecff;outline:2px solid var(--gold)}
+#duel-opts button:disabled{opacity:.55;cursor:default}
+#duel-opts button.right{border-color:var(--green);background:#e2f7dc}
+#duel-opts button.wrong{border-color:var(--red);background:#fbdede}
+#duel-result{min-height:30px;font-weight:bold;font-size:16px;margin-top:10px}
+#duel-flee{margin-top:8px}
+
+/* ---------- Toast ---------- */
+#toast{
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);z-index:80;
+  background:#0d2438;color:#ffe9b0;border:2px solid var(--gold);border-radius:12px;
+  padding:12px 20px;font-size:15.5px;max-width:90vw;text-align:center;opacity:0;pointer-events:none;
+  transition:opacity .25s,transform .25s;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- Ceremony ---------- */
+#ceremony{
+  display:none;position:fixed;inset:0;z-index:60;background:radial-gradient(ellipse at 50% 30%,#1b4f7d,#071d33);
+  align-items:center;justify-content:center;padding:16px;overflow:auto;
+}
+#ceremony.open{display:flex}
+#ceremony-card{
+  max-width:620px;text-align:center;background:linear-gradient(180deg,#fdf6df,#f0dca8);
+  border:5px solid var(--gold);border-radius:18px;padding:30px 26px;position:relative;
+  box-shadow:0 0 60px rgba(244,185,66,.45);
+}
+#ceremony-card h1{color:var(--navy);font-size:clamp(30px,6vw,48px);text-shadow:2px 2px 0 var(--gold)}
+#ceremony-card .ship{font-size:54px;margin:8px 0}
+#ceremony-card p{line-height:1.6;margin:10px 0;font-size:16px}
+.confetti{position:absolute;font-size:22px;animation:fall 3.2s linear infinite;pointer-events:none}
+@keyframes fall{0%{transform:translateY(-30px) rotate(0)}100%{transform:translateY(340px) rotate(360deg)}}
+
+/* ---------- Footer / misc ---------- */
+#foot{display:flex;justify-content:space-between;align-items:center;padding:2px 6px;font-size:12px;color:#cdb271}
+#foot button{background:none;border:none;color:#cdb271;text-decoration:underline;font-size:12px}
+
+/* responsive */
+@media (max-width:700px){
+  #hud .game-title{font-size:16px}
+  .trial{font-size:11px;padding:3px 8px}
+  #statusbar{font-size:13.5px}
+  .nav-arrow{max-width:74px;font-size:12px;padding:8px 4px}
+  .nav-arrow small{display:none}
+  .inv-item{width:62px;height:62px;font-size:22px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<!-- Shared SVG gradients -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="skyD" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7ec8e8"/><stop offset="1" stop-color="#d8f0fa"/>
+    </linearGradient>
+    <linearGradient id="seaD" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2aa5c4"/><stop offset="1" stop-color="#166a8a"/>
+    </linearGradient>
+    <linearGradient id="sandD" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2dd9e"/><stop offset="1" stop-color="#dfb96a"/>
+    </linearGradient>
+    <linearGradient id="woodD" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a06a35"/><stop offset="1" stop-color="#7a4e22"/>
+    </linearGradient>
+    <linearGradient id="caveD" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a3f52"/><stop offset="1" stop-color="#191c28"/>
+    </linearGradient>
+    <linearGradient id="jungleD" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d5c2e"/><stop offset="1" stop-color="#0d3318"/>
+    </linearGradient>
+    <linearGradient id="fireD" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#e74c3c"/><stop offset=".6" stop-color="#f39c12"/><stop offset="1" stop-color="#f9e04b"/>
+    </linearGradient>
+    <radialGradient id="sunG" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fff6c9"/><stop offset="1" stop-color="#ffd94d"/>
+    </radialGradient>
+  </defs>
+</svg>
+
+<div id="app">
+  <!-- ============ TITLE SCREEN ============ -->
+  <div id="title-screen" class="panel">
+    <div class="flag-wave">🏴‍☠️🦜⚓</div>
+    <h1>Swordplay Isle</h1>
+    <div class="sub">A point-and-click pirate adventure in four scenes</div>
+    <div class="story">
+      <b>Pippa Wren</b> has dreamed of the pirate life since she was knee-high to a
+      barnacle. Now she's finally reached <b>Swordplay Isle</b> — and the legendary
+      <b>Captain Marisol Vane</b> has agreed to consider her for a crew spot...
+      <i>if</i> Pippa can pass <b>three trials</b>: out-wit the duelist
+      <b>Barnacle Bess</b> in an insult swordfight, reassemble the captain's
+      <b>torn treasure map</b>, and brew her <b>legendary sea stew</b>.
+      <br><br>Click around each scene to <b>Look</b>, <b>Take</b>, and <b>Talk</b>.
+      Combine items in your inventory, mind what the locals tell you — and when in
+      doubt, ask <b>Waffles the parrot</b> for a nudge.
+    </div>
+    <div class="title-btns">
+      <button class="btn" id="btn-new">⚔️ New Game</button>
+      <button class="btn secondary" id="btn-continue" style="display:none">📜 Continue</button>
+      <button class="btn ghost" id="btn-howto">How to play</button>
+    </div>
+    <div id="howto">
+      🖱️ <b>Mouse / touch:</b> click anything interesting. A menu offers
+      <b>Look</b>, <b>Take</b>, or <b>Talk</b>. Click an inventory item to select it,
+      then click a hotspot (or another item) to use / combine it.<br>
+      ⌨️ <b>Keyboard:</b> <kbd>Tab</kbd> / <kbd>←</kbd><kbd>→</kbd> move between hotspots
+      &amp; inventory, <kbd>Enter</kbd> activates, <kbd>Esc</kbd> closes menus.<br>
+      💾 Your voyage <b>auto-saves</b> as you play. The 🦜 button gives hints.
+      This is a classic point-and-click adventure: look, take, talk, and combine!</div>
+    <div class="tiny">An original tale. No parrots were harmed in the making of this adventure.</div>
+  </div>
+
+  <!-- ============ GAME ============ -->
+  <div id="game">
+    <div id="hud" class="panel">
+      <div class="game-title">🏴‍☠️ Swordplay Isle</div>
+      <div id="trials">
+        <span class="trial" id="trial-sword"><span class="box">○</span> 🗡️ Duel Bess</span>
+        <span class="trial" id="trial-map"><span class="box">○</span> 🗺️ Reassemble map</span>
+        <span class="trial" id="trial-stew"><span class="box">○</span> 🍲 Brew sea stew</span>
+      </div>
+      <button id="parrot-btn" title="Ask Waffles the parrot for a hint" aria-label="Ask Waffles the parrot for a hint">🦜</button>
+      <button id="menu-btn" class="btn ghost">Menu</button>
+    </div>
+
+    <div id="scene-wrap">
+      <div id="scene-label">The Dock</div>
+      <button class="nav-arrow left" id="nav-left"><span class="arr">◀</span><small id="nav-left-name"></small></button>
+      <button class="nav-arrow right" id="nav-right"><span class="arr">▶</span><small id="nav-right-name"></small></button>
+
+      <!-- ======== SCENE: DOCK ======== -->
+      <div class="scene" id="scene-dock" data-scene="dock">
+        <svg viewBox="0 0 960 540" role="img" aria-label="A sunny wooden dock">
+          <rect width="960" height="310" fill="url(#skyD)"/>
+          <circle cx="830" cy="80" r="48" fill="url(#sunG)"/>
+          <ellipse cx="220" cy="90" rx="90" ry="26" fill="#ffffff" opacity=".9"/>
+          <ellipse cx="300" cy="75" rx="60" ry="20" fill="#ffffff" opacity=".9"/>
+          <ellipse cx="560" cy="130" rx="70" ry="20" fill="#ffffff" opacity=".8"/>
+          <!-- distant ship -->
+          <g opacity=".85">
+            <rect x="640" y="225" width="190" height="34" rx="8" fill="#4a3220"/>
+            <rect x="700" y="140" width="10" height="90" fill="#4a3220"/>
+            <rect x="770" y="160" width="8" height="70" fill="#4a3220"/>
+            <polygon points="710,140 710,200 660,200" fill="#f3ead2"/>
+            <polygon points="710,140 710,200 762,200" fill="#e5d5ae"/>
+            <rect x="640" y="212" width="190" height="10" fill="#2e1f12"/>
+          </g>
+          <rect y="300" width="960" height="130" fill="url(#seaD)"/>
+          <path d="M0 330 q30 -12 60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0" stroke="#bfe6f2" stroke-width="5" fill="none" opacity=".7"/>
+          <path d="M0 380 q40 -14 80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0" stroke="#bfe6f2" stroke-width="4" fill="none" opacity=".5"/>
+          <!-- gulls -->
+          <g stroke="#334" stroke-width="3" fill="none">
+            <path d="M330 70 q12 -10 24 0 q12 -10 24 0"/>
+            <path d="M410 95 q10 -8 20 0 q10 -8 20 0"/>
+            <path d="M480 60 q10 -8 20 0 q10 -8 20 0"/>
+          </g>
+          <!-- pier -->
+          <rect y="420" width="960" height="120" fill="url(#woodD)"/>
+          <g stroke="#5f3c1a" stroke-width="3">
+            <line x1="0" y1="452" x2="960" y2="452"/><line x1="0" y1="486" x2="960" y2="486"/><line x1="0" y1="520" x2="960" y2="520"/>
+          </g>
+          <g fill="#5f3c1a">
+            <rect x="120" y="420" width="26" height="120"/><rect x="420" y="420" width="26" height="120"/>
+            <rect x="720" y="420" width="26" height="120"/>
+          </g>
+          <!-- notice board -->
+          <rect x="72" y="300" width="16" height="130" fill="#5f3c1a"/>
+          <rect x="188" y="300" width="16" height="130" fill="#5f3c1a"/>
+          <rect x="52" y="190" width="172" height="120" rx="6" fill="#a06a35" stroke="#5f3c1a" stroke-width="5"/>
+          <rect x="64" y="202" width="60" height="44" fill="#f3ead2" transform="rotate(-4 94 224)"/>
+          <rect x="132" y="206" width="60" height="44" fill="#efe0c0" transform="rotate(3 162 228)"/>
+          <rect x="80" y="254" width="90" height="40" fill="#f7efdb" transform="rotate(-2 125 274)"/>
+          <!-- torn map scrap peeking behind board -->
+          <polygon points="196,250 224,244 220,300 192,306" fill="#e8d49a" stroke="#8a6a35" stroke-width="2"/>
+          <path d="M200 262 l14 8 M198 280 l16 6" stroke="#8a6a35" stroke-width="1.5"/>
+          <!-- fish stall -->
+          <rect x="440" y="330" width="110" height="90" fill="#7a4e22"/>
+          <rect x="430" y="352" width="130" height="16" fill="#a06a35"/>
+          <polygon points="420,240 570,240 550,300 440,300" fill="#c0392b" opacity=".92"/>
+          <polygon points="420,240 570,240 562,258 428,258" fill="#e8e0cc"/>
+          <line x1="440" y1="296" x2="550" y2="296" stroke="#5f3c1a" stroke-width="5"/>
+          <g> <!-- hanging smoked fish -->
+            <ellipse cx="465" cy="322" rx="10" ry="20" fill="#b0894a"/>
+            <polygon points="465,342 455,356 475,356" fill="#b0894a"/>
+            <ellipse cx="500" cy="320" rx="10" ry="20" fill="#a87f3e"/>
+            <polygon points="500,340 490,354 510,354" fill="#a87f3e"/>
+            <ellipse cx="533" cy="323" rx="10" ry="20" fill="#b0894a"/>
+            <polygon points="533,343 523,357 543,357" fill="#b0894a"/>
+            <line x1="465" y1="296" x2="465" y2="304" stroke="#5f3c1a" stroke-width="3"/>
+            <line x1="500" y1="296" x2="500" y2="302" stroke="#5f3c1a" stroke-width="3"/>
+            <line x1="533" y1="296" x2="533" y2="305" stroke="#5f3c1a" stroke-width="3"/>
+          </g>
+          <!-- Old Tom -->
+          <g>
+            <rect x="596" y="380" width="18" height="70" fill="#33455e"/>
+            <rect x="622" y="380" width="18" height="70" fill="#2b3a4e"/>
+            <rect x="592" y="318" width="56" height="66" rx="10" fill="#3e6b8f"/>
+            <line x1="592" y1="336" x2="648" y2="336" stroke="#e8e0cc" stroke-width="5"/>
+            <line x1="592" y1="354" x2="648" y2="354" stroke="#e8e0cc" stroke-width="5"/>
+            <circle cx="620" cy="292" r="24" fill="#e8b98a"/>
+            <polygon points="596,300 644,300 620,352" fill="#f2f2f2"/>
+            <rect x="596" y="266" width="48" height="16" rx="6" fill="#2e4a62"/>
+            <rect x="612" y="250" width="16" height="20" fill="#2e4a62"/>
+            <circle cx="612" cy="292" r="3" fill="#222"/><circle cx="628" cy="292" r="3" fill="#222"/>
+            <line x1="648" y1="330" x2="700" y2="230" stroke="#5f3c1a" stroke-width="5"/>
+            <line x1="700" y1="230" x2="700" y2="330" stroke="#ddd" stroke-width="2"/>
+          </g>
+          <!-- Barnacle Bess -->
+          <g>
+            <rect x="726" y="392" width="18" height="58" fill="#4a3220"/>
+            <rect x="752" y="392" width="18" height="58" fill="#3a2716"/>
+            <rect x="722" y="330" width="56" height="66" rx="8" fill="#2e6b46"/>
+            <polygon points="722,330 778,330 766,352 734,352" fill="#e8e0cc"/>
+            <circle cx="750" cy="304" r="23" fill="#f0c49a"/>
+            <path d="M727 296 q23 -26 46 0 l0 -14 q-23 -18 -46 0 z" fill="#c0392b"/>
+            <circle cx="742" cy="304" r="3" fill="#222"/><circle cx="758" cy="304" r="3" fill="#222"/>
+            <path d="M742 318 q8 6 16 0" stroke="#7c3a20" stroke-width="3" fill="none"/>
+            <line x1="776" y1="346" x2="830" y2="300" stroke="#c9c9c9" stroke-width="5"/>
+            <circle cx="832" cy="298" r="5" fill="#f4b942"/>
+          </g>
+          <!-- coiled rope on pier -->
+          <g>
+            <ellipse cx="310" cy="446" rx="46" ry="18" fill="#c9a86a"/>
+            <ellipse cx="310" cy="440" rx="36" ry="13" fill="#d9bc82"/>
+            <ellipse cx="310" cy="434" rx="24" ry="9" fill="#c9a86a"/>
+            <path d="M310 428 q30 -18 60 -12" stroke="#c9a86a" stroke-width="7" fill="none"/>
+          </g>
+          <g id="hs-dock"></g>
+        </svg>
+      </div>
+
+      <!-- ======== SCENE: TAVERN ======== -->
+      <div class="scene" id="scene-tavern" data-scene="tavern">
+        <svg viewBox="0 0 960 540" role="img" aria-label="Inside the Salty Parrot tavern">
+          <rect width="960" height="430" fill="#d9b98a"/>
+          <rect y="420" width="960" height="120" fill="#6b4423"/>
+          <g stroke="#8a5a2b" stroke-width="4">
+            <line x1="0" y1="120" x2="960" y2="120"/><line x1="0" y1="240" x2="960" y2="240"/>
+          </g>
+          <rect x="0" y="0" width="960" height="26" fill="#5f3c1a"/>
+          <g fill="#5f3c1a">
+            <rect x="180" y="26" width="22" height="394"/><rect x="760" y="26" width="22" height="394"/>
+          </g>
+          <!-- hanging sign -->
+          <g>
+            <line x1="480" y1="26" x2="480" y2="66" stroke="#333" stroke-width="6"/>
+            <rect x="350" y="66" width="260" height="66" rx="10" fill="#7a4e22" stroke="#3f2708" stroke-width="5"/>
+            <text x="480" y="108" text-anchor="middle" font-family="Georgia,serif" font-size="30" fill="#ffe9b0">The Salty Parrot</text>
+            <text x="585" y="112" font-size="30">🦜</text>
+          </g>
+          <!-- window with sea view -->
+          <g>
+            <rect x="700" y="150" width="190" height="140" fill="#7ec8e8" stroke="#5f3c1a" stroke-width="10"/>
+            <rect x="716" y="166" width="158" height="70" fill="url(#skyD)"/>
+            <rect x="716" y="236" width="158" height="38" fill="url(#seaD)"/>
+            <line x1="795" y1="150" x2="795" y2="290" stroke="#5f3c1a" stroke-width="8"/>
+            <line x1="700" y1="220" x2="890" y2="220" stroke="#5f3c1a" stroke-width="8"/>
+          </g>
+          <!-- door -->
+          <rect x="36" y="200" width="120" height="230" rx="8" fill="#4e3013" stroke="#2e1c08" stroke-width="6"/>
+          <circle cx="140" cy="330" r="7" fill="#f4b942"/>
+          <!-- spare cutlass leaning by door -->
+          <g>
+            <line x1="96" y1="330" x2="130" y2="440" stroke="#c9c9c9" stroke-width="9"/>
+            <line x1="88" y1="336" x2="104" y2="326" stroke="#f4b942" stroke-width="9"/>
+            <circle cx="96" cy="330" r="7" fill="#8a5a2b"/>
+          </g>
+          <!-- hearth -->
+          <g>
+            <path d="M600 430 L600 300 Q690 260 780 300 L780 430 Z" fill="#8d8d99" stroke="#55555f" stroke-width="5"/>
+            <path d="M636 430 L636 340 Q690 312 744 340 L744 430 Z" fill="#2b2118"/>
+            <g> <!-- fire -->
+              <polygon points="668,430 690,360 712,430" fill="url(#fireD)"/>
+              <polygon points="682,430 694,386 706,430" fill="#f9e04b"/>
+            </g>
+            <!-- the great sea pot -->
+            <ellipse cx="690" cy="352" rx="66" ry="16" fill="#222"/>
+            <path d="M624 352 L636 412 Q690 428 744 412 L756 352 Z" fill="#3a3a44" stroke="#16161c" stroke-width="4"/>
+            <ellipse cx="690" cy="352" rx="52" ry="10" fill="#7fb069"/>
+            <g stroke="#e8e0cc" stroke-width="4" opacity=".7" fill="none">
+              <path d="M668 330 q6 -14 0 -26 q-6 -12 0 -24"/>
+              <path d="M692 332 q6 -14 0 -26 q-6 -12 0 -24"/>
+              <path d="M714 330 q6 -14 0 -26 q-6 -12 0 -24"/>
+            </g>
+          </g>
+          <!-- Captain Marisol Vane -->
+          <g>
+            <rect x="446" y="380" width="20" height="70" fill="#2b2118"/>
+            <rect x="474" y="380" width="20" height="70" fill="#241a10"/>
+            <path d="M430 300 L510 300 L522 384 L418 384 Z" fill="#1f3a5f"/>
+            <path d="M430 300 L470 300 L470 384 L418 384 Z" fill="#274a77"/>
+            <line x1="470" y1="300" x2="470" y2="384" stroke="#f4b942" stroke-width="4"/>
+            <polygon points="462,318 478,318 470,330" fill="#f4b942"/>
+            <circle cx="470" cy="272" r="26" fill="#e8b98a"/>
+            <path d="M444 268 q26 -30 52 0 l-4 -22 q-22 -14 -44 0 z" fill="#1f3a5f"/>
+            <rect x="436" y="240" width="68" height="14" rx="6" fill="#152a45"/>
+            <circle cx="462" cy="272" r="3.4" fill="#222"/><circle cx="480" cy="272" r="3.4" fill="#222"/>
+            <path d="M462 288 q8 7 16 0" stroke="#7c3a20" stroke-width="3.5" fill="none"/>
+            <polygon points="452,300 488,300 470,318" fill="#c0392b"/>
+            <rect x="508" y="330" width="12" height="52" rx="6" fill="#e8b98a" transform="rotate(-18 514 356)"/>
+          </g>
+          <!-- table with tankards -->
+          <g>
+            <ellipse cx="250" cy="452" rx="90" ry="18" fill="#7a4e22"/>
+            <rect x="160" y="452" width="180" height="16" fill="#8a5a2b"/>
+            <rect x="200" y="400" width="26" height="52" rx="5" fill="#b0894a"/>
+            <rect x="290" y="406" width="26" height="46" rx="5" fill="#b0894a"/>
+            <ellipse cx="213" cy="400" rx="13" ry="5" fill="#e8d9b0"/>
+            <ellipse cx="303" cy="406" rx="13" ry="5" fill="#e8d9b0"/>
+          </g>
+          <g id="hs-tavern"></g>
+        </svg>
+      </div>
+
+      <!-- ======== SCENE: JUNGLE PATH ======== -->
+      <div class="scene" id="scene-jungle" data-scene="jungle">
+        <svg viewBox="0 0 960 540" role="img" aria-label="A lush jungle path">
+          <rect width="960" height="540" fill="url(#jungleD)"/>
+          <ellipse cx="120" cy="120" rx="200" ry="120" fill="#2e7d43" opacity=".8"/>
+          <ellipse cx="840" cy="100" rx="220" ry="130" fill="#2e7d43" opacity=".8"/>
+          <ellipse cx="480" cy="60" rx="300" ry="110" fill="#35924e" opacity=".7"/>
+          <!-- light shaft -->
+          <polygon points="420,0 560,0 640,540 340,540" fill="#fff8d0" opacity=".14"/>
+          <!-- path -->
+          <path d="M380 540 Q440 400 420 300 Q410 240 460 200 L560 200 Q510 260 540 340 Q580 430 620 540 Z" fill="#c9a86a" opacity=".9"/>
+          <!-- palm tree with coconuts -->
+          <g>
+            <path d="M360 420 Q350 300 380 200" stroke="#7a4e22" stroke-width="26" fill="none"/>
+            <g fill="#2e8b57">
+              <ellipse cx="300" cy="170" rx="90" ry="28" transform="rotate(-24 300 170)"/>
+              <ellipse cx="460" cy="170" rx="90" ry="28" transform="rotate(24 460 170)"/>
+              <ellipse cx="380" cy="130" rx="80" ry="26"/>
+              <ellipse cx="340" cy="210" rx="70" ry="22" transform="rotate(-40 340 210)"/>
+              <ellipse cx="420" cy="210" rx="70" ry="22" transform="rotate(40 420 210)"/>
+            </g>
+            <circle cx="352" cy="226" r="17" fill="#6b4423"/>
+            <circle cx="392" cy="222" r="17" fill="#6b4423"/>
+            <circle cx="372" cy="248" r="17" fill="#5f3c1a"/>
+          </g>
+          <!-- pepper bush -->
+          <g>
+            <ellipse cx="190" cy="380" rx="80" ry="60" fill="#1d5c2e"/>
+            <ellipse cx="150" cy="360" rx="50" ry="40" fill="#2e7d43"/>
+            <ellipse cx="230" cy="360" rx="50" ry="40" fill="#2e7d43"/>
+            <g fill="#c0392b">
+              <ellipse cx="150" cy="390" rx="10" ry="16" transform="rotate(-14 150 390)"/>
+              <ellipse cx="200" cy="400" rx="10" ry="16" transform="rotate(10 200 400)"/>
+              <ellipse cx="240" cy="380" rx="10" ry="16" transform="rotate(-8 240 380)"/>
+              <ellipse cx="180" cy="365" rx="10" ry="16" transform="rotate(16 180 365)"/>
+            </g>
+          </g>
+          <!-- smuggler's chest -->
+          <g>
+            <rect x="480" y="400" width="150" height="70" rx="8" fill="#7a4e22" stroke="#3f2708" stroke-width="5"/>
+            <path d="M480 408 Q555 372 630 408 L630 430 L480 430 Z" fill="#8a5a2b" stroke="#3f2708" stroke-width="5"/>
+            <rect x="545" y="400" width="20" height="70" fill="#3f2708"/>
+            <rect x="548" y="428" width="14" height="22" rx="4" fill="#f4b942" stroke="#8a6a1e" stroke-width="3"/>
+          </g>
+          <!-- Mango Sal -->
+          <g>
+            <rect x="692" y="390" width="18" height="60" fill="#8a5a3a"/>
+            <rect x="716" y="390" width="18" height="60" fill="#7a4e30"/>
+            <path d="M676 300 L750 300 L762 394 L664 394 Z" fill="#6a3d8f"/>
+            <path d="M676 300 L713 300 L713 394 L664 394 Z" fill="#7d4fa3"/>
+            <circle cx="713" cy="272" r="25" fill="#caa07a"/>
+            <circle cx="713" cy="246" r="18" fill="#9a9a9a"/>
+            <circle cx="730" cy="238" r="9" fill="#e86a92"/>
+            <circle cx="730" cy="238" r="3.5" fill="#f9e04b"/>
+            <circle cx="705" cy="272" r="3.2" fill="#222"/><circle cx="721" cy="272" r="3.2" fill="#222"/>
+            <path d="M705 288 q8 6 16 0" stroke="#5e2f1a" stroke-width="3" fill="none"/>
+            <line x1="668" y1="320" x2="650" y2="400" stroke="#5f3c1a" stroke-width="6"/>
+          </g>
+          <!-- hanging vines -->
+          <g stroke="#2e8b57" stroke-width="8" fill="none" opacity=".85">
+            <path d="M120 0 q10 60 -6 120"/><path d="M620 0 q-12 70 8 130"/><path d="M880 0 q10 50 -8 100"/>
+          </g>
+          <g fill="#2e8b57" opacity=".9">
+            <ellipse cx="114" cy="130" rx="16" ry="10"/><ellipse cx="628" cy="140" rx="16" ry="10"/><ellipse cx="872" cy="110" rx="16" ry="10"/>
+          </g>
+          <g id="hs-jungle"></g>
+        </svg>
+      </div>
+
+      <!-- ======== SCENE: BEACH CAVE ======== -->
+      <div class="scene" id="scene-cave" data-scene="cave">
+        <svg viewBox="0 0 960 540" role="img" aria-label="A shadowy beach cave">
+          <rect width="960" height="540" fill="url(#caveD)"/>
+          <!-- light shaft -->
+          <polygon points="430,0 530,0 600,540 360,540" fill="#fff3c4" opacity=".10"/>
+          <!-- stalactites -->
+          <g fill="#2c3040">
+            <polygon points="80,0 130,0 105,90"/><polygon points="220,0 290,0 255,120"/>
+            <polygon points="640,0 700,0 670,100"/><polygon points="800,0 880,0 840,130"/>
+            <polygon points="480,0 520,0 500,70"/>
+          </g>
+          <!-- side walls -->
+          <path d="M0 0 L170 0 Q120 200 90 340 Q70 440 110 540 L0 540 Z" fill="#232733"/>
+          <path d="M960 0 L800 0 Q850 200 880 340 Q900 440 860 540 L960 540 Z" fill="#232733"/>
+          <!-- high ledge with glinting paper -->
+          <g>
+            <path d="M370 130 L610 130 L590 170 L390 170 Z" fill="#3a4054" stroke="#22262f" stroke-width="4"/>
+            <g id="ledge-paper">
+              <polygon points="470,108 512,100 508,128 466,134" fill="#f2e3b3" stroke="#8a6a35" stroke-width="2"/>
+              <path d="M478 114 l18 4 M476 122 l20 3" stroke="#8a6a35" stroke-width="1.5"/>
+              <polygon points="492,84 497,94 507,96 499,102 501,112 492,106 483,112 485,102 477,96 487,94" fill="#fff6c9"/>
+            </g>
+          </g>
+          <!-- cave painting -->
+          <g opacity=".8">
+            <rect x="60" y="170" width="130" height="100" rx="8" fill="#2c3040" stroke="#454b60" stroke-width="3"/>
+            <g stroke="#c98f4a" stroke-width="4" fill="none">
+              <circle cx="105" cy="210" r="12"/><line x1="105" y1="222" x2="105" y2="244"/>
+              <line x1="105" y1="230" x2="90" y2="238"/><line x1="105" y1="230" x2="120" y2="238"/>
+              <path d="M130 244 q20 -14 40 -4" />
+              <circle cx="165" cy="208" r="7"/>
+            </g>
+          </g>
+          <!-- tide pool with kelp -->
+          <g>
+            <ellipse cx="250" cy="460" rx="120" ry="42" fill="#1e7f9e" stroke="#0d4a61" stroke-width="5"/>
+            <ellipse cx="250" cy="452" rx="95" ry="28" fill="#3aa8c9" opacity=".7"/>
+            <g id="pool-kelp" stroke="#2e8b57" stroke-width="9" fill="none">
+              <path d="M210 460 q-8 -40 6 -70 q10 -20 -2 -38"/>
+              <path d="M250 462 q6 -44 -6 -74 q-8 -18 4 -34"/>
+              <path d="M290 460 q-4 -36 10 -62"/>
+            </g>
+          </g>
+          <!-- crate with rusty hook -->
+          <g>
+            <rect x="700" y="410" width="130" height="90" fill="#7a4e22" stroke="#3f2708" stroke-width="5"/>
+            <line x1="700" y1="455" x2="830" y2="455" stroke="#3f2708" stroke-width="5"/>
+            <line x1="765" y1="410" x2="765" y2="500" stroke="#3f2708" stroke-width="5"/>
+            <g id="crate-hook" stroke="#8a5a2b" stroke-width="10" fill="none">
+              <path d="M740 400 q-6 -30 14 -34 q16 -3 14 12"/>
+              <circle cx="754" cy="382" r="6" fill="#8a5a2b" stroke="none"/>
+            </g>
+          </g>
+          <!-- sand floor -->
+          <ellipse cx="480" cy="530" rx="480" ry="40" fill="#5a4a33" opacity=".55"/>
+          <g id="hs-cave"></g>
+        </svg>
+      </div>
+
+      <div id="verb-menu" role="menu" aria-label="Actions">
+        <button class="vm-x" id="verb-x" aria-label="Close menu">×</button>
+        <div class="vm-title" id="verb-title">Notice board</div>
+        <button id="verb-look" role="menuitem">👁️ Look at</button>
+        <button id="verb-take" role="menuitem">✋ Take</button>
+        <button id="verb-talk" role="menuitem">💬 Talk to</button>
+      </div>
+    </div>
+
+    <div id="statusbar">Click around — <b>Look</b>, <b>Take</b>, and <b>Talk</b> to everything!</div>
+
+    <div id="inventory-bar" class="panel" aria-label="Inventory">
+      <span class="inv-label">🎒 Pack:</span>
+      <span id="inv-empty">empty — grab everything that isn't nailed down!</span>
+      <span id="inv-items" style="display:contents"></span>
+    </div>
+
+    <div id="dialogue" role="dialog" aria-live="polite">
+      <button class="dlg-x" id="dlg-x" aria-label="Close dialogue">×</button>
+      <div class="speaker"><span id="dlg-speaker">???</span><span class="who-tag" id="dlg-tag"></span></div>
+      <div class="dlg-text" id="dlg-text"></div>
+      <div class="dlg-opts" id="dlg-opts"></div>
+    </div>
+
+    <div id="foot">
+      <span>Swordplay Isle — an original adventure</span>
+      <span><button id="foot-save">💾 save now</button> · <button id="foot-title">title screen</button> · <button id="foot-reset">restart adventure</button></span>
+    </div>
+  </div>
+</div>
+
+<!-- Duel modal -->
+<div id="duel-modal" role="dialog" aria-modal="true" aria-label="Insult swordfight">
+  <div id="duel-card">
+    <h2>⚔️ Insult Swordfight ⚔️</h2>
+    <div class="sub2" style="font-size:13.5px;color:#6b4a1f">First to <b>3 hits</b> wins the bout! Pick the comeback that rhymes.</div>
+    <div id="duel-score">
+      <span>🐦 Pippa <span class="pips" id="pips-p">○○○</span></span>
+      <span>🏴‍☠️ Bess <span class="pips" id="pips-b">○○○</span></span>
+    </div>
+    <div id="duel-insult"><span class="bess">BARNACLE BESS SNEERS:</span><span id="duel-insult-text"></span></div>
+    <div id="duel-opts"></div>
+    <div id="duel-result"></div>
+    <button class="btn ghost" id="duel-flee">🏳️ Flee the duel</button>
+  </div>
+</div>
+
+<div id="toast" role="status"></div>
+
+<!-- Win ceremony -->
+<div id="ceremony" role="dialog" aria-modal="true" aria-label="Victory ceremony">
+  <div id="ceremony-card">
+    <span class="confetti" style="left:8%;animation-delay:0s">🎉</span>
+    <span class="confetti" style="left:25%;animation-delay:.7s">⭐</span>
+    <span class="confetti" style="left:45%;animation-delay:1.2s">🎊</span>
+    <span class="confetti" style="left:65%;animation-delay:.4s">✨</span>
+    <span class="confetti" style="left:82%;animation-delay:1s">🎉</span>
+    <h1>Welcome Aboard!</h1>
+    <div class="ship">🚢🦜⚓</div>
+    <p id="ceremony-text"></p>
+    <div class="title-btns">
+      <button class="btn" id="btn-again">🔄 Play Again</button>
+      <button class="btn secondary" id="btn-roam">🏝️ Keep Exploring</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   SWORDPLAY ISLE — game engine
+   Sections:
+     1. Data: items, insults, dialogues
+     2. State + save/load
+     3. Scene rendering + hotspots + nav
+     4. Verb menu + Look/Take/Talk/Use
+     5. Inventory + combining
+     6. Dialogue engine
+     7. Insult swordfight
+     8. Parrot hints
+     9. Keyboard + init
+   ============================================================ */
+
+/* ==================== 1. DATA ==================== */
+
+const SAVE_KEY = "swordplayIsle.v1";
+
+/* Item catalogue: id -> {name, icon, desc} */
+const ITEMS = {
+  rope:        {name:"Coiled Rope",      icon:"🪢", desc:"A sturdy sailor's rope. Smells faintly of tar and ambition."},
+  hook:        {name:"Rusty Hook",       icon:"🪝", desc:"A big rusty boat hook. Looks grabby."},
+  grappling:   {name:"Grappling Hook",   icon:"🪝", desc:"Rope + hook = piracy's favorite multi-tool."},
+  mapPiece1:   {name:"Map Scrap — Dock", icon:"🧩", desc:"A torn corner of a treasure map. Salty."},
+  mapPiece2:   {name:"Map Scrap — Cave", icon:"🧩", desc:"A torn corner of a treasure map. Damp."},
+  mapPiece3:   {name:"Map Scrap — Jungle",icon:"🧩", desc:"A torn corner of a treasure map. Leafy."},
+  map2of3:     {name:"Partial Map (2/3)",icon:"🗺️", desc:"Two pieces fitted together. One more to go!"},
+  mapWhole:    {name:"Reassembled Map",  icon:"🗺️", desc:"The captain's treasure map, whole again. X marks... a buffet?"},
+  coconut:     {name:"Coconut",          icon:"🥥", desc:"A hairy coconut. Mango Sal would probably love this."},
+  brassKey:    {name:"Brass Key",        icon:"🗝️", desc:"A heavy brass key. Smells of mango and secrets."},
+  sunPeppers:  {name:"Sun Peppers",      icon:"🌶️", desc:"Fiery red jungle peppers. Handle with courage."},
+  kelp:        {name:"Tide Kelp",        icon:"🌿", desc:"Rubbery cave kelp. The stew's salty soul."},
+  smokedFish:  {name:"Smoked Fish",      icon:"🐟", desc:"One of Old Tom's finest smoked fish."},
+  seaStew:     {name:"Sea Stew",         icon:"🍲", desc:"Marisol's legendary sea stew. It bubbles with destiny."},
+  spareCutlass:{name:"Spare Cutlass",    icon:"🗡️", desc:"A slightly nicked practice cutlass. Perfect for insult duels."},
+};
+
+/* 12 original insult/comeback pairs (Bess insults -> Pippa's correct comeback).
+   Wrong options are drawn from the OTHER pairs' comebacks. */
+const INSULTS = [
+  {i:"You fight like a sleepy old clam!", c:"At least I don't doze when the battle drums jam!"},
+  {i:"Your footwork's as graceful as a three-legged mule!", c:"Says the duelist who trips over her own stool, you fool!"},
+  {i:"I've dueled sharper barnacles stuck to a dock!", c:"And I've outwitted gulls who hold grudges with a rock!"},
+  {i:"You swing that blade like you're swatting a fly!", c:"Then buzz off, Bess — this little fly says goodbye!"},
+  {i:"Your sword's so dull it couldn't slice cheese!", c:"Then why are your knees knocking in this sea breeze?"},
+  {i:"Your thrusts have the force of a sleepy old snail!", c:"And your boasts have the bite of a guppy's tail!"},
+  {i:"My granny fences better, and she's ninety-two!", c:"Then fetch your granny — I'll duel her too!"},
+  {i:"Your courage sailed off with the morning tide!", c:"At least mine came back for the ride!"},
+  {i:"You couldn't hit water if you fell in the sea!", c:"Then stand real still — you're my target, you'll see!"},
+  {i:"That hat's the bravest thing that you own!", c:"It stays on my head — yours stays home alone!"},
+  {i:"You couldn't scare a clam with that stance!", c:"This clam's about to teach you to dance!"},
+  {i:"I've seen bolder moves from a sleepy old cat!", c:"And I've seen smarter pirates — imagine that!"},
+];
+const BESS_TAUNTS = [
+  "Ha! Was that a comeback or a hiccup?",
+  "My parrot insults better than that, and he's a parrot!",
+  "Ooh, the guppy nips! How terrifying.",
+  "Swing and a miss, little minnow!",
+  "Is that your tongue or a wet noodle?",
+];
+const PIPPA_CHEERS = [
+  "A hit! The dockworkers gasp!",
+  "A hit! Bess staggers back, spluttering!",
+  "A hit! Even the gulls applaud!",
+  "A hit! Somewhere, a bard takes notes!",
+];
+
+/* ---------- Dialogue trees ----------
+   Node: {sp:text, opts:[{t, go, do}]}  go = node id | "__end" | function-made node
+   "do" runs a side-effect function when the option is picked. */
+const DLG = {
+  /* ----- CAPTAIN MARISOL VANE (tavern) ----- */
+  marisol_first: {sp:"Captain Marisol Vane", tag:"Trial Master",
+    text:"Well, well. Another dreamer with salt in their eyes. I'm Captain Marisol Vane of the Gullwing. State your business, small fry.",
+    opts:[
+      {t:"\"I want to join your crew!\"", go:"marisol_trials"},
+      {t:"\"Just visiting. Nice tavern.\"", go:"__end"},
+    ]},
+  marisol_trials: {sp:"Captain Marisol Vane", tag:"Trial Master",
+    text:"Hah! Nobody joins the Vane crew by asking nicely. You want a hammock on my ship? Pass my THREE trials. First: the Trial of Wit — beat Barnacle Bess in an insult duel at the docks. Match her rhymes, don't just swing steel. Second: the Trial of the Map — my treasure map tore into three pieces in a storm. One flutters by the dock boards, one the cave keeps on a high ledge, and one sits in a locked chest on the jungle path. Bring me the whole map. Third: the Trial of the Pot — brew my legendary sea stew: kelp from the cave pools, sun-peppers from the jungle, and a smoked fish from Old Tom's stall, all simmered in my tavern pot.",
+    opts:[
+      {t:"\"Any advice before I start?\"", go:"marisol_advice", do:()=>{S.flags.metMarisol=true; save();}},
+      {t:"\"I'll be back with all three done!\"", go:"__end", do:()=>{S.flags.metMarisol=true; save();}},
+    ]},
+  marisol_advice: {sp:"Captain Marisol Vane", tag:"Trial Master",
+    text:"Listen close, small fry. Bess won't duel an unarmed guppy — there's a spare cutlass by the tavern door, take it. The cave ledge is too high to reach by hand: rope plus hook, every sailor knows that trick. And the jungle hermit, Mango Sal? She adores coconuts, and she knows about that locked chest. Now off with you — the sea waits for no one!",
+    opts:[{t:"\"Aye, Captain!\"", go:"__end"}]},
+
+  /* ----- OLD TOM BRINEY (dock) ----- */
+  tom: {sp:"Old Tom Briney", tag:"Fisherman",
+    text:"Ahoy, young Pippa! Old Tom Briney — fisher of legends, teller of mostly-true tales. What can this old sea dog do for ye?",
+    opts:[
+      {t:"\"Any advice for the captain's trials?\"", go:"tom_advice"},
+      {t:"\"Tell me a fishing story.\"", go:"tom_story"},
+      {t:"\"What's in the captain's sea stew?\"", go:"tom_stew"},
+      {t:"\"Fair winds, Tom.\"", go:"__end"},
+    ]},
+  tom_advice: {sp:"Old Tom Briney", tag:"Fisherman",
+    text:"Bess? Best insulter on the isle, but she can't abide a rhyme about her HAT — rattles her something fierce. For the map: I saw a scrap of parchment pinned behind the dock notice board, plain as day. And that cave ledge? Rope and a hook, lass — every sailor knows that trick. The jungle chest belongs to smugglers of old; the hermit Sal knows more than she lets on.",
+    opts:[
+      {t:"\"Tell me a fishing story.\"", go:"tom_story"},
+      {t:"\"Fair winds, Tom.\"", go:"__end"},
+    ]},
+  tom_story: {sp:"Old Tom Briney", tag:"Fisherman",
+    text:"There I was, line in the water, when I hooked a marlin the size of a rowboat! We fought for three days. On the fourth day, the marlin looked me in the eye and said — well. Let's just say we agreed to disagree, and I let him win. He sends his regards.",
+    opts:[
+      {t:"\"Any advice for the trials?\"", go:"tom_advice"},
+      {t:"\"Fair winds, Tom.\"", go:"__end"},
+    ]},
+  tom_stew: {sp:"Old Tom Briney", tag:"Fisherman",
+    text:"The captain's stew? Kelp from the cave pools, sun-peppers from the jungle path, and one of MY fine smoked fish — help yourself to the one hanging at my stall, it's on the house for a future crewmate. Simmer it all in her tavern pot. Legend says one bowl once ended a mutiny. Another legend says it started one. Either way: memorable.",
+    opts:[
+      {t:"\"Any advice for the trials?\"", go:"tom_advice"},
+      {t:"\"Fair winds, Tom.\"", go:"__end"},
+    ]},
+
+  /* ----- BARNACLE BESS (dock) ----- */
+  bess: {sp:"Barnacle Bess", tag:"Duelist",
+    text:"Well, if it isn't Pippa Wren — the terror of the tide pools! Come to watch a REAL duelist at work? I'm undefeated in forty insult duels. I fight with wit sharper than my blade — which is saying something, because my blade is VERY sharp.",
+    opts:[
+      {t:"\"I challenge you to an insult duel!\"", go:"bess_duel"},
+      {t:"\"What's an insult duel, exactly?\"", go:"bess_rules"},
+      {t:"\"Maybe later, Bess.\"", go:"__end"},
+    ]},
+  bess_rules: {sp:"Barnacle Bess", tag:"Duelist",
+    text:"Simple, guppy: I hurl an insult, you fire back a comeback. It must RHYME — wit without rhythm is just noise. Best of five exchanges... er, first to THREE clean hits wins the bout. Land your comeback and I take the hit. Fumble it and YOU take the hit. Think your tongue's quick enough?",
+    opts:[
+      {t:"\"I challenge you!\"", go:"bess_duel"},
+      {t:"\"Maybe later.\"", go:"__end"},
+    ]},
+  bess_duel_gate: {sp:"Barnacle Bess", tag:"Duelist",
+    text:"Ha! No blade, no bout! An insult duel is still a DUEL, guppy. Marisol keeps a spare cutlass by the tavern door — fetch one and stop wasting my tide.",
+    opts:[{t:"\"I'll be back — with steel!\"", go:"__end", do:()=>{S.flags.cutlassTold=true; save(); toast("🗡️ Bess wants you armed: there's a spare cutlass by the tavern door!");}}]},
+  bess_win: {sp:"Barnacle Bess", tag:"Duelist",
+    text:"You... you actually beat me. Forty-one duels, and a guppy with a rhyming dictionary ends the streak. Hah! Fine — you've got salt, Wren. The crew'll hear of this. Marisol picked a good one... don't let it go to your head. Much.",
+    opts:[{t:"\"Thanks, Bess. That was fun!\"", go:"__end"}]},
+  bess_lose: {sp:"Barnacle Bess", tag:"Duelist",
+    text:"Hah! Come back when your tongue's sharper than a butter knife, minnow. I'll be here — undefeated, unmatched, unbelievably humble.",
+    opts:[{t:"\"Rematch!\"", go:"bess_duel"},{t:"\"I'll be back.\"", go:"__end"}]},
+
+  /* ----- MANGO SAL (jungle) ----- */
+  sal: {sp:"Mango Sal", tag:"Hermit",
+    text:"Hmm? Another visitor on my path? Mango Sal sees few faces out here. Speak, child — but make it quick, my peppers won't pick themselves.",
+    opts:[
+      {t:"\"What are you doing out here?\"", go:"sal_who"},
+      {t:"\"Know anything about a torn treasure map?\"", go:"sal_map"},
+      {t:"\"Got any advice for me?\"", go:"sal_advice"},
+      {t:"\"I'll leave you to your peppers.\"", go:"__end"},
+    ]},
+  sal_who: {sp:"Mango Sal", tag:"Hermit",
+    text:"The jungle's quieter than people, child. I keep my peppers, my palms, and my secrets. Forty years out here and the only thing I've missed is a decent coconut — the palms tease me, but my climbing days are behind me.",
+    opts:[
+      {t:"\"Know anything about a torn map?\"", go:"sal_map"},
+      {t:"\"Got any advice for me?\"", go:"sal_advice"},
+      {t:"\"I'll leave you to your peppers.\"", go:"__end"},
+    ]},
+  sal_map: {sp:"Mango Sal", tag:"Hermit",
+    text:"Aye — a scrap of the captain's map sits in the old smuggler's chest, right there on the path. Locked tight, and THIS key of mine opens it. But keys don't grow on trees, child... though COCONUTS do. Bring Mango Sal a nice coconut and we'll talk trade.",
+    opts:[
+      {t:"\"What are you doing out here?\"", go:"sal_who"},
+      {t:"\"I'll find you a coconut!\"", go:"__end"},
+    ]},
+  sal_advice: {sp:"Mango Sal", tag:"Hermit",
+    text:"The dock flutters, the cave glitters, the jungle locks. Three scraps, one map — put the pieces together, child. And if the cave ledge mocks you: rope plus hook. Even hermits know that one.",
+    opts:[
+      {t:"\"Know anything about a torn map?\"", go:"sal_map"},
+      {t:"\"I'll leave you to your peppers.\"", go:"__end"},
+    ]},
+  sal_trade: {sp:"Mango Sal", tag:"Hermit",
+    text:"Is that... a COCONUT for old Sal? Oh, you sweet child! Here — the brass key, as promised. It opens the smuggler's chest on the path. Mind the map scrap inside... and mind the splinters. Everything out here has splinters.",
+    opts:[{t:"\"Thank you, Sal!\"", go:"__end"}]},
+
+  /* ----- WAFFLES THE PARROT (hint button) ----- */
+  waffles: {sp:"Waffles", tag:"Parrot Sidekick", text:"", opts:[{t:"\"Thanks, Waffles!\"", go:"__end"}]},
+};
+
+/* ==================== 2. STATE + SAVE ==================== */
+const SCENES = ["dock","tavern","jungle","cave"];
+const SCENE_NAMES = {dock:"The Dock", tavern:"The Salty Parrot Tavern", jungle:"Jungle Path", cave:"Beach Cave"};
+
+let S = freshState();
+function freshState(){
+  return {scene:"dock", inv:[], selected:null,
+    flags:{}, trials:{sword:false, map:false, stew:false},
+    pot:{kelp:false, peppers:false, fish:false}};
+}
+const has = id => S.inv.includes(id);
+function addItem(id){
+  if(has(id)) return;
+  S.inv.push(id);
+  renderInventory(); save();
+  toast("🎒 Picked up: <b>"+ITEMS[id].name+"</b>");
+  blip(520);
+}
+function removeItem(id){
+  S.inv = S.inv.filter(x=>x!==id);
+  if(S.selected===id) S.selected=null;
+  renderInventory(); save();
+}
+function save(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      scene:S.scene, inv:S.inv, flags:S.flags, trials:S.trials, pot:S.pot}));
+  }catch(e){/* storage full/blocked — game still works */}
+}
+function loadSave(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    S = Object.assign(freshState(), d);
+    return true;
+  }catch(e){ return false; }
+}
+const hasSave = () => { try{ return !!localStorage.getItem(SAVE_KEY); }catch(e){ return false; } };
+function wipeSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+
+/* ==================== 3. HOTSPOTS ==================== */
+const HOTSPOTS = [];
+function H(def){ HOTSPOTS.push(def); return def; }
+const taken = id => !!S.flags["taken_"+id];
+
+const WRONG_USE = [
+  "That doesn't seem to work. Pippa scratches her head.",
+  "Nope. The universe remains unimpressed.",
+  "Pippa tries it... and immediately pretends she didn't.",
+  "Hmm. That combination belongs in a different adventure.",
+];
+
+/* ---- DOCK ---- */
+H({id:"ship", scene:"dock", x:620,y:60,w:300,h:180, label:"the Gullwing",
+  look:"The <b>Gullwing</b> — Captain Marisol Vane's ship — bobs proudly at anchor. One day, Pippa thinks, I'll have a hammock on that deck."});
+H({id:"board", scene:"dock", x:52,y:180,w:172,h:140, label:"the notice board", icon:"🧩",
+  look:"Layered with old notices: lost parrots, found parrots, parrots seeking parrots. Wait — a <b>torn scrap of parchment</b> flutters behind the board!",
+  take:"mapPiece1", takeMsg:"A torn corner of a treasure map! This must be one of the captain's three pieces."});
+H({id:"rope", scene:"dock", x:250,y:380,w:120,h:70, label:"the coiled rope", icon:"🪢",
+  look:"A sturdy coil of sailor's rope. Somewhere, a sailor is wondering where it went.",
+  take:"rope"});
+H({id:"fishstall", scene:"dock", x:430,y:200,w:130,h:110, label:"the smoked fish", icon:"🐟",
+  look:"Old Tom's smoked fish hang like salty trophies. A little sign reads: 'Future crewmates eat free.'",
+  take:"smokedFish", takeMsg:"One prime smoked fish, 'on the house for a future crewmate.' Thanks, Tom!"});
+H({id:"tom", scene:"dock", x:592,y:230,w:56,h:220, label:"Old Tom Briney",
+  look:"Old Tom Briney: beard like a storm cloud, eyes like a kindly shark.",
+  talk:"tom"});
+H({id:"bess", scene:"dock", x:722,y:250,w:110,h:200, label:"Barnacle Bess",
+  look:"Barnacle Bess: undefeated insult duelist, owner of one extremely confident hat.",
+  talk:()=>"bess",
+  onUse(item){
+    if(item!=="spareCutlass") return false;
+    toast("🗡️ Pippa brandishes the cutlass! Bess grins a feral grin...");
+    showDialogue(buildBess()); return true;
+  }});
+H({id:"gulls", scene:"dock", x:300,y:50,w:220,h:70, label:"the seagulls",
+  look:"The gulls scream pirate gossip at each other. Pippa is fairly sure they're discussing her."});
+
+/* ---- TAVERN ---- */
+H({id:"sign", scene:"tavern", x:350,y:66,w:250,h:66, label:"the tavern sign",
+  look:"'The Salty Parrot' — est. ages ago. The painted parrot winks at you. Probably."});
+H({id:"window", scene:"tavern", x:700,y:150,w:190,h:140, label:"the window",
+  look:"Through the window: the whole sparkling harbor. Somewhere out there is adventure. And also lunch."});
+H({id:"marisol", scene:"tavern", x:418,y:180,w:104,h:270, label:"Captain Marisol Vane",
+  look:"Captain Marisol Vane: navy coat, captain's hat, and the calm confidence of someone who has seen EVERYTHING.",
+  talk:()=>"marisol",
+  onUse(item){
+    if(item==="mapWhole" && !S.trials.map){
+      removeItem("mapWhole"); S.trials.map=true; updateTrials(); save(); blip(880);
+      toast("🗺️ <b>Trial complete: the map!</b> Marisol unrolls it with shining eyes. ("+trialWord()+"/3 trials done)");
+      showDialogue(buildMarisol()); return true;
+    }
+    if(item==="seaStew" && !S.trials.stew){
+      removeItem("seaStew"); S.trials.stew=true; updateTrials(); save(); blip(880);
+      toast("🍲 <b>Trial complete: the stew!</b> Marisol tastes it and actually applauds. ("+trialWord()+"/3 trials done)");
+      showDialogue(buildMarisol()); return true;
+    }
+    return false;
+  }});
+H({id:"pot", scene:"tavern", x:620,y:320,w:140,h:110, label:"the great sea pot",
+  look:()=> S.flags.stewBrewed
+    ? "The great sea pot, still warm from your legendary stew. History was made here."
+    : "Marisol's legendary sea pot bubbles over the hearth. It looks ready for kelp, sun-peppers, and smoked fish...",
+  onUse(item){
+    if(S.flags.stewBrewed){ toast("The stew's already brewed — a masterpiece needs no sequel."); return true; }
+    const map = {kelp:"kelp", sunPeppers:"peppers", smokedFish:"fish"};
+    if(!map[item]) return false;
+    const key = map[item];
+    if(S.pot[key]){ toast("Already in the pot!"); return true; }
+    S.pot[key]=true; removeItem(item); save(); blip(660);
+    const have = ["kelp","peppers","fish"].filter(k=>S.pot[k]);
+    if(have.length===3){
+      S.flags.stewBrewed = true;
+      addItem("seaStew");
+      toast("🍲 <b>The sea stew bubbles to perfection!</b> It smells like victory and thyme. Bring it to the captain!");
+    }else{
+      const names = {kelp:"tide kelp", peppers:"sun-peppers", fish:"smoked fish"};
+      toast("Into the pot goes the "+names[key]+"! ("+have.length+"/3 ingredients)");
+    }
+    renderHotspots(); return true;
+  }});
+H({id:"cutlass", scene:"tavern", x:80,y:300,w:70,h:140, label:"the spare cutlass", icon:"🗡️",
+  look:"A slightly nicked practice cutlass, leaning by the door. 'Spare' — as in, free for aspiring duelists.",
+  take:"spareCutlass", takeMsg:"You take the spare cutlass. Barnacle Bess won't be able to say 'no blade, no bout' now!"});
+H({id:"table", scene:"tavern", x:160,y:400,w:180,h:70, label:"the table",
+  look:"A sticky tavern table with two foaming tankards. Someone's mid-celebration. Or mid-nap."});
+
+/* ---- JUNGLE ---- */
+H({id:"palm", scene:"jungle", x:280,y:120,w:180,h:160, label:"the coconut palm", icon:"🥥",
+  look:"A generous palm heavy with coconuts. One hangs low enough to grab. Mango Sal did mention missing coconuts...",
+  take:"coconut", takeMsg:"A fine hairy coconut! Mango Sal's eyes would light up at this."});
+H({id:"peppers", scene:"jungle", x:110,y:300,w:160,h:140, label:"the pepper bush", icon:"🌶️",
+  look:"A bush blazing with red sun-peppers. They practically sizzle in the dappled light.",
+  take:"sunPeppers", takeMsg:"A handful of fiery sun-peppers! The stew's spicy heart."});
+H({id:"chest", scene:"jungle", x:480,y:360,w:150,h:110, label:"the smuggler's chest",
+  look:()=> S.flags.chestOpen
+    ? "The old smuggler's chest stands open and empty — save for dust, splinters, and the memory of treasure."
+    : "An old smuggler's chest, banded with iron. A brass lock winks at you. Locked, of course.",
+  onUse(item){
+    if(item!=="brassKey") return false;
+    if(S.flags.chestOpen){ toast("Already open — you got the map scrap."); return true; }
+    S.flags.chestOpen = true; removeItem("brassKey"); save(); blip(700);
+    addItem("mapPiece3");
+    toast("🗝️ The lock clicks! Inside: a <b>torn map scrap</b> — and nothing else. Classic smugglers.");
+    renderHotspots(); return true;
+  }});
+H({id:"sal", scene:"jungle", x:664,y:200,w:98,h:250, label:"Mango Sal",
+  look:"Mango Sal: jungle hermit, pepper farmer, keeper of secrets and one very fine flower.",
+  talk:"sal",
+  onUse(item){
+    if(item!=="coconut") return false;
+    if(S.flags.gotKey){ toast("Sal already gave you the key — she's back to her peppers."); return true; }
+    S.flags.gotKey = true; removeItem("coconut"); addItem("brassKey"); save();
+    showDialogue(DLG.sal_trade); return true;
+  }});
+H({id:"vines", scene:"jungle", x:0,y:0,w:960,h:120, label:"the vines",
+  look:"Vines dangle like nature's own rope ladder. Tempting, but Pippa has actual rope for actual problems."});
+
+/* ---- CAVE ---- */
+H({id:"ledge", scene:"cave", x:370,y:80,w:240,h:90, label:"the high ledge",
+  look:()=> S.flags.taken_ledge
+    ? "The ledge is bare now — just rock and the echo of your triumph."
+    : "High on the ledge: a glint of parchment! Far beyond arm's reach. If only you had something long and grabby...",
+  onUse(item){
+    if(item!=="grappling") return false;
+    if(S.flags.taken_ledge){ toast("Already retrieved — the ledge is bare."); return true; }
+    S.flags.taken_ledge = true; save(); blip(760);
+    addItem("mapPiece2");
+    toast("🪝 The grappling hook catches! Down flutters a <b>torn map scrap</b> — damp, but legible!");
+    renderHotspots(); renderSceneArt(); return true;
+  }});
+H({id:"pool", scene:"cave", x:130,y:400,w:240,h:110, label:"the tide pool", icon:"🌿",
+  look:"A glassy tide pool. Long strands of tide kelp sway beneath the surface like a slow green dance.",
+  take:"kelp", takeMsg:"A slippery armful of tide kelp! The stew's salty soul."});
+H({id:"hookcrate", scene:"cave", x:700,y:370,w:130,h:130, label:"the crate", icon:"🪝",
+  look:"A barnacled old crate. A big rusty boat hook leans against it — some sailor's lost multi-tool.",
+  take:"hook", takeMsg:"A big rusty hook! Pair it with rope and you'd have a proper grappling hook."});
+H({id:"painting", scene:"cave", x:60,y:170,w:130,h:100, label:"the cave painting",
+  look:"Ancient cave art: a stick figure, a magnificent fish, and what is either a treasure map or a shopping list."});
+
+/* ==================== 4. SCENE RENDERING ==================== */
+const $ = id => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+
+function renderSceneArt(){
+  // hide/show dynamic art bits based on flags
+  const lp = $("ledge-paper"); if(lp) lp.style.display = S.flags.taken_ledge ? "none" : "";
+  const pk = $("pool-kelp");   if(pk) pk.style.display = taken("pool") ? "none" : "";
+  const ch = $("crate-hook");  if(ch) ch.style.display = taken("hookcrate") ? "none" : "";
+}
+
+function showScene(name){
+  S.scene = name; S.selected = null;
+  closeVerbMenu(); closeDialogue();
+  document.querySelectorAll(".scene").forEach(el=>el.classList.toggle("active", el.dataset.scene===name));
+  $("scene-label").textContent = "📍 " + SCENE_NAMES[name];
+  // nav arrows (loop)
+  const i = SCENES.indexOf(name);
+  $("nav-left-name").textContent = SCENE_NAMES[SCENES[(i+SCENES.length-1)%SCENES.length]];
+  $("nav-right-name").textContent = SCENE_NAMES[SCENES[(i+1)%SCENES.length]];
+  renderSceneArt(); renderHotspots();
+  setStatus("Click around — <b>Look</b>, <b>Take</b>, and <b>Talk</b> to everything!");
+  save();
+}
+function goNav(dir){
+  const i = SCENES.indexOf(S.scene);
+  const n = SCENES[(i+dir+SCENES.length)%SCENES.length];
+  blip(440); showScene(n);
+}
+
+function renderHotspots(){
+  const layer = $("hs-"+S.scene);
+  if(!layer) return;
+  layer.innerHTML = "";
+  HOTSPOTS.filter(h=>h.scene===S.scene && (!h.cond || h.cond())).forEach(h=>{
+    const g = document.createElementNS(SVGNS,"g");
+    g.setAttribute("class","hotspot");
+    g.setAttribute("tabindex","0");
+    g.setAttribute("role","button");
+    g.setAttribute("aria-label", h.label);
+    g.dataset.hs = h.id;
+    const r = document.createElementNS(SVGNS,"rect");
+    r.setAttribute("x",h.x); r.setAttribute("y",h.y);
+    r.setAttribute("width",h.w); r.setAttribute("height",h.h);
+    r.setAttribute("rx","14"); r.setAttribute("class","hl");
+    g.appendChild(r);
+    // floating icon for available takeables
+    if(h.take && !taken(h.id) && h.icon){
+      const t = document.createElementNS(SVGNS,"text");
+      t.setAttribute("x", h.x + h.w/2); t.setAttribute("y", h.y + h.h/2);
+      t.setAttribute("class","hs-icon pulse");
+      t.textContent = h.icon;
+      g.appendChild(t);
+    }
+    g.addEventListener("click", ev=>{ ev.stopPropagation(); onHotspot(h, ev); });
+    g.addEventListener("keydown", ev=>{
+      if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); onHotspot(h, ev); }
+    });
+    g.addEventListener("mouseenter", ()=>setStatus(labelFor(h)+" — "+verbHint(h)));
+    g.addEventListener("focus", ()=>setStatus(labelFor(h)+" — "+verbHint(h)));
+    layer.appendChild(g);
+  });
+}
+function labelFor(h){ return cap(h.label); }
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function verbHint(h){
+  const v = [];
+  v.push("Look");
+  if(h.take && !taken(h.id)) v.push("Take");
+  if(h.talk) v.push("Talk");
+  if(S.selected) v.push("Use "+ITEMS[S.selected].name+" with");
+  return v.join(" · ");
+}
+
+function setStatus(html){ $("statusbar").innerHTML = html; }
+
+/* ---- hotspot activation ---- */
+function onHotspot(h, ev){
+  blip(600);
+  if(S.selected){
+    const item = S.selected; S.selected = null; renderInventory();
+    let handled = false;
+    if(h.onUse) handled = h.onUse(item);
+    if(!handled){
+      toast("🍃 "+WRONG_USE[Math.floor(Math.random()*WRONG_USE.length)]);
+    }
+    renderHotspots();
+    return;
+  }
+  openVerbMenu(h, ev);
+}
+
+/* ==================== 5. VERB MENU ==================== */
+let verbTarget = null;
+function openVerbMenu(h, ev){
+  verbTarget = h;
+  const m = $("verb-menu");
+  $("verb-title").textContent = cap(h.label);
+  $("verb-look").style.display = "";
+  $("verb-take").style.display = (h.take && !taken(h.id)) ? "" : "none";
+  $("verb-talk").style.display = h.talk ? "" : "none";
+  // position near click, inside scene wrap
+  const wrap = $("scene-wrap").getBoundingClientRect();
+  let cx = 480, cy = 270;
+  if(ev && ev.clientX){ cx = ev.clientX - wrap.left; cy = ev.clientY - wrap.top; }
+  m.style.display = "block";
+  const mw = m.offsetWidth, mh = m.offsetHeight;
+  m.style.left = Math.max(8, Math.min(wrap.width - mw - 8, cx - mw/2)) + "px";
+  m.style.top  = Math.max(8, Math.min(wrap.height - mh - 8, cy - mh/2)) + "px";
+  $("verb-look").focus();
+}
+function closeVerbMenu(){ $("verb-menu").style.display="none"; verbTarget=null; }
+
+function doLook(h){
+  closeVerbMenu();
+  const t = typeof h.look==="function" ? h.look() : (h.look || "It's "+h.label+". Very... label-y.");
+  setStatus("👁️ <b>"+cap(h.label)+":</b> "+t);
+}
+function doTake(h){
+  closeVerbMenu();
+  if(!h.take || taken(h.id)) return;
+  S.flags["taken_"+h.id] = true;
+  addItem(h.take);
+  if(h.takeMsg) setStatus("✋ "+h.takeMsg);
+  renderHotspots(); renderSceneArt();
+}
+function doTalk(h){
+  closeVerbMenu();
+  const t = typeof h.talk==="function" ? h.talk() : h.talk;
+  if(t==="marisol") showDialogue(buildMarisol());
+  else if(t==="bess") showDialogue(buildBess());
+  else if(DLG[t]) showDialogue(DLG[t]);
+}
+
+/* ---- Marisol & Bess dynamic dialogue roots ---- */
+function trialWord(){ const n=[S.trials.sword,S.trials.map,S.trials.stew].filter(Boolean).length; return n; }
+function buildMarisol(){
+  if(!S.flags.metMarisol) return DLG.marisol_first;
+  const done = [S.trials.sword&&"the duel", S.trials.map&&"the map", S.trials.stew&&"the stew"].filter(Boolean);
+  let text;
+  if(done.length===3){
+    text = "Well, shiver my timbers... the duel won, the map whole, the stew brewed. You've done it ALL, Pippa Wren. The Gullwing hasn't seen a trial run like that in years. Ready for your reward?";
+  }else if(done.length===0){
+    text = "Back so soon, small fry? Three trials: out-wit Barnacle Bess at the docks, bring me my whole map, and brew my sea stew in that pot. Off with you!";
+  }else{
+    text = "Progress! You've completed: <b>"+done.join(", ")+"</b>. "+(3-done.length)+" to go, small fry. What's next?";
+  }
+  const opts = [];
+  if(has("mapWhole") && !S.trials.map)
+    opts.push({t:"\"I reassembled your treasure map!\"", do:()=>{
+      removeItem("mapWhole"); S.trials.map=true; updateTrials(); save();
+      toast("🗺️ <b>Trial complete: the map!</b> Marisol beams. ("+trialWord()+"/3 trials done)");
+    }, go:"__refresh"});
+  if(has("seaStew") && !S.trials.stew)
+    opts.push({t:"\"I brewed your legendary sea stew!\"", do:()=>{
+      removeItem("seaStew"); S.trials.stew=true; updateTrials(); save();
+      toast("🍲 <b>Trial complete: the stew!</b> Marisol tastes it and actually applauds. ("+trialWord()+"/3 trials done)");
+    }, go:"__refresh"});
+  if(done.length===3)
+    opts.push({t:"\"I'm ready for my reward, Captain!\"", do:()=>{ triggerCeremony(); }, go:"__end"});
+  opts.push({t:"\"Remind me of the trials.\"", go:"__node", node:{
+    sp:"Captain Marisol Vane", tag:"Trial Master",
+    text:"One: beat Barnacle Bess in an insult duel at the docks — match her rhymes! Two: my map, three pieces — one flutters by the dock boards, one the cave keeps on a high ledge, one in a locked jungle chest. Three: my sea stew — cave kelp, jungle sun-peppers, Old Tom's smoked fish, simmered in my tavern pot.",
+    opts:[{t:"\"Aye, Captain!\"", go:"__back"}]}});
+  opts.push({t:"\"I'll keep working on them.\"", go:"__end"});
+  return {sp:"Captain Marisol Vane", tag:"Trial Master", text, opts, back:"__root"};
+}
+function buildBess(){
+  if(S.trials.sword)
+    return {sp:"Barnacle Bess", tag:"Duelist (defeated)",
+      text:"There's the giant-slayer. My streak's still in mourning, but I'll get you in the rematch... someday. The crew speaks well of you, Wren.",
+      opts:[{t:"\"Thanks, Bess.\"", go:"__end"}]};
+  return DLG.bess;
+}
+
+/* ==================== 6. INVENTORY ==================== */
+function renderInventory(){
+  const wrap = $("inv-items");
+  wrap.innerHTML = "";
+  $("inv-empty").style.display = S.inv.length ? "none" : "";
+  S.inv.forEach(id=>{
+    const it = ITEMS[id]; if(!it) return;
+    const b = document.createElement("button");
+    b.className = "inv-item" + (S.selected===id ? " selected" : "");
+    b.title = it.name+" — "+it.desc;
+    b.setAttribute("aria-label", it.name+(S.selected===id?", selected":""));
+    b.innerHTML = "<span>"+it.icon+"</span><small>"+it.name+"</small>";
+    b.addEventListener("click", ()=>onInvClick(id));
+    wrap.appendChild(b);
+  });
+}
+function onInvClick(id){
+  blip(500);
+  if(S.selected===id){ S.selected=null; renderInventory(); setStatus("Put away the "+ITEMS[id].name+"."); return; }
+  if(S.selected){ const a=S.selected; S.selected=null; tryCombine(a,id); renderInventory(); return; }
+  S.selected=id; renderInventory();
+  setStatus("🖐️ <b>"+ITEMS[id].name+"</b> selected — click a hotspot to use it, or click another item to combine.");
+}
+const PIECE_IDS = ["mapPiece1","mapPiece2","mapPiece3"];
+function tryCombine(a,b){
+  const pair = [a,b].sort().join("+");
+  // rope + hook = grappling hook
+  if(pair==="hook+rope"){
+    removeItem("rope"); removeItem("hook"); addItem("grappling");
+    toast("🪢+🪝 <b>Grappling hook crafted!</b> Pippa gives it a test swing. Very piracy.");
+    setStatus("That grappling hook could reach the <b>high ledge in the beach cave</b>...");
+    return;
+  }
+  // two map scraps -> partial map
+  if(PIECE_IDS.includes(a) && PIECE_IDS.includes(b) && a!==b){
+    removeItem(a); removeItem(b); addItem("map2of3");
+    toast("🧩 <b>Two pieces fit together!</b> The edges match perfectly. One scrap left to find.");
+    return;
+  }
+  // partial map + last scrap -> whole map
+  if((a==="map2of3" && PIECE_IDS.includes(b)) || (b==="map2of3" && PIECE_IDS.includes(a))){
+    removeItem(a); removeItem(b); addItem("mapWhole");
+    S.flags.mapAssembled = true; save();
+    toast("🗺️ <b>The treasure map is WHOLE!</b> X marks... a buffet? Bring it to Captain Marisol Vane!");
+    setStatus("The map is complete! Bring it to <b>Captain Marisol Vane</b> in the tavern.");
+    return;
+  }
+  toast("🍃 "+WRONG_USE[Math.floor(Math.random()*WRONG_USE.length)]);
+}
+
+/* ==================== 7. DIALOGUE ENGINE ==================== */
+let dlgStack = [];
+function showDialogue(node){
+  if(typeof node==="string") node = DLG[node];
+  if(!node) return;
+  dlgStack.push(node);
+  renderDialogue(node);
+  blip(700);
+}
+function renderDialogue(node){
+  $("dialogue").style.display = "block";
+  $("dlg-speaker").textContent = node.sp;
+  $("dlg-tag").textContent = node.tag || "";
+  $("dlg-text").innerHTML = node.text;
+  const box = $("dlg-opts"); box.innerHTML = "";
+  (node.opts||[{t:"\"...\"",go:"__end"}]).forEach(o=>{
+    const b = document.createElement("button");
+    b.textContent = o.t;
+    b.addEventListener("click", ()=>pickOption(o));
+    box.appendChild(b);
+  });
+  const first = box.querySelector("button"); if(first) first.focus();
+  $("dialogue").scrollIntoView({block:"nearest", behavior:"smooth"});
+}
+function pickOption(o){
+  blip(620);
+  if(o.do){ try{ o.do(); }catch(e){ console.error(e); } }
+  const go = o.go || "__end";
+  if(go==="__end"){ closeDialogue(); return; }
+  if(go==="__refresh"){ dlgStack=[]; showDialogue(buildMarisol()); return; }
+  if(go==="__back"){ dlgStack.pop(); const prev=dlgStack[dlgStack.length-1]; if(prev) renderDialogue(prev); else closeDialogue(); return; }
+  if(go==="__node" && o.node){ showDialogue(o.node); return; }
+  if(go==="bess_duel"){
+    closeDialogue();
+    if(S.trials.sword){ showDialogue(buildBess()); return; }
+    if(!has("spareCutlass")){ showDialogue(DLG.bess_duel_gate); return; }
+    startDuel(); return;
+  }
+  if(DLG[go]){ showDialogue(DLG[go]); return; }
+  closeDialogue();
+}
+function closeDialogue(){ $("dialogue").style.display="none"; dlgStack=[]; }
+
+/* ==================== 8. TRIALS CHECKLIST + TOAST + SOUND ==================== */
+function updateTrials(){
+  const map = {sword:"trial-sword", map:"trial-map", stew:"trial-stew"};
+  for(const k in map){
+    const el = $(map[k]);
+    const done = S.trials[k];
+    el.classList.toggle("done", done);
+    el.querySelector(".box").textContent = done ? "●" : "○";
+  }
+}
+let toastTimer=null;
+function toast(html, ms){
+  const t = $("toast");
+  t.innerHTML = html; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), ms||3400);
+}
+let audioCtx=null;
+function blip(freq){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type="triangle"; o.frequency.value=freq||600;
+    g.gain.setValueAtTime(0.06, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.12);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime+0.13);
+  }catch(e){/* no audio — fine */}
+}
+
+/* ==================== 9. INSULT SWORDFIGHT ==================== */
+let duel = null;
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function startDuel(){
+  duel = {p:0, b:0, used:new Set(), idx:-1, correct:"", locked:false};
+  $("duel-modal").classList.add("open");
+  nextRound();
+  toast("⚔️ <b>The insult duel begins!</b> First to 3 hits wins.");
+}
+function updatePips(){
+  $("pips-p").textContent = "●".repeat(duel.p)+"○".repeat(3-duel.p);
+  $("pips-b").textContent = "●".repeat(duel.b)+"○".repeat(3-duel.b);
+}
+function nextRound(){
+  duel.locked = false;
+  let pool = INSULTS.map((_,i)=>i).filter(i=>!duel.used.has(i));
+  if(!pool.length){ duel.used.clear(); pool = INSULTS.map((_,i)=>i); }
+  const idx = pool[Math.floor(Math.random()*pool.length)];
+  duel.used.add(idx); duel.idx = idx;
+  duel.correct = INSULTS[idx].c;
+  const others = shuffle(INSULTS.filter((_,i)=>i!==idx).map(x=>x.c));
+  const opts = shuffle([duel.correct, others[0], others[1]]);
+  $("duel-insult-text").textContent = "\u201C"+INSULTS[idx].i+"\u201D";
+  $("duel-result").textContent = "";
+  const box = $("duel-opts"); box.innerHTML = "";
+  opts.forEach(t=>{
+    const b = document.createElement("button");
+    b.textContent = "\u201C"+t+"\u201D";
+    b.addEventListener("click", ()=>answerDuel(b, t));
+    box.appendChild(b);
+  });
+  updatePips();
+  const first = box.querySelector("button"); if(first) first.focus();
+}
+function answerDuel(btn, text){
+  if(!duel || duel.locked) return;
+  duel.locked = true;
+  const box = $("duel-opts");
+  box.querySelectorAll("button").forEach(b=>{
+    b.disabled = true;
+    if(b.textContent==="\u201C"+duel.correct+"\u201D") b.classList.add("right");
+  });
+  const res = $("duel-result");
+  if(text===duel.correct){
+    duel.p++; btn.classList.add("right");
+    res.innerHTML = "✅ <b>HIT!</b> "+PIPPA_CHEERS[Math.floor(Math.random()*PIPPA_CHEERS.length)];
+    blip(880);
+  }else{
+    duel.b++; btn.classList.add("wrong");
+    res.innerHTML = "❌ <b>MISS!</b> Bess cackles: \u201C"+BESS_TAUNTS[Math.floor(Math.random()*BESS_TAUNTS.length)]+"\u201D";
+    blip(220);
+  }
+  updatePips();
+  setTimeout(()=>{
+    if(duel.p>=3) endDuel(true);
+    else if(duel.b>=3) endDuel(false);
+    else nextRound();
+  }, 1900);
+}
+function endDuel(won){
+  $("duel-modal").classList.remove("open");
+  if(won){
+    S.trials.sword = true; updateTrials(); save(); blip(990);
+    toast("🏆 <b>Trial complete: the insult duel!</b> Barnacle Bess is beaten! ("+trialWord()+"/3 trials done)");
+    showDialogue(DLG.bess_win);
+  }else{
+    showDialogue(DLG.bess_lose);
+  }
+  duel = null;
+}
+
+/* ==================== 10. PARROT HINTS ==================== */
+function parrotHint(){
+  const T = S.trials, F = S.flags;
+  if(T.sword && T.map && T.stew)
+    return "Squawk! All three trials done, pretty bird! Report to Captain Marisol Vane for your reward! SQUAWK!";
+  if(!F.metMarisol)
+    return "Squawk! Talk to Captain Marisol Vane in the tavern — she sets the trials, pretty bird! Don't be shy!";
+  if(has("mapWhole") && !T.map)
+    return "Squawk! That whole map belongs in the captain's hands — the tavern, pretty bird! Chop chop!";
+  if(has("seaStew") && !T.stew)
+    return "Squawk! Stew's getting cold! Serve it to Captain Marisol in the tavern! Smells like victory!";
+  if(!T.sword){
+    if(!has("spareCutlass"))
+      return "Squawk! Bess won't duel an unarmed guppy! There's a spare cutlass by the tavern door, pretty bird!";
+    return "Squawk! Challenge Barnacle Bess at the dock! Listen to her rhyme, then pick the comeback that RHYMES back! Hat jokes rattle her!";
+  }
+  if(!F.mapAssembled){
+    const got1 = taken("board")||has("mapPiece1"), got2 = F.taken_ledge||has("mapPiece2"), got3 = F.chestOpen||has("mapPiece3")||has("map2of3");
+    if(got1 && got2 && got3 && !has("mapWhole"))
+      return "Squawk! You've got all three scraps! Click one map piece, then another, in your pack to fit them together!";
+    if(!got1) return "Squawk! A map scrap flutters behind the dock notice board. Grabby-grab, pretty bird!";
+    if(!got2){
+      if(!has("grappling")) return "Squawk! The cave ledge is too high! Rope PLUS hook makes a grappling hook — combine them in your pack!";
+      return "Squawk! Use your grappling hook on the high ledge in the beach cave!";
+    }
+    if(!got3){
+      if(!F.gotKey) return "Squawk! The jungle chest is locked! Mango Sal trades her brass key for a nice coconut!";
+      return "Squawk! Unlock the jungle chest with your brass key, pretty bird!";
+    }
+  }
+  if(!F.stewBrewed){
+    const need = [];
+    if(!S.pot.kelp && !taken("pool")) need.push("tide kelp sways in the cave tide pool");
+    if(!S.pot.peppers && !taken("peppers")) need.push("sun-peppers blaze on the jungle path");
+    if(!S.pot.fish && !taken("fishstall")) need.push("a smoked fish hangs at Old Tom's dock stall");
+    if(need.length) return "Squawk! For the stew you still need: "+need.join("; ")+", pretty bird!";
+    return "Squawk! You've got the ingredients! Use them on the great sea pot in the tavern — one by one!";
+  }
+  return "Squawk! Check your trials list at the top, pretty bird! You're closer than you think!";
+}
+function askParrot(){
+  blip(920);
+  showDialogue(Object.assign({}, DLG.waffles, {text:"🦜 <i>Waffles ruffles his feathers thoughtfully...</i><br><br>"+parrotHint()}));
+}
+
+/* ==================== 11. WIN CEREMONY ==================== */
+function triggerCeremony(){
+  closeDialogue(); closeVerbMenu();
+  $("ceremony-text").innerHTML =
+    "Captain Marisol Vane climbs onto a crate and raises her tankard. The whole tavern falls silent.<br><br>"+
+    "\u201CPippa Wren! You out-witted Barnacle Bess in fair duel, pieced together my map from three corners of the isle, "+
+    "and brewed a stew that made Old Tom weep into his beard. By the power vested in me by the sea herself, "+
+    "I name you <b>Crewmate of the Gullwing!</b>\u201D<br><br>"+
+    "The crew roars. Waffles sheds a proud feather. Somewhere, a seagull applauds. Your pirate life begins. 🏴‍☠️";
+  $("ceremony").classList.add("open");
+  S.flags.ceremony = true; save();
+  [660,760,880,990].forEach((f,i)=>setTimeout(()=>blip(f), i*160));
+}
+
+/* ==================== 12. KEYBOARD NAV ==================== */
+function getFocusables(){
+  const hs = [...document.querySelectorAll("#scene-"+S.scene+" .hotspot")];
+  const inv = [...document.querySelectorAll(".inv-item")];
+  return [...hs, ...inv, $("nav-left"), $("nav-right")].filter(Boolean);
+}
+document.addEventListener("keydown", e=>{
+  if($("duel-modal").classList.contains("open")) return;   // duel is button-driven
+  if($("ceremony").classList.contains("open")) return;
+  if($("title-screen").style.display!=="none") return;
+  if(e.key==="Escape"){
+    if($("verb-menu").style.display==="block"){ closeVerbMenu(); e.preventDefault(); return; }
+    if($("dialogue").style.display==="block"){ closeDialogue(); e.preventDefault(); return; }
+  }
+  if($("dialogue").style.display==="block") return;        // dialogue buttons handle keys
+  if(e.key==="ArrowRight"||e.key==="ArrowDown"||e.key==="ArrowLeft"||e.key==="ArrowUp"){
+    const f = getFocusables(); if(!f.length) return;
+    let i = f.indexOf(document.activeElement);
+    const d = (e.key==="ArrowRight"||e.key==="ArrowDown") ? 1 : -1;
+    i = (i+d+f.length)%f.length;
+    e.preventDefault();
+    f[i].focus();
+    document.querySelectorAll(".hotspot.kb").forEach(x=>x.classList.remove("kb"));
+    if(f[i].classList && f[i].classList.contains("hotspot")) f[i].classList.add("kb");
+  }
+});
+// clicking empty scene space closes the verb menu
+$("scene-wrap").addEventListener("click", ()=>{
+  if($("verb-menu").style.display==="block") closeVerbMenu();
+});
+
+/* ==================== 13. TITLE / MENU / INIT ==================== */
+function startGame(){
+  $("title-screen").style.display = "none";
+  $("game").style.display = "flex";
+  renderInventory(); updateTrials();
+  showScene(S.scene && SCENES.includes(S.scene) ? S.scene : "dock");
+  window.scrollTo(0,0);
+}
+function newGame(){
+  wipeSave();
+  S = freshState();
+  startGame();
+  setTimeout(()=>toast("🏴‍☠️ <b>Welcome to Swordplay Isle, Pippa Wren!</b> Find Captain Marisol Vane in the tavern."), 400);
+}
+function toTitle(){
+  $("game").style.display = "none";
+  $("ceremony").classList.remove("open");
+  $("title-screen").style.display = "block";
+  $("btn-continue").style.display = hasSave() ? "" : "none";
+  window.scrollTo(0,0);
+}
+
+$("btn-new").addEventListener("click", ()=>{
+  if(hasSave() && !confirm("Start a new game? Your saved voyage will be erased.")) return;
+  newGame();
+});
+$("btn-continue").addEventListener("click", ()=>{
+  if(loadSave()){ startGame(); toast("📜 <b>Voyage resumed!</b> Welcome back, Pippa."); }
+  else{ newGame(); }
+});
+$("btn-howto").addEventListener("click", ()=>{
+  const h = $("howto");
+  h.style.display = h.style.display==="block" ? "none" : "block";
+});
+$("menu-btn").addEventListener("click", ()=>{ save(); toTitle(); });
+$("foot-save").addEventListener("click", ()=>{ save(); toast("💾 Voyage saved!"); });
+$("foot-title").addEventListener("click", ()=>{ save(); toTitle(); });
+$("foot-reset").addEventListener("click", ()=>{
+  if(confirm("Restart the whole adventure from the beginning?")) newGame();
+});
+$("parrot-btn").addEventListener("click", askParrot);
+$("nav-left").addEventListener("click", ()=>goNav(-1));
+$("nav-right").addEventListener("click", ()=>goNav(1));
+$("verb-look").addEventListener("click", ()=>verbTarget && doLook(verbTarget));
+$("verb-take").addEventListener("click", ()=>verbTarget && doTake(verbTarget));
+$("verb-talk").addEventListener("click", ()=>verbTarget && doTalk(verbTarget));
+$("verb-x").addEventListener("click", closeVerbMenu);
+$("dlg-x").addEventListener("click", closeDialogue);
+$("duel-flee").addEventListener("click", ()=>{
+  $("duel-modal").classList.remove("open"); duel = null;
+  toast("🏳️ Pippa retreats... for now. Bess's laughter follows you down the dock.");
+});
+$("btn-again").addEventListener("click", ()=>{
+  $("ceremony").classList.remove("open");
+  newGame();
+});
+$("btn-roam").addEventListener("click", ()=>{
+  $("ceremony").classList.remove("open");
+  toast("🏝️ The isle is yours to explore, Crewmate Wren!");
+});
+
+// init: show Continue if a save exists
+if(hasSave()) $("btn-continue").style.display = "";
+</script>
+</body>
+</html>
