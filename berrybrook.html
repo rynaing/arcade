@@ -45,6 +45,15 @@ body{
 }
 .icon-btn:active{transform:scale(.93);}
 #reset-link{font-size:11px; color:var(--ink-soft); background:none; border:none; text-decoration:underline; cursor:pointer; padding:8px;}
+/* ---------- Back to Arcade ---------- */
+#arcade-back{
+  position:fixed; top:10px; left:10px; z-index:90;
+  display:flex; align-items:center; gap:6px;
+  background:var(--berry); color:#fff; font-weight:bold; font-size:14px;
+  border:none; border-radius:999px; padding:10px 16px; min-height:44px;
+  text-decoration:none; box-shadow:0 4px 12px rgba(0,0,0,.18); white-space:nowrap;
+}
+#arcade-back:active{transform:scale(.94);}
 /* ---------- Screens ---------- */
 main{flex:1; position:relative; overflow:hidden;}
 .screen{
@@ -191,6 +200,7 @@ hr.soft{border:none; border-top:2px dashed #eee; margin:14px 0;}
 </style>
 </head>
 <body>
+<a id="arcade-back" href="https://rynaing.github.io/arcade/" aria-label="Back to Arcade">← Arcade</a>
 <div id="topbar" class="hidden">
   <div id="buddy-chip"><span id="buddy-avatar"></span><span id="buddy-name-top"></span></div>
   <div class="spacer"></div>
