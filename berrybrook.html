@@ -444,6 +444,9 @@ function showScreen(id){
   $$(".screen").forEach(s=>s.classList.remove("active"));
   $("#"+id).classList.add("active");
   $("main").scrollTop=0; window.scrollTo(0,0);
+  /* Topbar (buddy chip, coin purse, stats, music) is visible once the player
+     is in town; keep it hidden on the welcome and creator screens. */
+  $("#topbar").classList.toggle("hidden", id==="screen-welcome"||id==="screen-creator");
 }
 function applyTopbar(){
   $("#coin-count").textContent=state.coins;
