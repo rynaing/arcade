@@ -211,7 +211,6 @@
   });
 })();
 </script>
-<!-- TEST ONLY - remove before prod -->
 <script>
 (function(){
   function rel(ts){
@@ -221,8 +220,18 @@
     var h=Math.floor(m/60); if(h<24) return h+"h ago";
     var d=Math.floor(h/24); return d+"d ago";
   }
-  document.querySelectorAll('.upd').forEach(function(el){
-    el.textContent="updated "+rel(el.getAttribute('data-ts'));
+  function paint(el,ts){ el.textContent="updated "+rel(ts); }
+  document.querySelectorAll('.card').forEach(function(card){
+    var badge=card.querySelector('.upd'); if(!badge) return;
+    var href=card.getAttribute('href')||'';
+    paint(badge,badge.getAttribute('data-ts'));
+    if(href.indexOf('./')===0){
+      fetch('https://api.github.com/repos/rynaing/arcade/commits?path='+encodeURIComponent(href.slice(2))+'&per_page=1')
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(list){
+          if(list&&list[0]&&list[0].commit&&list[0].commit.author){ paint(badge,list[0].commit.author.date); }
+        }).catch(function(){});
+    }
   });
 })();
 </script>
