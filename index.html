@@ -59,6 +59,8 @@
   .b-solo{background:#dff3e6;color:#237a44}
   .b-party{background:#e7e0fb;color:#5740a8}
   .b-new{background:var(--pink);color:#fff}
+  /* TEST ONLY - remove before prod */
+  .upd{display:block;font-size:.75rem;color:var(--muted);margin-top:6px}
   .play{flex:0 0 auto;background:var(--pink-deep);color:#fff;font-weight:800;
         font-size:.95rem;padding:11px 22px;border-radius:999px;
         box-shadow:0 4px 12px rgba(224,84,139,.4)}
@@ -123,6 +125,7 @@
       <p>Defend the cozy mushroom forest from grumbly critters in this tower-defense adventure.</p>
       <div class="badges"><span class="badge b-solo">Solo</span><span class="badge b-new">New</span></div>
     </div>
+    <!-- TEST ONLY - remove before prod --><span class="upd" data-ts="2026-09-26T02:44:49Z"></span>
     <span class="play">Play</span>
   </a>
 
@@ -137,6 +140,7 @@
       <p>Unscramble the letters before time runs out.</p>
       <div class="badges"><span class="badge b-party">Party</span></div>
     </div>
+    <!-- TEST ONLY - remove before prod --><span class="upd" data-ts="2026-09-25T07:38:16Z"></span>
     <span class="play">Play</span>
   </a>
 
@@ -152,6 +156,7 @@
       <p>Vote on silly questions about your friends and family.</p>
       <div class="badges"><span class="badge b-party">Party</span></div>
     </div>
+    <!-- TEST ONLY - remove before prod --><span class="upd" data-ts="2026-09-24T13:38:05Z"></span>
     <span class="play">Play</span>
   </a>
   <a class="card" data-tags="party new" href="https://rynaing.github.io/game-night/">
@@ -165,6 +170,7 @@
       <p>Race to solve each problem &mdash; fastest correct answer scores the most.</p>
       <div class="badges"><span class="badge b-party">Party</span><span class="badge b-new">New</span></div>
     </div>
+    <!-- TEST ONLY - remove before prod --><span class="upd" data-ts="2026-09-26T02:55:33Z"></span>
     <span class="play">Play</span>
   </a>
   <a class="card" data-tags="party new" href="https://rynaing.github.io/game-night/">
@@ -180,6 +186,7 @@
       <p>Estimate wild quantities &mdash; closest guess without going over wins.</p>
       <div class="badges"><span class="badge b-party">Party</span><span class="badge b-new">New</span></div>
     </div>
+    <!-- TEST ONLY - remove before prod --><span class="upd" data-ts="2026-09-26T02:57:26Z"></span>
     <span class="play">Play</span>
   </a>
 
@@ -201,6 +208,21 @@
         c.style.display=(f==='all'||tags.indexOf(f)>-1)?'':'none';
       });
     });
+  });
+})();
+</script>
+<!-- TEST ONLY - remove before prod -->
+<script>
+(function(){
+  function rel(ts){
+    var s=Math.max(0,Math.floor((Date.now()-new Date(ts).getTime())/1000));
+    if(s<60) return "just now";
+    var m=Math.floor(s/60); if(m<60) return m+"m ago";
+    var h=Math.floor(m/60); if(h<24) return h+"h ago";
+    var d=Math.floor(h/24); return d+"d ago";
+  }
+  document.querySelectorAll('.upd').forEach(function(el){
+    el.textContent="updated "+rel(el.getAttribute('data-ts'));
   });
 })();
 </script>
