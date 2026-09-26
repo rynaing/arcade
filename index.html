@@ -22,7 +22,16 @@
       var(--cream);
     color:var(--ink); min-height:100vh;
   }
-  .wrap{max-width:640px;margin:0 auto;padding:36px 20px 60px}
+  .wrap{max-width:980px;margin:0 auto;padding:36px 20px 60px}
+  .layout{display:flex;gap:30px;align-items:flex-start}
+  aside.filters{flex:0 0 168px;position:sticky;top:24px}
+  .filters h3{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin:26px 0 12px}
+  .fbtn{display:block;width:100%;text-align:left;background:#fff;border:2px solid transparent;border-radius:14px;
+        padding:10px 14px;margin-bottom:8px;font:inherit;font-weight:700;color:var(--ink);cursor:pointer;
+        box-shadow:0 4px 12px rgba(90,70,110,.08)}
+  .fbtn:hover{border-color:#f0e4d4}
+  .fbtn.active{border-color:var(--pink);color:var(--pink-deep)}
+  main.games{flex:1;min-width:0}
   header{text-align:center;margin-bottom:28px}
   .logo{width:84px;height:84px;margin:0 auto 10px;filter:drop-shadow(0 6px 10px rgba(224,84,139,.25))}
   h1{font-size:2.4rem;letter-spacing:-1px;color:#4a3a5e}
@@ -39,7 +48,6 @@
         box-shadow:0 6px 18px rgba(90,70,110,.10);
         transition:transform .15s ease, box-shadow .15s ease}
   .card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(90,70,110,.16)}
-  .card.featured{border-color:var(--pink);background:linear-gradient(180deg,#fff,#fff5f9)}
   .art{flex:0 0 64px;width:64px;height:64px;border-radius:18px;
         display:flex;align-items:center;justify-content:center}
   .info{flex:1;min-width:0}
@@ -57,6 +65,13 @@
   .card:hover .play{background:var(--pink)}
   footer{text-align:center;color:var(--muted);font-size:.85rem;margin-top:34px;line-height:1.7}
   footer .shrooms{font-size:1.3rem;letter-spacing:6px}
+  @media (max-width:700px){
+    .layout{display:block}
+    aside.filters{position:static;display:flex;gap:8px;overflow-x:auto;margin:0 0 4px;padding-bottom:4px}
+    .filters h3{display:none}
+    .fbtn{width:auto;white-space:nowrap;margin-bottom:0}
+    .section-label{margin-top:18px}
+  }
   @media (max-width:480px){
     h1{font-size:1.9rem}
     .play{padding:9px 16px;font-size:.85rem}
@@ -84,9 +99,18 @@
     <p class="tagline">by Ryan Naing</p>
   </header>
 
-  <div class="section-label">Start playing</div>
+  <div class="layout">
+    <aside class="filters" aria-label="Filter games">
+      <h3>Filter</h3>
+      <button class="fbtn active" data-filter="all">All games</button>
+      <button class="fbtn" data-filter="solo">Solo</button>
+      <button class="fbtn" data-filter="party">Party</button>
+      <button class="fbtn" data-filter="new">New</button>
+    </aside>
+    <main class="games">
+      <div class="section-label">Start playing</div>
 
-  <a class="card featured" href="./berrybrook.html">
+  <a class="card" data-tags="solo new" href="./berrybrook.html">
     <div class="art" style="background:linear-gradient(135deg,#ffe3ef,#ffd166)">
       <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
         <path d="M50 12 12 44h10v34a6 6 0 0 0 6 6h44a6 6 0 0 0 6-6V44h10L50 12z" fill="#ff7ba9"/>
@@ -103,7 +127,7 @@
     <span class="play">Play</span>
   </a>
 
-  <a class="card featured" href="./swordplay-isle.html">
+  <a class="card" data-tags="solo new" href="./swordplay-isle.html">
     <div class="art" style="background:linear-gradient(135deg,#bfe3ff,#7fb6e8)">
       <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
         <path d="M22 78 66 34" stroke="#5a6b7a" stroke-width="7" stroke-linecap="round"/>
@@ -121,7 +145,7 @@
     <span class="play">Play</span>
   </a>
 
-  <a class="card featured" href="./mossbell-grove.html">
+  <a class="card" data-tags="solo new" href="./mossbell-grove.html">
     <div class="art" style="background:linear-gradient(135deg,#ffd9e8,#cdb4f2)">
       <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
         <path d="M50 8C28 8 12 26 12 44c0 5 4 8 9 8h58c5 0 9-3 9-8C88 26 72 8 50 8z" fill="#ff7ba9"/>
@@ -137,7 +161,7 @@
     <span class="play">Play</span>
   </a>
 
-  <a class="card" href="https://rynaing.github.io/game-night/">
+  <a class="card" data-tags="party" href="https://rynaing.github.io/game-night/">
     <div class="art" style="background:linear-gradient(135deg,#ffe9b8,#ffb35d)">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="12" cy="12" r="9" stroke="#b36a00" stroke-width="2.4"/>
@@ -153,7 +177,7 @@
     <span class="play">Play</span>
   </a>
 
-  <a class="card" href="https://rynaing.github.io/game-night/">
+  <a class="card" data-tags="party solo" href="https://rynaing.github.io/game-night/">
     <div class="art" style="background:linear-gradient(135deg,#c8f0d4,#7fd6a4)">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="3" y="3" width="8" height="8" rx="2" fill="#237a44"/>
@@ -170,7 +194,7 @@
     <span class="play">Play</span>
   </a>
 
-  <a class="card" href="https://rynaing.github.io/game-night/">
+  <a class="card" data-tags="party" href="https://rynaing.github.io/game-night/">
     <div class="art" style="background:linear-gradient(135deg,#d6e9ff,#8fb8f5)">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M4 7h16M4 12h16M4 17h10" stroke="#2b4d9e" stroke-width="2.6" stroke-linecap="round"/>
@@ -184,7 +208,7 @@
     <span class="play">Play</span>
   </a>
 
-  <a class="card" href="https://rynaing.github.io/game-night/">
+  <a class="card" data-tags="party" href="https://rynaing.github.io/game-night/">
     <div class="art" style="background:linear-gradient(135deg,#f3d9ff,#c99df5)">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="8" cy="8" r="4" fill="#6a3fb5"/>
@@ -199,11 +223,31 @@
     <span class="play">Play</span>
   </a>
 
+    </main>
+  </div>
+
   <footer>
     <div class="shrooms">🍄🌿🍄</div>
     Made with love in the Mossbell Grove
   </footer>
 
 </div>
+<script>
+(function(){
+  var btns=[].slice.call(document.querySelectorAll('.fbtn'));
+  var cards=[].slice.call(document.querySelectorAll('.card'));
+  btns.forEach(function(b){
+    b.addEventListener('click',function(){
+      btns.forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+      var f=b.getAttribute('data-filter');
+      cards.forEach(function(c){
+        var tags=(c.getAttribute('data-tags')||'').split(' ');
+        c.style.display=(f==='all'||tags.indexOf(f)>-1)?'':'none';
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>
