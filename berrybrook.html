@@ -6,8 +6,8 @@
 <title>Berrybrook — a cozy little world</title>
 <style>
 /* ============================================================
-   BERRYBROOK — an original kid-friendly virtual world game
-   All art is inline CSS/SVG, all music is WebAudio-generated.
+   BERRYBROOK — an original cozy virtual world game.
+   All characters, names, dialogue, and art are original.
    No external assets, no libraries, no backend.
    ============================================================ */
 :root{
@@ -24,30 +24,28 @@ body{
   color:var(--ink); touch-action:manipulation; user-select:none; -webkit-user-select:none;
   min-height:100vh; display:flex; flex-direction:column;
 }
-
-/* ---------- Top bar (coins, buddy, music, reset) ---------- */
+/* ---------- Top bar ---------- */
 #topbar{
-  display:flex; align-items:center; gap:10px; padding:8px 12px;
-  background:rgba(255,255,255,.85); backdrop-filter:blur(4px);
+  display:flex; align-items:center; gap:8px; padding:8px 10px;
+  background:rgba(255,255,255,.88); backdrop-filter:blur(4px);
   border-bottom:3px solid var(--pink); position:sticky; top:0; z-index:50;
 }
 #topbar.hidden{display:none;}
 #coin-purse{
   display:flex; align-items:center; gap:6px; background:var(--lemon);
-  border:2px solid var(--gold); border-radius:999px; padding:6px 14px;
-  font-weight:bold; font-size:18px; min-height:44px;
+  border:2px solid var(--gold); border-radius:999px; padding:6px 12px;
+  font-weight:bold; font-size:17px; min-height:44px; cursor:pointer;
 }
-#buddy-chip{display:flex; align-items:center; gap:8px; font-weight:bold; font-size:16px;}
-#buddy-chip svg{width:40px;height:56px;}
+#buddy-chip{display:flex; align-items:center; gap:6px; font-weight:bold; font-size:15px;}
+#buddy-chip svg{width:34px;height:48px;}
 .spacer{flex:1;}
 .icon-btn{
   min-width:44px; min-height:44px; border-radius:14px; border:2px solid var(--lav);
   background:#fff; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center;
 }
 .icon-btn:active{transform:scale(.93);}
-#reset-link{font-size:12px; color:var(--ink-soft); background:none; border:none; text-decoration:underline; cursor:pointer; padding:10px;}
-
-/* ---------- Screens & transitions ---------- */
+#reset-link{font-size:11px; color:var(--ink-soft); background:none; border:none; text-decoration:underline; cursor:pointer; padding:8px;}
+/* ---------- Screens ---------- */
 main{flex:1; position:relative; overflow:hidden;}
 .screen{
   display:none; position:absolute; inset:0; overflow-y:auto; padding:16px 14px 90px;
@@ -57,12 +55,11 @@ main{flex:1; position:relative; overflow:hidden;}
 @keyframes screenIn{from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:none;}}
 .scene-card{
   background:var(--card); border-radius:24px; border:3px solid #fff;
-  box-shadow:0 6px 0 rgba(0,0,0,.06); padding:18px; max-width:640px; margin:0 auto;
+  box-shadow:0 6px 0 rgba(0,0,0,.06); padding:18px; max-width:680px; margin:0 auto 14px;
 }
-h1{font-size:30px; margin:6px 0 12px; text-align:center; color:var(--berry-dark);}
-h2{font-size:22px; margin:8px 0; color:var(--berry-dark);}
+h1{font-size:28px; margin:6px 0 10px; text-align:center; color:var(--berry-dark);}
+h2{font-size:21px; margin:8px 0; color:var(--berry-dark);}
 p.hint{text-align:center; color:var(--ink-soft); font-size:15px; margin:6px 0 14px;}
-
 /* ---------- Buttons ---------- */
 .btn{
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
@@ -75,466 +72,324 @@ p.hint{text-align:center; color:var(--ink-soft); font-size:15px; margin:6px 0 14
 .btn.green:active{box-shadow:0 1px 0 #3d8b40;}
 .btn.gold{background:var(--gold); box-shadow:0 4px 0 #c98a1e; color:#5a3d00;}
 .btn.gold:active{box-shadow:0 1px 0 #c98a1e;}
+.btn.small{min-height:44px; padding:8px 18px; font-size:15px;}
 .btn:disabled{opacity:.5; cursor:default;}
-.back-row{display:flex; justify-content:center; margin-top:18px;}
+.back-row{display:flex; justify-content:center; margin-top:18px; gap:10px; flex-wrap:wrap;}
 .option-grid{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:10px 0;}
 .pick{
-  min-width:52px; min-height:52px; border-radius:16px; border:3px solid #e8e2f2;
-  background:#fff; cursor:pointer; font-size:15px; font-weight:bold; font-family:inherit;
-  padding:8px 12px; color:var(--ink);
+  min-width:52px; min-height:52px; padding:10px 14px; border-radius:16px;
+  border:3px solid #eee; background:#fafafa; font-size:16px; font-weight:bold;
+  font-family:inherit; color:var(--ink); cursor:pointer;
 }
-.pick.selected{border-color:var(--berry); background:var(--pink); box-shadow:0 0 0 3px var(--pink);}
-.swatch{width:52px; height:52px; padding:0;}
-.creator-section{margin:14px 0; text-align:center;}
-.creator-section h3{margin:6px 0; font-size:17px; color:var(--ink-soft);}
-#avatar-preview{display:flex; justify-content:center; margin:8px 0;}
-#avatar-preview svg{width:120px; height:168px; filter:drop-shadow(0 4px 0 rgba(0,0,0,.08));}
-#buddy-name{
-  font-size:20px; padding:12px 16px; border-radius:16px; border:3px solid var(--lav);
-  width:80%; max-width:320px; text-align:center; font-family:inherit; min-height:52px;
-}
-
+.pick.selected{border-color:var(--berry); background:var(--pink);}
+.pick.swatch{width:52px; height:52px; padding:0;}
 /* ---------- Town map ---------- */
-#town-map{position:relative; max-width:640px; margin:0 auto;}
-.map-loc{
-  position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center;
-  background:none; border:none; cursor:pointer; font-family:inherit; padding:8px;
+.town-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:680px; margin:0 auto;}
+@media (max-width:480px){.town-grid{grid-template-columns:repeat(2,1fr);}}
+.town-bldg{
+  background:#fff; border:3px solid #fff; border-radius:20px; padding:12px 6px;
+  box-shadow:0 4px 0 rgba(0,0,0,.06); cursor:pointer; text-align:center; font-family:inherit;
 }
-.map-loc .pin{
-  width:72px; height:72px; border-radius:50%; background:#fff; border:4px solid var(--berry);
-  display:flex; align-items:center; justify-content:center; font-size:34px;
-  box-shadow:0 4px 0 rgba(0,0,0,.1);
-}
-.map-loc:active .pin{transform:scale(.92);}
-.map-loc .lbl{
-  margin-top:6px; background:#fff; border-radius:999px; padding:4px 12px;
-  font-weight:bold; font-size:14px; border:2px solid var(--lav); white-space:nowrap;
-}
-
-/* ---------- Scene art & NPCs ---------- */
-.scene-art{border-radius:18px; overflow:hidden; margin-bottom:12px; position:relative;}
-.scene-art svg{display:block; width:100%; height:auto;}
-.npc{
-  position:absolute; transform:translate(-50%,-100%); background:none; border:none; cursor:pointer; padding:6px;
-}
-.npc .npc-face{
-  width:64px; height:64px; border-radius:50%; border:4px solid #fff; display:flex;
-  align-items:center; justify-content:center; font-size:36px; background:var(--peach);
-  box-shadow:0 3px 0 rgba(0,0,0,.12);
-}
-.npc:active .npc-face{transform:scale(.9);}
-.npc .npc-name{
-  margin-top:4px; background:#fff; border-radius:999px; padding:2px 10px; font-size:13px;
-  font-weight:bold; border:2px solid var(--lav); white-space:nowrap;
-}
-.hidden-kite{position:absolute; background:none; border:none; cursor:pointer; padding:10px; opacity:.9;}
-
-/* ---------- Speech bubble ---------- */
-#speech{
-  position:fixed; left:50%; transform:translateX(-50%) translateY(-8px); top:76px; z-index:80;
-  background:#fff; border:3px solid var(--berry); border-radius:18px; padding:12px 18px;
-  font-size:17px; font-weight:bold; max-width:88%; text-align:center; opacity:0; pointer-events:none;
-  transition:opacity .2s, transform .2s; box-shadow:0 6px 0 rgba(0,0,0,.08);
-}
-#speech.show{opacity:1; transform:translateX(-50%) translateY(0);}
-#speech .who{color:var(--berry-dark); font-size:14px; display:block; margin-bottom:2px;}
-
+.town-bldg:active{transform:scale(.96);}
+.town-bldg .emoji{font-size:38px; display:block; margin-bottom:4px;}
+.town-bldg .nm{font-weight:bold; font-size:14px; color:var(--ink);}
+.town-bldg .sub{font-size:11px; color:var(--ink-soft);}
+/* ---------- Stats ---------- */
+.stat-row{display:flex; align-items:center; gap:8px; margin:6px 0; font-size:14px;}
+.stat-row .lbl{width:78px; font-weight:bold;}
+.stat-bar{flex:1; height:14px; background:#eee; border-radius:99px; overflow:hidden;}
+.stat-bar i{display:block; height:100%; border-radius:99px; background:var(--grass-dark); transition:width .4s;}
+.stat-row .val{width:34px; text-align:right; font-weight:bold;}
+/* ---------- Shops ---------- */
+.shop-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
+@media (max-width:420px){.shop-grid{grid-template-columns:1fr;}}
+.shop-item{background:#faf7ff; border:2px solid var(--lav); border-radius:16px; padding:12px; text-align:center;}
+.shop-item .emoji{font-size:34px;}
+.shop-item .nm{font-weight:bold; margin:4px 0;}
+.shop-item .pr{color:var(--berry-dark); font-weight:bold;}
+.shop-item .fx{font-size:12px; color:var(--ink-soft); margin:4px 0 8px;}
+/* ---------- NPCs & dialogue ---------- */
+.npc-row{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:12px 0;}
+.npc-btn{background:#fff; border:3px solid var(--pink); border-radius:18px; padding:10px 14px;
+  font-family:inherit; font-size:15px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:8px;}
+.npc-btn .emoji{font-size:28px;}
+#dialog-modal{position:fixed; inset:0; background:rgba(60,40,70,.45); display:none; align-items:flex-end; justify-content:center; z-index:100; padding:16px;}
+#dialog-modal.open{display:flex;}
+.dialog-box{background:#fff; border-radius:22px; border:3px solid var(--pink); max-width:520px; width:100%;
+  padding:18px; animation:screenIn .25s ease;}
+.dialog-box .who{font-weight:bold; color:var(--berry-dark); font-size:18px; margin-bottom:6px;}
+.dialog-box .txt{font-size:16px; line-height:1.5; min-height:48px;}
+.dialog-box .row{display:flex; justify-content:flex-end; gap:10px; margin-top:12px;}
 /* ---------- Toast ---------- */
 #toast{
-  position:fixed; left:50%; transform:translateX(-50%) translateY(20px); bottom:26px; z-index:90;
-  background:var(--ink); color:#fff; border-radius:999px; padding:12px 24px; font-size:16px; font-weight:bold;
-  opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; max-width:92%; text-align:center;
+  position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(80px);
+  background:var(--ink); color:#fff; padding:12px 22px; border-radius:999px; font-weight:bold;
+  font-size:15px; z-index:200; transition:transform .3s ease; max-width:92vw; text-align:center;
 }
-#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
-
-/* ---------- Arcade games ---------- */
-.game-card{background:var(--lav); border-radius:18px; padding:16px; margin:12px 0; text-align:center;}
-.game-card h3{margin:4px 0 8px; font-size:20px;}
-#rope-area{display:none; text-align:center;}
-#rope-track{
-  position:relative; width:90px; height:320px; margin:12px auto; background:linear-gradient(180deg,#bfe3ff,#e8f7ff);
-  border:4px solid #8fb8dd; border-radius:16px; overflow:hidden;
+#toast.show{transform:translateX(-50%) translateY(0);}
+/* ---------- House ---------- */
+#house-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; max-width:420px; margin:12px auto;}
+.house-cell{aspect-ratio:1; background:#f6f1e7; border:2px dashed #d9cba8; border-radius:14px;
+  display:flex; align-items:center; justify-content:center; font-size:34px; cursor:pointer;}
+.house-cell.filled{border-style:solid; border-color:var(--gold); background:#fff8e8;}
+.inv-bar{display:flex; gap:8px; overflow-x:auto; padding:8px 2px; margin:8px 0;}
+.inv-item{flex:0 0 auto; background:#fff; border:2px solid var(--lav); border-radius:14px; padding:8px 10px;
+  font-size:14px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:6px;}
+.inv-item .emoji{font-size:24px;}
+.inv-item.selected{border-color:var(--berry); background:var(--pink);}
+/* ---------- Arcade / games ---------- */
+.game-cat{font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; color:var(--ink-soft); margin:18px 4px 8px;}
+.game-list{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
+@media (max-width:420px){.game-list{grid-template-columns:1fr;}}
+.game-card{background:#fff; border:3px solid #fff; border-radius:20px; padding:14px; cursor:pointer;
+  box-shadow:0 4px 0 rgba(0,0,0,.06); text-align:center; font-family:inherit;}
+.game-card:active{transform:scale(.97);}
+.game-card .emoji{font-size:36px;}
+.game-card .nm{font-weight:bold; font-size:16px; margin:4px 0;}
+.game-card .ds{font-size:12px; color:var(--ink-soft);}
+.game-card .best{font-size:12px; color:var(--berry-dark); font-weight:bold; margin-top:4px;}
+#game-area{margin:12px 0; min-height:200px;}
+canvas.game-canvas{display:block; margin:0 auto; background:#eef7ff; border-radius:16px; border:3px solid #fff;
+  box-shadow:0 4px 0 rgba(0,0,0,.06); touch-action:none; max-width:100%;}
+.big-tap{font-size:22px; padding:18px 40px;}
+.dpad{display:flex; gap:8px; justify-content:center; margin:10px 0;}
+.dpad button{min-width:56px; min-height:56px; font-size:24px; border-radius:16px; border:2px solid var(--lav); background:#fff; cursor:pointer;}
+.quiz-q{font-size:18px; font-weight:bold; margin:12px 0; text-align:center;}
+.quiz-opts{display:flex; flex-direction:column; gap:8px; max-width:420px; margin:0 auto;}
+.quiz-opts .pick{text-align:left;}
+/* ---------- Newspaper ---------- */
+.paper{background:#fffdf4; border:3px solid #e8dcc0; border-radius:8px; padding:20px; max-width:640px; margin:0 auto;
+  box-shadow:0 6px 0 rgba(0,0,0,.06);}
+.paper h1{font-family:Georgia,serif; letter-spacing:1px; border-bottom:3px double var(--ink); padding-bottom:8px;}
+.paper .dateline{text-align:center; color:var(--ink-soft); font-size:13px; margin-bottom:12px;}
+.paper h3{font-size:18px; margin:14px 0 4px; color:var(--ink);}
+.paper p{font-size:14px; line-height:1.55;}
+/* ---------- Misc ---------- */
+.mail-item{background:#f6f1ff; border:2px solid var(--lav); border-radius:14px; padding:10px 12px; margin:8px 0; font-size:14px;}
+.mail-item .from{font-weight:bold; color:var(--berry-dark);}
+.book{background:#fff; border:2px solid var(--gold); border-radius:14px; padding:12px; margin:8px 0; cursor:pointer;}
+.book .t{font-weight:bold; font-size:16px;}
+.book.done{opacity:.65;}
+.exhibit{background:#f4f9ff; border:2px solid var(--sky); border-radius:14px; padding:12px; margin:8px 0;}
+.exhibit .t{font-weight:bold;}
+.quest{background:#f2fbf2; border:2px solid var(--grass); border-radius:14px; padding:12px; margin:8px 0;}
+.quest .t{font-weight:bold;}
+.quest.done{opacity:.6;}
+.quest .prog{font-size:13px; color:var(--ink-soft);}
+.trophy-case{display:flex; flex-wrap:wrap; gap:8px; justify-content:center;}
+.trophy{background:var(--lemon); border:2px solid var(--gold); border-radius:14px; padding:8px 12px; font-size:13px; font-weight:bold;}
+.profile-row{display:flex; gap:8px; align-items:center; margin:8px 0; font-size:15px;}
+.profile-row select, .text-input{
+  font-family:inherit; font-size:16px; padding:10px 12px; border-radius:12px; border:2px solid var(--lav); background:#fff; color:var(--ink);
 }
-#rope-line{position:absolute; left:50%; top:0; bottom:0; width:6px; background:#a9805e; transform:translateX(-50%);}
-#rope-buddy{position:absolute; left:50%; transform:translateX(-50%); font-size:34px; transition:bottom .3s;}
-#rope-marker{
-  position:absolute; left:4px; right:4px; height:26px; border-radius:10px; background:var(--berry);
-  border:3px solid #fff; box-shadow:0 2px 0 rgba(0,0,0,.15);
-}
-#rope-zone{position:absolute; left:4px; right:4px; border-radius:10px; background:rgba(92,184,92,.45); border:3px dashed #2f7d32;}
-#rope-progress{font-size:20px; font-weight:bold; margin:8px 0;}
-#memory-area{display:none;}
-#memory-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:420px; margin:12px auto;}
-.mcard{
-  aspect-ratio:1; border:none; border-radius:16px; cursor:pointer; font-size:0; padding:0;
-  background:linear-gradient(135deg,var(--berry),var(--berry-dark)); position:relative;
-  box-shadow:0 4px 0 rgba(0,0,0,.12); min-height:44px;
-}
-.mcard .face{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; border-radius:16px;}
-.mcard .front{background:linear-gradient(135deg,var(--berry),var(--berry-dark)); color:#fff; font-size:30px;}
-.mcard .backB{background:#fff; transform:rotateY(90deg);}
-.mcard.flipped .front{transform:rotateY(90deg);}
-.mcard.flipped .backB{transform:rotateY(0);}
-.mcard .face{transition:transform .25s;}
-.mcard.matched{outline:4px solid var(--gold); cursor:default;}
-.mcard svg{width:52%; height:52%;}
-
-/* ---------- Store & house ---------- */
-.shop-item{
-  display:flex; align-items:center; gap:14px; background:#fff; border:3px solid var(--peach);
-  border-radius:18px; padding:10px 14px; margin:10px 0;
-}
-.shop-item svg{width:64px; height:64px; flex:none;}
-.shop-item .info{flex:1;}
-.shop-item .info b{font-size:17px;}
-.shop-item .price{font-weight:bold; color:#8a6d00; font-size:16px;}
-#house-grid{
-  display:grid; grid-template-columns:repeat(4,1fr); gap:8px; max-width:440px; margin:12px auto;
-  background:#f3e9d2; border:6px solid #d9b98a; border-radius:14px; padding:10px;
-}
-.cell{
-  aspect-ratio:1; border:2px dashed #c8a86b; border-radius:10px; background:rgba(255,255,255,.5);
-  cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; min-height:44px;
-}
-.cell svg{width:88%; height:88%;}
-.cell:active{transform:scale(.95);}
-#inventory-bar{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:10px 0; min-height:70px;}
-.inv-item{
-  width:64px; height:64px; border-radius:14px; border:3px solid var(--lav); background:#fff; cursor:pointer; padding:4px;
-}
-.inv-item svg{width:100%; height:100%;}
-.inv-item.selected{border-color:var(--berry); background:var(--pink); box-shadow:0 0 0 3px var(--pink);}
-.inv-empty{color:var(--ink-soft); font-style:italic;}
-
-/* ---------- Quest board ---------- */
-.quest{
-  display:flex; gap:12px; align-items:flex-start; background:#fff; border:3px solid var(--lemon);
-  border-radius:16px; padding:12px; margin:10px 0;
-}
-.quest .stamp{
-  flex:none; width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-  font-size:26px; border:3px dashed #c9bfa5; color:#c9bfa5; background:#faf7ef;
-}
-.quest.done .stamp{border:3px solid var(--grass-dark); color:#fff; background:var(--grass-dark);}
-.quest .qtext{flex:1;}
-.quest .qtext b{font-size:16px;}
-.quest .qreward{font-size:14px; color:#8a6d00; font-weight:bold;}
-.quest.done{opacity:.85; border-color:var(--grass-dark);}
-#quest-board-wrap{display:none;}
-
-/* ---------- Confetti (CSS only) ---------- */
-.confetti{position:fixed; top:-20px; z-index:99; pointer-events:none; animation:fall linear forwards;}
-@keyframes fall{to{transform:translateY(110vh) rotate(720deg);}}
-
-@media (max-width:420px){
-  h1{font-size:24px;}
-  #buddy-chip span.bname{display:none;}
-}
+.text-input{width:100%; max-width:300px;}
+input[type=number].text-input{max-width:140px;}
+hr.soft{border:none; border-top:2px dashed #eee; margin:14px 0;}
+.hidden{display:none !important;}
+.center{text-align:center;}
+.mt{margin-top:14px;}
 </style>
 </head>
 <body>
-
-<!-- ======= TOP BAR ======= -->
-<header id="topbar" class="hidden">
-  <div id="coin-purse" title="Your Berry Coins">🫐 <span id="coin-count">0</span></div>
-  <div id="buddy-chip"><span id="buddy-avatar"></span><span class="bname" id="buddy-name-top"></span></div>
+<div id="topbar" class="hidden">
+  <div id="buddy-chip"><span id="buddy-avatar"></span><span id="buddy-name-top"></span></div>
   <div class="spacer"></div>
-  <button id="music-toggle" class="icon-btn" title="Music on/off" aria-label="Toggle music">🎵</button>
-  <button id="reset-link" title="Start over">start over</button>
-</header>
+  <div id="coin-purse" title="Your Berry Coins">🪙 <span id="coin-count">0</span></div>
+  <button class="icon-btn" id="stats-btn" title="My stats" aria-label="My stats">💪</button>
+  <button class="icon-btn" id="music-toggle" title="Music on/off" aria-label="Music on/off">🎵</button>
+  <button id="reset-link">reset</button>
+</div>
 
 <main>
-<!-- ======= SCREEN: AVATAR CREATOR ======= -->
-<section id="screen-creator" class="screen">
-  <div class="scene-card">
-    <h1>🫐 Welcome to Berrybrook!</h1>
-    <p class="hint">First, let's make your buddy — the little friend who'll explore Berrybrook with you.</p>
-    <div id="avatar-preview"></div>
-
-    <div class="creator-section"><h3>Skin tone</h3><div class="option-grid" id="pick-skin"></div></div>
-    <div class="creator-section"><h3>Hair style</h3><div class="option-grid" id="pick-hair"></div></div>
-    <div class="creator-section"><h3>Hair color</h3><div class="option-grid" id="pick-haircolor"></div></div>
-    <div class="creator-section"><h3>Shirt color</h3><div class="option-grid" id="pick-shirt"></div></div>
-    <div class="creator-section"><h3>Pants color</h3><div class="option-grid" id="pick-pants"></div></div>
-
-    <div class="creator-section">
-      <h3>Buddy's name</h3>
-      <input id="buddy-name" maxlength="16" placeholder="e.g. Pip" autocomplete="off">
+  <!-- Welcome / creator -->
+  <section class="screen" id="screen-welcome">
+    <div class="scene-card center">
+      <div style="font-size:64px;">🌳🫐🏠</div>
+      <h1>Welcome to Berrybrook!</h1>
+      <p class="hint">A cozy little town where you can make a buddy, play games, earn Berry Coins, adopt a pet, decorate a house, and read the town newspaper.</p>
+      <button class="btn" id="to-creator">Make my buddy ✨</button>
     </div>
-    <div style="text-align:center; margin-top:16px;">
-      <button class="btn green" id="start-adventure">Start my adventure! 🌈</button>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- ======= SCREEN: TOWN MAP ======= -->
-<section id="screen-town" class="screen">
-  <div class="scene-card" style="text-align:center;">
-    <h1>Berrybrook Town Map</h1>
-    <p class="hint">Tap a place to visit it!</p>
-  </div>
-  <div id="town-map">
-    <svg viewBox="0 0 640 560" style="width:100%; height:auto; border-radius:20px;" aria-hidden="true">
-      <rect width="640" height="560" rx="20" fill="#bfe8c0"/>
-      <ellipse cx="320" cy="480" rx="300" ry="80" fill="#a5dba8"/>
-      <path d="M120 60 Q 200 140 160 240 T 200 420" stroke="#e8d8a8" stroke-width="44" fill="none" stroke-linecap="round"/>
-      <path d="M160 240 Q 320 240 470 200" stroke="#e8d8a8" stroke-width="44" fill="none" stroke-linecap="round"/>
-      <ellipse cx="500" cy="430" rx="110" ry="70" fill="#9fd0f5"/>
-      <ellipse cx="500" cy="430" rx="86" ry="52" fill="#bfe0fa"/>
-      <g><rect x="250" y="120" width="70" height="50" rx="6" fill="#fff"/><polygon points="250,120 285,95 320,120" fill="#e2548b"/><rect x="278" y="140" width="16" height="30" fill="#a9805e"/></g>
-      <g><rect x="380" y="300" width="80" height="55" rx="6" fill="#fff"/><polygon points="380,300 420,270 460,300" fill="#7c5cd6"/><circle cx="420" cy="325" r="10" fill="#ffe08a"/></g>
-      <g><rect x="90" y="330" width="70" height="50" rx="6" fill="#fff"/><polygon points="90,330 125,305 160,330" fill="#5cb85c"/><rect x="118" y="350" width="14" height="30" fill="#a9805e"/></g>
-      <g><circle cx="140" cy="120" r="26" fill="#7ccf7c"/><rect x="134" y="140" width="12" height="26" fill="#8a6239"/></g>
-      <g><circle cx="540" cy="110" r="30" fill="#7ccf7c"/><rect x="533" y="134" width="14" height="30" fill="#8a6239"/></g>
-      <g><circle cx="470" cy="90" r="20" fill="#8fd694"/><rect x="464" y="106" width="12" height="24" fill="#8a6239"/></g>
-      <g fill="#fff"><circle cx="120" cy="80" r="22"/><circle cx="145" cy="72" r="18"/><circle cx="100" cy="74" r="16"/></g>
-      <g fill="#fff"><circle cx="520" cy="200" r="20"/><circle cx="543" cy="193" r="16"/></g>
-    </svg>
-    <button class="map-loc" data-goto="square" style="left:50%; top:27%;"><span class="pin">⛲</span><span class="lbl">Town Square</span></button>
-    <button class="map-loc" data-goto="arcade" style="left:66%; top:62%;"><span class="pin">🕹️</span><span class="lbl">Arcade</span></button>
-    <button class="map-loc" data-goto="house" style="left:25%; top:68%;"><span class="pin">🏠</span><span class="lbl">My House</span></button>
-    <button class="map-loc" data-goto="store" style="left:38%; top:47%;"><span class="pin">🏪</span><span class="lbl">General Store</span></button>
-    <button class="map-loc" data-goto="lake" style="left:78%; top:80%;"><span class="pin">🌊</span><span class="lbl">Lake</span></button>
-  </div>
-</section>
+  <section class="screen" id="screen-creator">
+    <div class="scene-card">
+      <h1>Make your buddy</h1>
+      <p class="hint">This is you in Berrybrook!</p>
+      <div class="center" id="avatar-preview"></div>
+      <div class="center mt"><input class="text-input" id="buddy-name" maxlength="16" placeholder="Buddy name (e.g. Pip)"></div>
+      <h2 class="center">Skin</h2><div class="option-grid" id="pick-skin"></div>
+      <h2 class="center">Hair style</h2><div class="option-grid" id="pick-hair"></div>
+      <h2 class="center">Hair color</h2><div class="option-grid" id="pick-haircolor"></div>
+      <h2 class="center">Shirt</h2><div class="option-grid" id="pick-shirt"></div>
+      <h2 class="center">Pants</h2><div class="option-grid" id="pick-pants"></div>
+      <div class="center mt"><button class="btn green" id="start-adventure">Move to Berrybrook! 🏡</button></div>
+    </div>
+  </section>
 
-<!-- ======= SCREEN: TOWN SQUARE ======= -->
-<section id="screen-square" class="screen">
-  <div class="scene-card">
-    <h1>Town Square</h1>
-    <div class="scene-art">
-      <svg viewBox="0 0 600 300" aria-hidden="true">
-        <rect width="600" height="300" fill="#cfe8ff"/>
-        <rect y="200" width="600" height="100" fill="#a5dba8"/>
-        <g fill="#fff"><ellipse cx="120" cy="60" rx="40" ry="18"/><ellipse cx="480" cy="50" rx="46" ry="20"/></g>
-        <ellipse cx="300" cy="240" rx="90" ry="26" fill="#9fd0f5"/>
-        <ellipse cx="300" cy="236" rx="70" ry="18" fill="#bfe0fa"/>
-        <rect x="286" y="150" width="28" height="80" fill="#cfd6e4"/>
-        <ellipse cx="300" cy="150" rx="34" ry="14" fill="#dbe2f0"/>
-        <rect x="292" y="90" width="16" height="60" fill="#cfd6e4"/>
-        <circle cx="300" cy="84" r="10" fill="#9fd0f5"/>
-        <g><rect x="80" y="150" width="90" height="60" rx="8" fill="#fff"/><polygon points="80,150 125,120 170,150" fill="#e2548b"/><rect x="115" y="175" width="20" height="35" fill="#a9805e"/><circle cx="125" cy="140" r="9" fill="#ffe08a"/></g>
-        <g><rect x="430" y="150" width="90" height="60" rx="8" fill="#fff"/><polygon points="430,150 475,120 520,150" fill="#7c5cd6"/><rect x="465" y="175" width="20" height="35" fill="#a9805e"/></g>
-        <g><circle cx="200" cy="230" r="18" fill="#ff9ec4"/><circle cx="400" cy="235" r="18" fill="#ffb3d9"/><circle cx="500" cy="240" r="14" fill="#ff9ec4"/></g>
-        <rect x="0" y="0" width="600" height="300" fill="none"/>
-      </svg>
-      <button class="npc" id="npc-marigold" style="left:50%; top:62%;"><span class="npc-face">🌼</span><span class="npc-name">Marigold</span></button>
+  <!-- Town map -->
+  <section class="screen" id="screen-town">
+    <div class="scene-card">
+      <h1>🌳 Berrybrook Town Map 🫐</h1>
+      <p class="hint">Tap a place to visit it. Earn Berry Coins by playing games!</p>
+      <div class="town-grid" id="town-grid"></div>
     </div>
-    <p class="hint">Say hi to Marigold the flower seller! Check the Quest Board for errands.</p>
-    <div style="text-align:center; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-      <button class="btn gold" id="open-quests">📋 Quest Board</button>
-    </div>
-    <div id="quest-board-wrap">
-      <h2>📋 Quest Board</h2>
-      <div id="quest-list"></div>
-    </div>
-    <div class="back-row"><button class="btn back-btn">🗺️ Back to Town</button></div>
-  </div>
-</section>
-
-<!-- ======= SCREEN: ARCADE ======= -->
-<section id="screen-arcade" class="screen">
-  <div class="scene-card">
-    <h1>Starlight Arcade</h1>
-    <div class="scene-art">
-      <svg viewBox="0 0 600 220" aria-hidden="true">
-        <rect width="600" height="220" fill="#3b2f5e"/>
-        <rect y="170" width="600" height="50" fill="#2c2347"/>
-        <g><rect x="60" y="60" width="90" height="110" rx="10" fill="#e2548b"/><rect x="72" y="74" width="66" height="50" rx="6" fill="#9fe8ff"/><circle cx="105" cy="150" r="10" fill="#fff"/></g>
-        <g><rect x="200" y="60" width="90" height="110" rx="10" fill="#7c5cd6"/><rect x="212" y="74" width="66" height="50" rx="6" fill="#fff3c4"/><circle cx="245" cy="150" r="10" fill="#fff"/></g>
-        <g><rect x="340" y="60" width="90" height="110" rx="10" fill="#5cb85c"/><rect x="352" y="74" width="66" height="50" rx="6" fill="#ffc4d6"/><circle cx="385" cy="150" r="10" fill="#fff"/></g>
-        <g><rect x="480" y="60" width="90" height="110" rx="10" fill="#f5b942"/><rect x="492" y="74" width="66" height="50" rx="6" fill="#cfe6ff"/><circle cx="525" cy="150" r="10" fill="#fff"/></g>
-        <g fill="#ffe08a"><circle cx="150" cy="30" r="4"/><circle cx="300" cy="22" r="4"/><circle cx="450" cy="34" r="4"/><circle cx="520" cy="26" r="4"/><circle cx="80" cy="26" r="4"/></g>
-      </svg>
-      <button class="npc" id="npc-dex" style="left:50%; top:88%;"><span class="npc-face">🤖</span><span class="npc-name">Dex</span></button>
-    </div>
-    <p class="hint">Dex runs the arcade. Win a game to earn Berry Coins!</p>
-
-    <div id="game-menu">
-      <div class="game-card">
-        <h3>🧗 Rope Climb</h3>
-        <p>Tap CLIMB when the pink marker is inside the green zone. 5 climbs wins!</p>
-        <button class="btn" data-game="rope">Play Rope Climb</button>
-      </div>
-      <div class="game-card">
-        <h3>🃏 Berry Match</h3>
-        <p>Flip the cards and match all 6 pairs!</p>
-        <button class="btn" data-game="memory">Play Berry Match</button>
+    <div class="scene-card" id="pet-widget" style="display:none;">
+      <h2 class="center">🐾 <span id="pet-widget-name"></span></h2>
+      <div class="center" style="font-size:52px;" id="pet-widget-emoji"></div>
+      <div class="stat-row"><span class="lbl">Happy</span><div class="stat-bar"><i id="pet-happy-bar"></i></div><span class="val" id="pet-happy-val"></span></div>
+      <div class="stat-row"><span class="lbl">Fed</span><div class="stat-bar"><i id="pet-fed-bar"></i></div><span class="val" id="pet-fed-val"></span></div>
+      <div class="center mt" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn small green" id="pet-feed">Feed 🍎</button>
+        <button class="btn small gold" id="pet-play">Play 🪀</button>
       </div>
     </div>
+  </section>
 
-    <div id="rope-area">
-      <h2>🧗 Rope Climb</h2>
-      <div id="rope-progress">Climbs: 0 / 5</div>
-      <div id="rope-track">
-        <div id="rope-line"></div>
-        <div id="rope-zone"></div>
-        <div id="rope-marker"></div>
-        <div id="rope-buddy">🧗</div>
-      </div>
-      <button class="btn green" id="rope-climb-btn" style="font-size:22px; padding:14px 44px;">CLIMB!</button>
-      <div style="margin-top:10px;"><button class="btn quit-game">Quit game</button></div>
+  <!-- Dynamic place screen -->
+  <section class="screen" id="screen-place">
+    <div class="scene-card" id="place-card"></div>
+    <div class="back-row"><button class="btn small back-btn">🗺️ Town map</button></div>
+  </section>
+
+  <!-- Shop screen -->
+  <section class="screen" id="screen-shop">
+    <div class="scene-card">
+      <h1 id="shop-title"></h1>
+      <p class="hint" id="shop-hint"></p>
+      <div class="shop-grid" id="shop-grid"></div>
     </div>
+    <div class="back-row"><button class="btn small back-btn">🗺️ Town map</button></div>
+  </section>
 
-    <div id="memory-area">
-      <h2>🃏 Berry Match</h2>
-      <p class="hint">Pairs found: <b id="memory-score">0</b> / 6</p>
-      <div id="memory-grid"></div>
-      <div style="margin-top:10px;"><button class="btn quit-game">Quit game</button></div>
+  <!-- House -->
+  <section class="screen" id="screen-house">
+    <div class="scene-card">
+      <h1>🏠 My House</h1>
+      <p class="hint">Pick furniture below, then tap a room square to place it. Tap placed furniture to pick it back up.</p>
+      <div class="inv-bar" id="house-inv"></div>
+      <div id="house-grid"></div>
     </div>
+    <div class="back-row"><button class="btn small back-btn">🗺️ Town map</button></div>
+  </section>
 
-    <div class="back-row"><button class="btn back-btn">🗺️ Back to Town</button></div>
-  </div>
-</section>
-
-<!-- ======= SCREEN: MY HOUSE ======= -->
-<section id="screen-house" class="screen">
-  <div class="scene-card">
-    <h1>My House</h1>
-    <div class="scene-art">
-      <svg viewBox="0 0 600 200" aria-hidden="true">
-        <rect width="600" height="200" fill="#ffe8c9"/>
-        <rect y="150" width="600" height="50" fill="#e8c9a0"/>
-        <rect x="230" y="30" width="140" height="120" fill="#fff" rx="8"/>
-        <polygon points="220,34 300,-6 380,34" fill="#e2548b"/>
-        <rect x="280" y="90" width="40" height="60" fill="#a9805e" rx="4"/>
-        <rect x="250" y="60" width="34" height="30" fill="#9fd0f5" rx="4"/>
-        <rect x="316" y="60" width="34" height="30" fill="#9fd0f5" rx="4"/>
-        <g><circle cx="120" cy="120" r="20" fill="#7ccf7c"/><rect x="114" y="134" width="12" height="24" fill="#8a6239"/></g>
-      </svg>
-      <button class="npc" id="npc-miso" style="left:30%; top:80%;"><span class="npc-face">🐱</span><span class="npc-name">Miso</span></button>
+  <!-- Arcade -->
+  <section class="screen" id="screen-arcade">
+    <div class="scene-card">
+      <h1>🕹️ Game Hall</h1>
+      <p class="hint">Games build your stats and earn Berry Coins. Beat the trophy score to win a trophy! 🏆</p>
+      <div id="arcade-list"></div>
     </div>
-    <p class="hint">Tap a moving-box item, then tap a floor square to place it. Tap placed furniture to pick it back up.</p>
-    <h2>📦 Moving box</h2>
-    <div id="inventory-bar"></div>
-    <h2>🛋️ My room</h2>
-    <div id="house-grid"></div>
-    <div class="back-row"><button class="btn back-btn">🗺️ Back to Town</button></div>
-  </div>
-</section>
+    <div class="back-row"><button class="btn small back-btn">🗺️ Town map</button></div>
+  </section>
 
-<!-- ======= SCREEN: GENERAL STORE ======= -->
-<section id="screen-store" class="screen">
-  <div class="scene-card">
-    <h1>Berry General Store</h1>
-    <div class="scene-art">
-      <svg viewBox="0 0 600 220" aria-hidden="true">
-        <rect width="600" height="220" fill="#ffe8c9"/>
-        <rect y="170" width="600" height="50" fill="#e8c9a0"/>
-        <rect x="170" y="50" width="260" height="120" rx="10" fill="#fff"/>
-        <rect x="150" y="30" width="300" height="34" rx="10" fill="#e2548b"/>
-        <rect x="180" y="86" width="60" height="44" fill="#9fd0f5" rx="6"/>
-        <rect x="250" y="86" width="60" height="44" fill="#9fd0f5" rx="6"/>
-        <rect x="320" y="86" width="60" height="44" fill="#9fd0f5" rx="6"/>
-        <rect x="270" y="120" width="60" height="50" fill="#a9805e" rx="6"/>
-        <g><circle cx="90" cy="120" r="22" fill="#7ccf7c"/><rect x="84" y="136" width="12" height="26" fill="#8a6239"/></g>
-        <g><circle cx="520" cy="120" r="22" fill="#7ccf7c"/><rect x="514" y="136" width="12" height="26" fill="#8a6239"/></g>
-      </svg>
-      <button class="npc" id="npc-barnaby" style="left:50%; top:80%;"><span class="npc-face">🧑‍🌾</span><span class="npc-name">Barnaby</span></button>
+  <!-- Mini-game host -->
+  <section class="screen" id="screen-game">
+    <div class="scene-card">
+      <h1 id="game-title"></h1>
+      <p class="hint" id="game-instructions"></p>
+      <p class="hint" id="game-best"></p>
+      <div class="center"><button class="btn green" id="game-start">▶ Start game</button></div>
+      <div id="game-area"></div>
+      <div id="game-result"></div>
     </div>
-    <p class="hint">Barnaby sells cozy furniture for your house. Bought items go into your moving box!</p>
-    <div id="shop-list"></div>
-    <div class="back-row"><button class="btn back-btn">🗺️ Back to Town</button></div>
-  </div>
-</section>
+    <div class="back-row">
+      <button class="btn small" id="game-quit">🕹️ Game Hall</button>
+      <button class="btn small back-btn">🗺️ Town map</button>
+    </div>
+  </section>
 
-<!-- ======= SCREEN: LAKE ======= -->
-<section id="screen-lake" class="screen">
-  <div class="scene-card">
-    <h1>Giggleberry Lake</h1>
-    <div class="scene-art">
-      <svg viewBox="0 0 600 300" aria-hidden="true">
-        <rect width="600" height="300" fill="#cfe8ff"/>
-        <g fill="#fff"><ellipse cx="140" cy="50" rx="42" ry="18"/><ellipse cx="460" cy="40" rx="48" ry="20"/></g>
-        <rect y="150" width="600" height="150" fill="#9fd0f5"/>
-        <rect y="150" width="600" height="150" fill="#bfe0fa" opacity=".6"/>
-        <ellipse cx="200" cy="210" rx="60" ry="12" fill="#8fc3ef" opacity=".8"/>
-        <ellipse cx="420" cy="250" rx="70" ry="14" fill="#8fc3ef" opacity=".8"/>
-        <g><rect x="60" y="120" width="14" height="70" fill="#5cb85c"/><rect x="80" y="110" width="14" height="80" fill="#6fd074"/><rect x="100" y="125" width="14" height="65" fill="#5cb85c"/></g>
-        <g><rect x="500" y="115" width="14" height="75" fill="#5cb85c"/><rect x="520" y="125" width="14" height="65" fill="#6fd074"/></g>
-        <g><circle cx="300" cy="235" r="14" fill="#ffb3d9"/><path d="M300 249 l0 14" stroke="#e2548b" stroke-width="3"/><circle cx="295" cy="232" r="2.5" fill="#4a3f55"/><circle cx="305" cy="232" r="2.5" fill="#4a3f55"/></g>
-        <g><circle cx="380" cy="200" r="10" fill="#ffe08a"/><circle cx="377" cy="198" r="2" fill="#4a3f55"/><circle cx="383" cy="198" r="2" fill="#4a3f55"/></g>
-        <g><circle cx="150" cy="260" r="12" fill="#ffd9e8"/><circle cx="147" cy="258" r="2" fill="#4a3f55"/><circle cx="153" cy="258" r="2" fill="#4a3f55"/></g>
-        <g><ellipse cx="90" cy="190" rx="26" ry="10" fill="#a9805e"/><circle cx="108" cy="184" r="8" fill="#c49a6c"/><circle cx="110" cy="182" r="1.6" fill="#4a3f55"/><path d="M112 186 l8 -2 l-8 -2 z" fill="#f5b942"/></g>
-      </svg>
-      <button class="npc" id="npc-willa" style="left:50%; top:52%;"><span class="npc-face">🧙‍♀️</span><span class="npc-name">Willa</span></button>
-      <!-- The lost kite hides among the reeds on the left -->
-      <button class="hidden-kite" id="lost-kite" style="left:8%; top:44%;" title="Something shiny in the reeds...">
-        <svg viewBox="0 0 60 60" width="44" height="44"><polygon points="30,4 54,30 30,56 6,30" fill="#e2548b"/><polygon points="30,4 54,30 30,30" fill="#ff9ec4"/><line x1="30" y1="4" x2="30" y2="56" stroke="#fff" stroke-width="2"/><line x1="6" y1="30" x2="54" y2="30" stroke="#fff" stroke-width="2"/><path d="M30 56 q -6 8 -2 14 q 5 -3 4 -8" stroke="#a9805e" stroke-width="2" fill="none"/></svg>
-      </button>
+  <!-- Newspaper -->
+  <section class="screen" id="screen-paper">
+    <div class="paper" id="paper-body"></div>
+    <div class="back-row"><button class="btn small back-btn">🗺️ Town map</button></div>
+  </section>
+
+  <!-- Stats modal screen -->
+  <section class="screen" id="screen-stats">
+    <div class="scene-card">
+      <h1>💪 My Stats</h1>
+      <p class="hint">Play games, eat good food, and help around town to grow!</p>
+      <div id="stats-list"></div>
+      <hr class="soft">
+      <h2 class="center">🏆 Trophy Case</h2>
+      <div class="trophy-case" id="trophy-case"></div>
     </div>
-    <p class="hint">Willa the Lake Keeper watches over the water. Some say a lost kite is tangled in the reeds…</p>
-    <div class="back-row"><button class="btn back-btn">🗺️ Back to Town</button></div>
-  </div>
-</section>
+    <div class="back-row"><button class="btn small back-btn">🗺️ Town map</button></div>
+  </section>
 </main>
 
-<div id="speech" role="status"></div>
-<div id="toast" role="status"></div>
+<div id="dialog-modal"><div class="dialog-box">
+  <div class="who" id="dialog-who"></div>
+  <div class="txt" id="dialog-txt"></div>
+  <div class="row"><button class="btn small" id="dialog-ok">OK</button></div>
+</div></div>
+<div id="toast"></div>
 
 <script>
 "use strict";
-/* ============================================================
-   BERRYBROOK game logic — all original code & art.
-   ============================================================ */
+/* ================= Utilities ================= */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const rnd = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
 
-/* ---------- tiny DOM helpers ---------- */
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+let toastTimer=null;
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"), 2600);
+}
+function say(who, text){
+  $("#dialog-who").textContent=who;
+  $("#dialog-txt").textContent=text;
+  $("#dialog-modal").classList.add("open");
+}
+$("#dialog-ok").addEventListener("click", ()=> $("#dialog-modal").classList.remove("open"));
+$("#dialog-modal").addEventListener("click", e=>{ if(e.target.id==="dialog-modal") $("#dialog-modal").classList.remove("open"); });
 
-/* ---------- persistent save ---------- */
-const SAVE_KEY = "berrybrook_save_v1";
-const DEFAULT_STATE = {
-  avatar: null,            // {skin, hair, hairColor, shirt, pants, name}
-  coins: 0,
-  inventory: [],           // array of furniture ids (moving box)
-  layout: {},              // {cellIndex: furnitureId}
-  quests: {},              // {questId: "done"}
-  musicOn: true,
-  kiteFound: false,
-  talked: {}               // {npcId: true}
-};
-
-let state = loadState();
+/* ================= State ================= */
+const SAVE_KEY="berrybrook-save-v2";
+const SKINS=["#ffd9b3","#f0b98a","#c98a5e","#8a5a3b"];
+const HAIRS=["bob","long","spiky","curly","buns","mop"];
+const HAIR_COLORS=["#4a3226","#b0722e","#e8c15a","#c44b4b","#7a4fb0","#3f7a4f"];
+const SHIRTS=["#e2548b","#4f8fd0","#5cb85c","#f5b942","#9a6fd0","#4a3f55"];
+const PANTS=["#4a5a8a","#6b4a8a","#3f7a4f","#8a5a3b","#4a3f55"];
+function defaultState(){
+  return {
+    v:2, avatar:null, coins:0, bank:0, bankOpen:false,
+    stats:{health:80, fitness:70, smarts:60, community:50, hunger:80},
+    profile:{color:"Pink", hobby:"Reading", music:"Pop"},
+    pet:null, inventory:[], furniture:[], house:{},
+    quests:{}, trophies:{}, books:[], mail:[],
+    lastLogin:null, day:1, gamesPlayed:0, fishCaught:0, quizzesDone:0
+  };
+}
+let state=defaultState();
+function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){} }
 function loadState(){
   try{
-    const raw = localStorage.getItem(SAVE_KEY);
-    if(!raw) return structuredClone(DEFAULT_STATE);
-    const parsed = JSON.parse(raw);
-    // merge with defaults so new fields never break old saves
-    return Object.assign(structuredClone(DEFAULT_STATE), parsed);
-  }catch(e){ return structuredClone(DEFAULT_STATE); }
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(raw){ const s=JSON.parse(raw); if(s && s.v===2){ state=Object.assign(defaultState(), s); return true; } }
+  }catch(e){}
+  return false;
 }
-function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){} }
 
-/* ============================================================
-   AVATAR — SVG buddy builder (original art)
-   ============================================================ */
-const SKINS  = ["#ffe0c2","#f5c9a0","#e0a878","#b97a4e","#7a4e2e"];
-const HAIRS  = ["short","long","curly","spiky"];
-const HAIR_COLORS = ["#3a2a1e","#7a4e2e","#e8a33d","#e2548b","#7c5cd6"];
-const SHIRTS = ["#e2548b","#5cb85c","#7c5cd6","#f5b942","#4aa8de","#ff8c42"];
-const PANTS  = ["#4a6fa5","#6b4a8a","#3f7d5d","#8a6239","#4a3f55"];
-
-const draft = { skin:SKINS[0], hair:"short", hairColor:HAIR_COLORS[0], shirt:SHIRTS[0], pants:PANTS[0] };
-
-function hairSVG(style, color){
-  // drawn to fit a head circle centered at (50,40) radius 18
-  switch(style){
-    case "short":
-      return `<path d="M32 38 Q32 18 50 18 Q68 18 68 38 Q62 30 56 32 Q50 24 44 32 Q38 30 32 38 Z" fill="${color}"/>`;
-    case "long":
-      return `<path d="M32 38 Q32 18 50 18 Q68 18 68 38 L70 78 Q64 74 62 66 L62 44 Q56 36 50 36 Q44 36 38 44 L38 66 Q36 74 30 78 Z" fill="${color}"/>`;
-    case "curly":
-      return `<g fill="${color}"><circle cx="36" cy="30" r="9"/><circle cx="46" cy="22" r="10"/><circle cx="58" cy="24" r="9"/><circle cx="66" cy="32" r="8"/><circle cx="40" cy="38" r="8"/><circle cx="60" cy="38" r="8"/></g>`;
-    case "spiky":
-      return `<polygon points="32,40 34,20 42,28 46,12 52,26 60,14 60,30 68,24 66,40 50,30" fill="${color}"/>`;
+/* ================= Avatar art (original) ================= */
+function hairSVG(hair, color){
+  const c=color;
+  switch(hair){
+    case "bob": return `<path d="M32 38 Q30 14 50 12 Q70 14 68 38 L64 38 Q66 20 50 18 Q34 20 36 38 Z" fill="${c}"/><circle cx="32" cy="40" r="4" fill="${c}"/><circle cx="68" cy="40" r="4" fill="${c}"/>`;
+    case "long": return `<path d="M30 40 Q28 10 50 10 Q72 10 70 40 L70 66 Q64 62 64 50 L36 50 Q36 62 30 66 Z" fill="${c}"/><path d="M32 24 Q50 8 68 24 Q50 16 32 24" fill="${c}"/>`;
+    case "spiky": return `<path d="M32 36 L36 12 L44 28 L50 8 L56 28 L64 12 L68 36 Q50 26 32 36 Z" fill="${c}"/>`;
+    case "curly": return `<circle cx="36" cy="24" r="8" fill="${c}"/><circle cx="50" cy="18" r="9" fill="${c}"/><circle cx="64" cy="24" r="8" fill="${c}"/><circle cx="42" cy="32" r="7" fill="${c}"/><circle cx="58" cy="32" r="7" fill="${c}"/>`;
+    case "buns": return `<path d="M34 34 Q36 16 50 16 Q64 16 66 34 Q50 26 34 34 Z" fill="${c}"/><circle cx="34" cy="18" r="7" fill="${c}"/><circle cx="66" cy="18" r="7" fill="${c}"/>`;
+    default: return `<path d="M32 36 Q34 14 50 14 Q66 14 68 36 Q60 24 50 26 Q40 24 32 36 Z" fill="${c}"/><path d="M36 30 Q50 22 64 30" stroke="${c}" stroke-width="4" fill="none"/>`;
   }
-  return "";
 }
-
 function avatarSVG(a, w){
-  return `<svg viewBox="0 0 100 140" width="${w||120}" height="${(w||120)*1.4}" aria-label="Your buddy">
+  const W=w||120;
+  return `<svg viewBox="0 0 100 140" width="${W}" height="${W*1.4}" aria-label="Buddy avatar">
     <rect x="36" y="96" width="11" height="30" rx="5" fill="${a.pants}"/>
     <rect x="53" y="96" width="11" height="30" rx="5" fill="${a.pants}"/>
     <rect x="32" y="120" width="17" height="10" rx="5" fill="#6b4a8a"/>
@@ -544,449 +399,1322 @@ function avatarSVG(a, w){
     <rect x="68" y="62" width="10" height="26" rx="5" fill="${a.skin}"/>
     <circle cx="50" cy="40" r="18" fill="${a.skin}"/>
     ${hairSVG(a.hair, a.hairColor)}
-    <circle cx="43" cy="40" r="2.6" fill="#4a3f55"/>
-    <circle cx="57" cy="40" r="2.6" fill="#4a3f55"/>
+    <circle cx="43" cy="40" r="2.6" fill="#4a3f55"/><circle cx="57" cy="40" r="2.6" fill="#4a3f55"/>
     <path d="M43 50 Q50 56 57 50" stroke="#4a3f55" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-    <circle cx="37" cy="46" r="3" fill="#ffb3d9" opacity=".7"/>
-    <circle cx="63" cy="46" r="3" fill="#ffb3d9" opacity=".7"/>
+    <circle cx="37" cy="46" r="3" fill="#ffb3d9" opacity=".7"/><circle cx="63" cy="46" r="3" fill="#ffb3d9" opacity=".7"/>
   </svg>`;
 }
 
-/* ---------- creator screen ---------- */
-function buildCreator(){
-  const mk = (el, items, key, isSwatch) => {
-    const host = $(el); host.innerHTML = "";
-    items.forEach((val,i) => {
-      const b = document.createElement("button");
-      b.className = "pick" + (isSwatch ? " swatch" : "");
-      b.type = "button";
-      if(isSwatch) b.style.background = val;
-      else b.textContent = (key==="hair") ? val[0].toUpperCase()+val.slice(1) : val;
-      b.setAttribute("aria-label", (key==="hair"? val+" hair" : val));
-      const isSel = () => draft[key] === val;
-      const paint = () => b.classList.toggle("selected", isSel());
-      b.addEventListener("click", () => { draft[key] = val; $$(el+" .pick").forEach(x=>x.classList.remove("selected")); paint(); renderPreview(); });
-      paint(); host.appendChild(b);
-    });
-  };
-  mk("#pick-skin", SKINS, "skin", true);
-  mk("#pick-hair", HAIRS, "hair", false);
-  mk("#pick-haircolor", HAIR_COLORS, "hairColor", true);
-  mk("#pick-shirt", SHIRTS, "shirt", true);
-  mk("#pick-pants", PANTS, "pants", true);
-  renderPreview();
+/* ================= Music (tiny WebAudio loop) ================= */
+let musicOn=false, musicNodes=null;
+const MELODY=[523,587,659,784,659,587,523,440,523,587,659,587,523,0,440,0];
+function startMusic(){
+  if(musicOn) return; musicOn=true; paintMusicBtn();
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const gain=ctx.createGain(); gain.gain.value=0.05; gain.connect(ctx.destination);
+    let i=0, timer=setInterval(()=>{
+      if(!musicOn){ clearInterval(timer); ctx.close(); return; }
+      const f=MELODY[i%MELODY.length]; i++;
+      if(f){ const o=ctx.createOscillator(); o.type="triangle"; o.frequency.value=f;
+        o.connect(gain); o.start(); o.stop(ctx.currentTime+0.28); }
+    },300);
+    musicNodes={ctx,timer};
+  }catch(e){ musicOn=false; }
 }
-function renderPreview(){ $("#avatar-preview").innerHTML = avatarSVG(draft); }
+function stopMusic(){
+  musicOn=false; paintMusicBtn();
+  if(musicNodes){ clearInterval(musicNodes.timer); try{musicNodes.ctx.close();}catch(e){} musicNodes=null; }
+}
+function paintMusicBtn(){ $("#music-toggle").textContent = musicOn ? "🎵" : "🔇"; }
+$("#music-toggle").addEventListener("click", ()=> musicOn?stopMusic():startMusic());
 
-$("#start-adventure").addEventListener("click", () => {
-  const name = $("#buddy-name").value.trim().slice(0,16) || "Pip";
-  state.avatar = Object.assign({}, draft, { name });
-  state.coins = 20; // starter Berry Coins
-  save(); applyTopbar(); showScreen("screen-town");
-  toast(`Welcome to Berrybrook, ${name}! 🌈 You got 20 Berry Coins!`);
-  startMusic();
-});
-
-/* ============================================================
-   SCREENS, TOP BAR, SPEECH, TOAST
-   ============================================================ */
+/* ================= Router / topbar ================= */
 function showScreen(id){
-  $$(".screen").forEach(s => s.classList.remove("active"));
+  $$(".screen").forEach(s=>s.classList.remove("active"));
   $("#"+id).classList.add("active");
-  $("main").scrollTop = 0;
-  window.scrollTo(0,0);
+  $("main").scrollTop=0; window.scrollTo(0,0);
 }
-$$(".back-btn").forEach(b => b.addEventListener("click", () => showScreen("screen-town")));
-$$(".map-loc").forEach(b => b.addEventListener("click", () => showScreen("screen-"+b.dataset.goto)));
-
 function applyTopbar(){
-  $("#coin-count").textContent = state.coins;
+  $("#coin-count").textContent=state.coins;
   if(state.avatar){
-    $("#buddy-avatar").innerHTML = avatarSVG(state.avatar, 30);
-    $("#buddy-name-top").textContent = state.avatar.name;
+    $("#buddy-avatar").innerHTML=avatarSVG(state.avatar,30);
+    $("#buddy-name-top").textContent=state.avatar.name;
   }
 }
 function addCoins(n){
-  state.coins += n; save(); applyTopbar();
-  // pop animation on the purse
-  const p = $("#coin-purse"); p.style.transform = "scale(1.15)";
-  setTimeout(()=>p.style.transform="", 180);
+  state.coins+=n; save(); applyTopbar();
+  const p=$("#coin-purse"); p.style.transform="scale(1.15)";
+  setTimeout(()=>p.style.transform="",180);
 }
-/* spendCoins returns true if the player could afford it */
 function spendCoins(n){
-  if(state.coins < n) return false;
-  state.coins -= n; save(); applyTopbar(); return true;
+  if(state.coins<n){ toast("Not enough Berry Coins! 🪙"); return false; }
+  state.coins-=n; save(); applyTopbar(); return true;
 }
+function bumpStat(stat, pts){
+  state.stats[stat]=clamp(state.stats[stat]+pts,0,100); save();
+}
+function eatHunger(){ bumpStat("hunger",-2); if(state.stats.hunger<=0) bumpStat("health",-4); }
 
-let speechTimer = null;
-function say(who, line){
-  const el = $("#speech");
-  el.innerHTML = `<span class="who">${who} says:</span>${line}`;
-  el.classList.add("show");
-  clearTimeout(speechTimer);
-  speechTimer = setTimeout(()=>el.classList.remove("show"), 3200);
-}
-let toastTimer = null;
-function toast(msg){
-  const el = $("#toast");
-  el.textContent = msg; el.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>el.classList.remove("show"), 2800);
-}
-
-/* ---------- NPC dialogue ---------- */
-const NPC_LINES = {
-  marigold: ["Marigold","Welcome to the Square, sweetpea! The Quest Board has little errands if you'd like to help out. 🌼"],
-  dex: ["Dex","Beep boop! Win a game and I'll shower you in Berry Coins. The rope climb is my favorite! 🕹️"],
-  miso: ["Miso","Mrrp! (That's cat for 'decorate our house, it's so empty in here!') 🐱"],
-  barnaby: ["Barnaby","Howdy! Finest furniture in Berrybrook, all priced in Berry Coins. The plant is very popular. 🪴"],
-  willa: ["Willa","Shhh… the lake likes quiet hellos. Oh! Have you seen a little red kite? It blew away in yesterday's breeze… 🪁"]
-};
-function talkTo(id){
-  const [who,line] = NPC_LINES[id];
-  say(who,line);
-  state.talked[id] = true; save();
-  if(id==="willa") completeQuest("q_hello"); // "Say hello to the Lake Keeper"
-}
-["marigold","dex","miso","barnaby","willa"].forEach(id => {
-  $("#npc-"+id).addEventListener("click", ()=>talkTo(id));
-});
-
-/* ---------- lost kite (hidden at the lake) ---------- */
-$("#lost-kite").addEventListener("click", () => {
-  if(state.kiteFound){ say("Willa","That's my kite, safe and sound — thank you again! 🪁"); return; }
-  state.kiteFound = true; save();
-  $("#lost-kite").style.display = "none";
-  say("Willa","My kite!! You found it tangled in the reeds! You're a true Berrybrook hero! 🪁");
-  confetti();
-  completeQuest("q_kite");
-});
-function paintKite(){ if(state.kiteFound) $("#lost-kite").style.display = "none"; }
-
-/* ============================================================
-   QUESTS
-   ============================================================ */
-const QUESTS = [
-  { id:"q_hello", text:"Say hello to Willa the Lake Keeper at the Lake", reward:10 },
-  { id:"q_plant", text:"Buy a plant at the General Store", reward:15 },
-  { id:"q_arcade", text:"Win one arcade game (Rope Climb or Berry Match)", reward:25 },
-  { id:"q_decor", text:"Place 3 furniture items in your house", reward:20 },
-  { id:"q_kite", text:"Find the lost kite at the Lake", reward:15 }
-];
-function renderQuests(){
-  const host = $("#quest-list"); host.innerHTML = "";
-  QUESTS.forEach(q => {
-    const done = state.quests[q.id] === "done";
-    const d = document.createElement("div");
-    d.className = "quest" + (done ? " done" : "");
-    d.innerHTML = `<div class="stamp">${done ? "★" : "?"}</div>
-      <div class="qtext"><b>${q.text}</b><br><span class="qreward">Reward: ${q.reward} 🫐 Berry Coins</span></div>`;
-    host.appendChild(d);
-  });
-}
-function completeQuest(id){
-  if(state.quests[id] === "done") return;
-  const q = QUESTS.find(x=>x.id===id);
-  state.quests[id] = "done";
-  addCoins(q.reward); // addCoins saves
-  renderQuests();
-  confetti();
-  toast(`Quest complete! +${q.reward} Berry Coins! 🎉`);
-}
-$("#open-quests").addEventListener("click", () => {
-  const w = $("#quest-board-wrap");
-  const open = w.style.display === "block";
-  w.style.display = open ? "none" : "block";
-  if(!open) renderQuests();
-});
-
-/* ---------- tiny CSS confetti ---------- */
-function confetti(){
-  const colors = ["#e2548b","#f5b942","#5cb85c","#7c5cd6","#4aa8de"];
-  for(let i=0;i<24;i++){
-    const c = document.createElement("div");
-    c.className = "confetti";
-    c.style.left = Math.random()*100 + "vw";
-    c.style.background = colors[i % colors.length];
-    const s = 8 + Math.random()*8;
-    c.style.width = s+"px"; c.style.height = s*0.6+"px";
-    c.style.borderRadius = "3px";
-    c.style.animationDuration = (1.6 + Math.random()*1.4) + "s";
-    document.body.appendChild(c);
-    setTimeout(()=>c.remove(), 3200);
-  }
-}
-
-/* ============================================================
-   ARCADE — game menu wiring
-   ============================================================ */
-$$("#game-menu [data-game]").forEach(b => b.addEventListener("click", () => {
-  $("#game-menu").style.display = "none";
-  if(b.dataset.game === "rope"){ $("#rope-area").style.display = "block"; startRope(); }
-  else { $("#memory-area").style.display = "block"; startMemory(); }
-}));
-$$(".quit-game").forEach(b => b.addEventListener("click", () => {
-  stopRope(); $("#rope-area").style.display = "none"; $("#memory-area").style.display = "none";
-  $("#game-menu").style.display = "block";
-}));
-function arcadeWin(gameName, coins){
-  stopRope();
-  addCoins(coins);
-  confetti();
-  toast(`You won ${gameName}! +${coins} Berry Coins! 🏆`);
-  completeQuest("q_arcade");
-  setTimeout(()=>{ $("#rope-area").style.display="none"; $("#memory-area").style.display="none"; $("#game-menu").style.display="block"; }, 1200);
-}
-
-/* ---------- Rope Climb: timing / reflex game ---------- */
-let rope = null;
-function startRope(){
-  stopRope();
-  const track = $("#rope-track"), marker = $("#rope-marker"), zone = $("#rope-zone"), buddy = $("#rope-buddy");
-  const TRACK_H = 320, MARK_H = 26;
-  rope = { y: 0, dir: 1, speed: 2.2, climbs: 0, zoneY: 0, zoneH: 70, running: true, raf: 0 };
-  const placeZone = () => {
-    rope.zoneH = Math.max(46, 80 - rope.climbs*6);
-    rope.zoneY = 10 + Math.random()*(TRACK_H - rope.zoneH - 20);
-    zone.style.top = rope.zoneY+"px"; zone.style.height = rope.zoneH+"px";
-  };
-  const paint = () => {
-    $("#rope-progress").textContent = `Climbs: ${rope.climbs} / 5`;
-    buddy.style.bottom = (8 + rope.climbs*(TRACK_H-70)/5) + "px";
-  };
-  placeZone(); paint();
-  const tick = () => {
-    if(!rope || !rope.running) return;
-    rope.y += rope.dir * rope.speed;
-    if(rope.y >= TRACK_H - MARK_H){ rope.y = TRACK_H - MARK_H; rope.dir = -1; }
-    if(rope.y <= 0){ rope.y = 0; rope.dir = 1; }
-    marker.style.top = rope.y + "px";
-    rope.raf = requestAnimationFrame(tick);
-  };
-  tick();
-  $("#rope-climb-btn").onclick = () => {
-    if(!rope || !rope.running) return;
-    const center = rope.y + MARK_H/2;
-    if(center >= rope.zoneY && center <= rope.zoneY + rope.zoneH){
-      rope.climbs++; rope.speed += 0.55; placeZone(); paint();
-      if(rope.climbs >= 5){ rope.running = false; arcadeWin("Rope Climb", 10); }
-    } else {
-      // a miss just wobbles the marker — kid-friendly, no punishment
-      marker.style.background = "#c9a0b4";
-      setTimeout(()=>{ if(rope) marker.style.background = ""; }, 150);
-    }
-  };
-}
-function stopRope(){
-  if(rope){ rope.running = false; cancelAnimationFrame(rope.raf); rope = null; }
-}
-
-/* ---------- Berry Match: 12-card memory game ---------- */
-const ICONS = {
-  berry:  c => `<svg viewBox="0 0 40 40"><circle cx="20" cy="24" r="11" fill="${c}"/><path d="M20 13 q2 -7 9 -9 q-1 7 -9 9" fill="#5cb85c"/><circle cx="16" cy="21" r="2.4" fill="#fff" opacity=".7"/></svg>`,
-  sun:    c => `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="9" fill="${c}"/><g stroke="${c}" stroke-width="3" stroke-linecap="round"><line x1="20" y1="4" x2="20" y2="9"/><line x1="20" y1="31" x2="20" y2="36"/><line x1="4" y1="20" x2="9" y2="20"/><line x1="31" y1="20" x2="36" y2="20"/><line x1="9" y1="9" x2="12" y2="12"/><line x1="28" y1="28" x2="31" y2="31"/><line x1="31" y1="9" x2="28" y2="12"/><line x1="12" y1="28" x2="9" y2="31"/></g></svg>`,
-  fish:   c => `<svg viewBox="0 0 40 40"><ellipse cx="17" cy="20" rx="10" ry="7" fill="${c}"/><polygon points="27,20 36,13 36,27" fill="${c}"/><circle cx="13" cy="18" r="1.8" fill="#fff"/></svg>`,
-  flower: c => `<svg viewBox="0 0 40 40"><g fill="${c}"><circle cx="20" cy="10" r="6"/><circle cx="29" cy="20" r="6"/><circle cx="20" cy="30" r="6"/><circle cx="11" cy="20" r="6"/></g><circle cx="20" cy="20" r="5" fill="#f5b942"/></svg>`,
-  star:   c => `<svg viewBox="0 0 40 40"><polygon points="20,4 24,15 36,15 26,22 30,34 20,27 10,34 14,22 4,15 16,15" fill="${c}"/></svg>`,
-  shroom: c => `<svg viewBox="0 0 40 40"><path d="M6 20 Q20 4 34 20 Q20 24 6 20" fill="${c}"/><rect x="16" y="20" width="8" height="12" rx="3" fill="#fff"/><circle cx="15" cy="15" r="2.4" fill="#fff"/><circle cx="25" cy="14" r="2" fill="#fff"/></svg>`
-};
-const ICON_KEYS = Object.keys(ICONS);
-const ICON_COLORS = { berry:"#e2548b", sun:"#f5b942", fish:"#4aa8de", flower:"#ff9ec4", star:"#b678e0", shroom:"#e2545c" };
-let mem = null;
-function startMemory(){
-  const grid = $("#memory-grid"); grid.innerHTML = "";
-  const deck = ICON_KEYS.concat(ICON_KEYS).map(k => ({key:k}));
-  for(let i=deck.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
-  mem = { first:null, lock:false, found:0 };
-  $("#memory-score").textContent = "0";
-  deck.forEach(card => {
-    const b = document.createElement("button");
-    b.className = "mcard"; b.type = "button"; b.setAttribute("aria-label","Memory card");
-    b.innerHTML = `<span class="face front">🫐</span><span class="face backB">${ICONS[card.key](ICON_COLORS[card.key])}</span>`;
-    b.addEventListener("click", () => flipCard(b, card.key));
-    grid.appendChild(b);
-  });
-}
-function flipCard(btn, key){
-  if(!mem || mem.lock || btn.classList.contains("flipped")) return;
-  btn.classList.add("flipped");
-  if(!mem.first){ mem.first = {btn, key}; return; }
-  const first = mem.first; mem.first = null;
-  if(first.key === key){
-    mem.lock = true;
-    setTimeout(()=>{
-      first.btn.classList.add("matched"); btn.classList.add("matched");
-      mem.found++; $("#memory-score").textContent = mem.found;
-      mem.lock = false;
-      if(mem.found >= 6) arcadeWin("Berry Match", 15);
-    }, 350);
-  } else {
-    mem.lock = true;
-    setTimeout(()=>{ first.btn.classList.remove("flipped"); btn.classList.remove("flipped"); mem.lock = false; }, 750);
-  }
-}
-
-/* ============================================================
-   FURNITURE — store, moving box, house grid
-   ============================================================ */
-const FURNITURE = {
-  plant:  { name:"Potted Plant", price:15, svg:`<svg viewBox="0 0 64 64"><path d="M32 44 q-14 -4 -16 -20 q10 2 14 8 q0 -12 8 -18 q2 12 -2 18 q8 -6 14 -4 q-4 12 -18 16" fill="#5cb85c"/><path d="M24 44 h16 l-3 14 h-10 z" fill="#e2548b"/></svg>` },
-  rug:    { name:"Cozy Rug", price:20, svg:`<svg viewBox="0 0 64 64"><ellipse cx="32" cy="34" rx="26" ry="18" fill="#ff9ec4"/><ellipse cx="32" cy="34" rx="18" ry="12" fill="#ffd9e8"/><ellipse cx="32" cy="34" rx="9" ry="6" fill="#e2548b"/></svg>` },
-  lamp:   { name:"Sunny Lamp", price:30, svg:`<svg viewBox="0 0 64 64"><path d="M22 26 L42 26 L36 10 L28 10 Z" fill="#fff3c4" stroke="#f5b942" stroke-width="3"/><rect x="30" y="26" width="4" height="22" fill="#a9805e"/><ellipse cx="32" cy="52" rx="10" ry="4" fill="#a9805e"/><circle cx="32" cy="18" r="4" fill="#ffe08a"/></svg>` },
-  poster: { name:"Berry Poster", price:25, svg:`<svg viewBox="0 0 64 64"><rect x="14" y="8" width="36" height="48" rx="4" fill="#fff" stroke="#7c5cd6" stroke-width="3"/><circle cx="32" cy="28" r="10" fill="#e2548b"/><path d="M32 18 q2 -6 8 -7" stroke="#5cb85c" stroke-width="3" fill="none"/><text x="32" y="50" text-anchor="middle" font-size="10" fill="#7c5cd6" font-weight="bold">YAY!</text></svg>` },
-  bed:    { name:"Comfy Bed", price:50, svg:`<svg viewBox="0 0 64 64"><rect x="8" y="30" width="48" height="18" rx="6" fill="#7c5cd6"/><rect x="8" y="22" width="10" height="28" rx="4" fill="#5c439e"/><rect x="14" y="24" width="18" height="10" rx="5" fill="#fff"/><rect x="12" y="48" width="4" height="8" fill="#5c439e"/><rect x="48" y="48" width="4" height="8" fill="#5c439e"/></svg>` }
-};
-const GRID_CELLS = 16;
-let selectedInv = -1; // index into state.inventory, -1 = none selected
-
-function renderShop(){
-  const host = $("#shop-list"); host.innerHTML = "";
-  Object.entries(FURNITURE).forEach(([id,f]) => {
-    const row = document.createElement("div");
-    row.className = "shop-item";
-    const canAfford = state.coins >= f.price;
-    row.innerHTML = `${f.svg}<div class="info"><b>${f.name}</b><br><span class="price">🫐 ${f.price} Berry Coins</span></div>`;
-    const btn = document.createElement("button");
-    btn.className = "btn gold"; btn.textContent = "Buy";
-    btn.disabled = !canAfford;
-    btn.addEventListener("click", () => buyFurniture(id));
-    row.appendChild(btn); host.appendChild(row);
-  });
-}
-function buyFurniture(id){
-  const f = FURNITURE[id];
-  if(!spendCoins(f.price)){ toast("Not enough Berry Coins yet! 🫐"); return; }
-  state.inventory.push(id); save();
-  renderShop(); renderInventory();
-  toast(`${f.name} added to your moving box! 📦`);
-  if(id === "plant") completeQuest("q_plant");
-}
-
-function renderInventory(){
-  const bar = $("#inventory-bar"); bar.innerHTML = "";
-  if(state.inventory.length === 0){
-    bar.innerHTML = `<span class="inv-empty">Empty — buy furniture at the General Store!</span>`;
-  }
-  state.inventory.forEach((id, idx) => {
-    const b = document.createElement("button");
-    b.className = "inv-item" + (idx === selectedInv ? " selected" : "");
-    b.type = "button"; b.title = FURNITURE[id].name; b.setAttribute("aria-label", FURNITURE[id].name);
-    b.innerHTML = FURNITURE[id].svg;
-    b.addEventListener("click", () => {
-      selectedInv = (selectedInv === idx) ? -1 : idx; // tap again to deselect
-      renderInventory();
-    });
-    bar.appendChild(b);
-  });
-}
-
-function renderHouse(){
-  const grid = $("#house-grid"); grid.innerHTML = "";
-  for(let i=0;i<GRID_CELLS;i++){
-    const cell = document.createElement("button");
-    cell.className = "cell"; cell.type = "button";
-    const itemId = state.layout[i];
-    if(itemId && FURNITURE[itemId]){
-      cell.innerHTML = FURNITURE[itemId].svg;
-      cell.title = FURNITURE[itemId].name + " (tap to pick up)";
-      cell.setAttribute("aria-label", FURNITURE[itemId].name + ", tap to pick up");
-    } else {
-      cell.setAttribute("aria-label", "Empty floor square");
-    }
-    cell.addEventListener("click", () => tapCell(i));
-    grid.appendChild(cell);
-  }
-}
-function tapCell(i){
-  const occupied = state.layout[i];
-  if(selectedInv >= 0 && !occupied){
-    // place selected inventory item
-    const id = state.inventory.splice(selectedInv, 1)[0];
-    selectedInv = -1;
-    state.layout[i] = id; save();
-    renderInventory(); renderHouse();
-    if(Object.keys(state.layout).length >= 3) completeQuest("q_decor");
-  } else if(selectedInv >= 0 && occupied){
-    toast("That spot is taken — pick another square!");
-  } else if(occupied){
-    // pick furniture back up into the moving box
-    const id = state.layout[i];
-    delete state.layout[i];
-    state.inventory.push(id); save();
-    renderInventory(); renderHouse();
-    toast(`${FURNITURE[id].name} picked up! 📦`);
-  } else {
-    toast("Pick an item from your moving box first! 📦");
-  }
-}
-
-/* ============================================================
-   MUSIC — gentle WebAudio loop (original simple melody)
-   ============================================================ */
-let audioCtx = null, musicTimer = null, musicStep = 0;
-// A soft, cheerful original melody in C major (frequencies in Hz)
-const MELODY = [523.25, 587.33, 659.25, 587.33, 523.25, 440, 392, 440, 523.25, 659.25, 783.99, 659.25, 523.25, 0, 392, 0];
-function startMusic(){
-  if(!state.musicOn) return;
-  try{
-    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if(audioCtx.state === "suspended") audioCtx.resume();
-  }catch(e){ return; }
-  if(musicTimer) return;
-  musicStep = 0;
-  const playNote = () => {
-    if(!state.musicOn) return;
-    const f = MELODY[musicStep % MELODY.length];
-    musicStep++;
-    if(f > 0 && audioCtx){
-      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-      o.type = "triangle"; o.frequency.value = f;
-      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.08, audioCtx.currentTime + 0.05);
-      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.42);
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start(); o.stop(audioCtx.currentTime + 0.45);
-    }
-  };
-  playNote();
-  musicTimer = setInterval(playNote, 460);
-}
-function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer = null; } }
-function paintMusicBtn(){ $("#music-toggle").textContent = state.musicOn ? "🎵" : "🔇"; }
-$("#music-toggle").addEventListener("click", () => {
-  state.musicOn = !state.musicOn; save(); paintMusicBtn();
-  if(state.musicOn) startMusic(); else stopMusic();
-  toast(state.musicOn ? "Music on 🎵" : "Music off 🔇");
-});
-
-/* ============================================================
-   RESET & INIT
-   ============================================================ */
-$("#reset-link").addEventListener("click", () => {
-  if(confirm("Start over? This erases your buddy, coins, house, and quests.")){
-    localStorage.removeItem(SAVE_KEY);
+$("#coin-purse").addEventListener("click", ()=>{ openPlace("bank"); });
+$("#stats-btn").addEventListener("click", ()=>{ renderStats(); showScreen("screen-stats"); });
+$("#reset-link").addEventListener("click", ()=>{
+  if(confirm("Start over with a brand-new buddy? This erases everything.")){
+    try{localStorage.removeItem(SAVE_KEY);}catch(e){}
     location.reload();
   }
 });
 
-function init(){
-  buildCreator();
-  paintMusicBtn(); paintKite(); renderShop(); renderInventory(); renderHouse(); renderQuests();
-  if(state.avatar){
-    // returning player — skip the creator
-    $("#topbar").classList.remove("hidden");
-    applyTopbar();
-    showScreen("screen-town");
-    if(state.musicOn){
-      // browsers require a gesture before audio; start on first tap
-      const kick = () => { startMusic(); document.removeEventListener("pointerdown", kick); };
-      document.addEventListener("pointerdown", kick);
-    }
-  } else {
-    showScreen("screen-creator");
-  }
+/* ================= Creator ================= */
+let draft={skin:SKINS[0], hair:"bob", hairColor:HAIR_COLORS[0], shirt:SHIRTS[0], pants:PANTS[0]};
+function buildCreator(){
+  const mk=(id, items, key, isSwatch)=>{
+    const host=$(id); host.innerHTML="";
+    items.forEach(val=>{
+      const b=document.createElement("button");
+      b.className="pick"+(isSwatch?" swatch":""); b.type="button";
+      if(isSwatch) b.style.background=val;
+      else b.textContent=(key==="hair")? val[0].toUpperCase()+val.slice(1) : "⬛";
+      if(!isSwatch && key!=="hair") b.style.background=val, b.textContent="";
+      b.setAttribute("aria-label",(key==="hair"?val+" hair":val));
+      const paint=()=>b.classList.toggle("selected", draft[key]===val);
+      b.addEventListener("click",()=>{ draft[key]=val; $$(id+" .pick").forEach(x=>x.classList.remove("selected")); paint(); renderPreview(); });
+      paint(); host.appendChild(b);
+    });
+  };
+  mk("#pick-skin",SKINS,"skin",true);
+  mk("#pick-hair",HAIRS,"hair",false);
+  mk("#pick-haircolor",HAIR_COLORS,"hairColor",true);
+  mk("#pick-shirt",SHIRTS,"shirt",true);
+  mk("#pick-pants",PANTS,"pants",true);
+  renderPreview();
 }
-init();
+function renderPreview(){ $("#avatar-preview").innerHTML=avatarSVG(draft,150); }
+$("#to-creator").addEventListener("click", ()=>{ buildCreator(); showScreen("screen-creator"); });
+$("#start-adventure").addEventListener("click", ()=>{
+  const name=$("#buddy-name").value.trim().slice(0,16)||"Pip";
+  state.avatar=Object.assign({},draft,{name});
+  state.coins=50; state.lastLogin=todayStr();
+  state.mail.push({from:"Mayor Moss", text:"Welcome to Berrybrook, "+name+"! Your new home is ready. Come say hi at Town Hall sometime. 🏛️", day:state.day});
+  save(); applyTopbar(); renderTown(); showScreen("screen-town");
+  toast("Welcome to Berrybrook, "+name+"! 🌈 You got 50 Berry Coins!");
+  startMusic();
+});
+
+/* ================= Daily login ================= */
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function dailyLogin(){
+  const t=todayStr();
+  if(state.lastLogin===t) return;
+  const isNew=!state.lastLogin;
+  state.day+= isNew?0:1;
+  state.lastLogin=t;
+  // daily bonus
+  state.coins+=50;
+  // bank interest
+  if(state.bankOpen && state.bank>0){ const i=Math.floor(state.bank*0.05); state.bank+=i; }
+  // pet finds a coin
+  if(state.pet){ state.coins+=5; state.pet.happy=clamp(state.pet.happy-10,0,100); state.pet.fed=clamp(state.pet.fed-15,0,100); }
+  // hunger decays overnight
+  state.stats.hunger=clamp(state.stats.hunger-15,0,100);
+  save();
+  if(!isNew) setTimeout(()=>toast("☀️ Daily bonus: +50 Berry Coins!"+(state.bankOpen&&state.bank>0?" Bank interest added!":"")),800);
+}
+
+/* ================= NPCs (all original) ================= */
+const NPCS={
+  barnaby:{name:"Barnaby", emoji:"🦊", lines:[
+    "Psst! The Game Hall pays out Berry Coins if you beat your best score. Just saying.",
+    "I buried a sandwich behind the Game Hall. For later. Don't tell anyone.",
+    "You look like a future Plinko champion. I can just tell."]},
+  dex:{name:"Dex", emoji:"🐭", lines:[
+    "I ran the rope climb in 9 seconds once. Okay, it was 19. Still counts.",
+    "Stretch before the Half-Pipe, trust me on this one.",
+    "Fitness tip: the Hoop Toss is all in the wrists. Probably."]},
+  marigold:{name:"Marigold", emoji:"🐰", lines:[
+    "The library just got new books and they smell like adventure.",
+    "I alphabetized my entire bookshelf yesterday. Twice.",
+    "Did you read the Bugle today? I'm in it. Well, my pie recipe is."]},
+  miso:{name:"Miso", emoji:"🐱", lines:[
+    "The Cozy Coop has the cutest little owl. Not that I'd ever admit it.",
+    "A clean park is a happy park. Pick up trash, get coins. Everybody wins.",
+    "Naps are important. Right after snacks."]},
+  willa:{name:"Willa", emoji:"🦉", lines:[
+    "The museum's rock collection is older than this whole town. Think about that.",
+    "I catalogued every leaf in Thimbleberry Park. 4,102. You're welcome.",
+    "Stars are just sky freckles. Don't quote me on that."]},
+  tansy:{name:"Tansy", emoji:"🦔", lines:[
+    "Shhh! ...Just kidding, you can talk in here. But gently.",
+    "Finish a whole book and your Smarts will thank you."]},
+  alder:{name:"Alder", emoji:"🦡", lines:[
+    "Coins in your pocket earn nothing. Coins in the bank earn interest. Math!",
+    "I count every coin twice. It's a lifestyle."]},
+  poppy:{name:"Poppy", emoji:"🐩", lines:[
+    "New hair, new you! That's what I always say. I say it a lot.",
+    "That color would look AMAZING on you. All of them would."]},
+  flint:{name:"Coach Flint", emoji:"🦅", lines:[
+    "Fishing rule one: patience. Rule two: see rule one.",
+    "I once caught a boot. Best day of my life. Worst boot of its life."]},
+  wren:{name:"Wren", emoji:"🐦", lines:[
+    "Feel the beat! Then tap slightly before the beat. Trust your wings.",
+    "I hum in my sleep. My neighbors hum along now."]},
+  bramble:{name:"Prof. Bramble", emoji:"🦉", lines:[
+    "A quiz a day keeps the sillies away. That's science. Probably.",
+    "Show your work! Even if the work is guessing."]},
+  moss:{name:"Mayor Moss", emoji:"🐢", lines:[
+    "Welcome to Berrybrook! I mean — welcome BACK. I say that to everyone.",
+    "A good citizen keeps their stats up and their park clean."]}
+};
+function talkTo(id){
+  const n=NPCS[id]; if(!n) return;
+  say(n.name+" "+n.emoji, pick(n.lines));
+}
+function npcRow(ids){
+  return `<div class="npc-row">${ids.map(id=>
+    `<button class="npc-btn" data-npc="${id}"><span class="emoji">${NPCS[id].emoji}</span>${NPCS[id].name}</button>`
+  ).join("")}</div>`;
+}
+document.addEventListener("click", e=>{
+  const b=e.target.closest("[data-npc]");
+  if(b) talkTo(b.dataset.npc);
+});
+/* ================= Town map ================= */
+const TOWN=[
+  {id:"bank", emoji:"🏦", nm:"Acorn Bank", sub:"Save & earn interest"},
+  {id:"post", emoji:"✉️", nm:"Post Office", sub:"Send & read mail"},
+  {id:"library", emoji:"📚", nm:"Twig & Tale Library", sub:"Read books"},
+  {id:"school", emoji:"🏫", nm:"Schoolhouse", sub:"Take quizzes"},
+  {id:"salon", emoji:"💇", nm:"Snip & Swirl", sub:"New hairstyles"},
+  {id:"grocery", emoji:"🍎", nm:"Honeycrisp Market", sub:"Fresh food", shop:"grocery"},
+  {id:"clothing", emoji:"👕", nm:"Dapper Daisy", sub:"Cool clothes", shop:"clothing"},
+  {id:"furniture", emoji:"🪑", nm:"The Gilded Twig", sub:"Furniture", shop:"furniture"},
+  {id:"toys", emoji:"🪀", nm:"Marbles & Mischief", sub:"Toys & games", shop:"toys"},
+  {id:"pets", emoji:"🐾", nm:"The Cozy Coop", sub:"Adopt a pet", shop:"pets"},
+  {id:"park", emoji:"🌳", nm:"Thimbleberry Park", sub:"Fish & play"},
+  {id:"studio", emoji:"🎵", nm:"Songbird Studio", sub:"Rhythm game"},
+  {id:"museum", emoji:"🏛️", nm:"Berrybrook Museum", sub:"Exhibits"},
+  {id:"house", emoji:"🏠", nm:"My House", sub:"Decorate"},
+  {id:"arcade", emoji:"🕹️", nm:"Game Hall", sub:"14 mini-games"},
+  {id:"paper", emoji:"📰", nm:"Bugle Office", sub:"Town newspaper"},
+  {id:"townhall", emoji:"🎖️", nm:"Town Hall", sub:"Stats & profile"},
+  {id:"community", emoji:"🤝", nm:"Hearth Hall", sub:"Quests & events"},
+];
+function renderTown(){
+  const g=$("#town-grid"); g.innerHTML="";
+  TOWN.forEach(t=>{
+    const b=document.createElement("button");
+    b.className="town-bldg";
+    b.innerHTML=`<span class="emoji">${t.emoji}</span><span class="nm">${t.nm}</span><br><span class="sub">${t.sub}</span>`;
+    b.addEventListener("click",()=>{
+      if(t.shop) openShop(t.shop);
+      else if(t.id==="house"){ renderHouse(); showScreen("screen-house"); }
+      else if(t.id==="arcade"){ renderArcade(); showScreen("screen-arcade"); }
+      else if(t.id==="paper"){ renderPaper(); showScreen("screen-paper"); }
+      else openPlace(t.id);
+    });
+    g.appendChild(b);
+  });
+  renderPetWidget();
+}
+
+/* ================= Places ================= */
+function openPlace(id){
+  const p=PLACES[id]; if(!p) return;
+  const card=$("#place-card");
+  card.innerHTML=`<h1>${p.emoji} ${p.name}</h1><p class="hint">${p.blurb}</p><div id="place-body"></div>${p.npcs?npcRow(p.npcs):""}`;
+  p.render($("#place-body"));
+  showScreen("screen-place");
+}
+
+const BOOKS=[
+  {id:"b1", title:"The Great Acorn Heist", emoji:"📖", pages:[
+    "Pip the chipmunk woke up to terrible news: the town's Giant Acorn — the one in the middle of the square — was GONE. Only a trail of tiny footprints remained.",
+    "Pip followed the footprints past the bakery, under the bridge, and straight to... a picnic blanket. A family of ducklings was using the Giant Acorn as a table.",
+    "Pip laughed so hard the ducklings shared their sandwiches. The acorn went back to the square, and Pip learned that sometimes a mystery is just lunch."]},
+  {id:"b2", title:"Willa and the Whispering Woods", emoji:"📗", pages:[
+    "Willa the owl loved quiet nights. But one night, the woods were NOT quiet. Something was whispering: ssshhh... ssshhh...",
+    "Willa packed a lantern and tiptoed between the trees. The whispering grew louder... and turned out to be a sleepy hedgehog, snoring into a hollow log.",
+    "Willa tucked a leaf-blanket around the hedgehog and whispered back: ssshhh... The woods were quiet again, and Willa smiled all the way home."]},
+  {id:"b3", title:"The Kite That Wanted to Fly", emoji:"📘", pages:[
+    "Barnaby built a kite from an old map and three birthday ribbons. But the kite refused to fly. It flopped. It sulked. It sat in the grass like a grumpy pancake.",
+    "Barnaby tried running faster. He tried jumping. He tried asking nicely. Finally he waited for the afternoon breeze and held the string very, very still.",
+    "Whoosh! Up it went, higher than the rooftops. The kite didn't want speed — it wanted patience. Barnaby never forgot that."]}
+];
+const SCHOOL_QUIZ=[
+  {q:"How many legs does a spider have?", opts:["6","8","10","100"], a:1},
+  {q:"What do plants need to grow? (pick the best)", opts:["Candy","Sunlight and water","Video games","Loud music"], a:1},
+  {q:"Which of these is a mammal?", opts:["Shark","Frog","Dolphin","Ant"], a:2},
+  {q:"How many days are in a week?", opts:["5","6","7","10"], a:2},
+  {q:"What shape has three sides?", opts:["Square","Circle","Triangle","Oval"], a:2}
+];
+const EXHIBITS=[
+  {t:"The Giant Pinecone", d:"Found in Thimbleberry Park in 1987, this pinecone weighs as much as a bowling ball. Scientists think it came from the oldest tree in the valley."},
+  {t:"Mayor Moss's First Gavel", d:"Carved from a fallen branch, this tiny gavel has opened every town meeting since Berrybrook was founded. It has never been dropped. Almost."},
+  {t:"The Singing Stones", d:"These smooth river stones hum when the wind blows through the museum skylight. Nobody knows why. Willa has three theories and a chart."},
+  {t:"Ancient Berry Press", d:"Long ago, Berrybrookians squished berries with this wooden press to make paint, jam, and once — by accident — a very purple mayor."}
+];
+const MUSEUM_QUIZ=[
+  {q:"What is the Giant Pinecone as heavy as?", opts:["A feather","A bowling ball","A car","A sandwich"], a:1},
+  {q:"What is Mayor Moss's gavel made from?", opts:["A fallen branch","A carrot","Recycled homework","Moon rock"], a:0},
+  {q:"When do the Singing Stones hum?", opts:["At lunch","When the wind blows","On Tuesdays","Never"], a:1},
+  {q:"What did the ancient berry press once make by accident?", opts:["A purple mayor","A rocket","A time machine","Soup"], a:0}
+];
+
+const PLACES={
+  bank:{emoji:"🏦", name:"Acorn Bank", blurb:"Keep your coins safe and watch them grow!", npcs:["alder"],
+    render(el){
+      if(!state.bankOpen){
+        el.innerHTML=`<p class="hint">Open a free savings account! Your coins earn 5% interest every day.</p>
+          <div class="center"><button class="btn green" id="open-acct">Open account 🆓</button></div>`;
+        $("#open-acct").addEventListener("click",()=>{ state.bankOpen=true; save(); questEvent("bank"); say("Alder 🦡","Account opened! Bring me coins and I'll keep them safe. 5% interest, daily. I'm very good at counting."); openPlace("bank"); });
+        return;
+      }
+      el.innerHTML=`
+        <div class="center" style="font-size:20px;font-weight:bold;">💰 Savings: <span id="bank-bal">${state.bank}</span> 🪙</div>
+        <p class="hint">5% interest added every day you visit!</p>
+        <div class="center" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          <input type="number" class="text-input" id="bank-amt" min="1" value="10">
+        </div>
+        <div class="center mt" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          <button class="btn small green" id="bank-dep">Deposit ⬇️</button>
+          <button class="btn small gold" id="bank-wd">Withdraw ⬆️</button>
+        </div>`;
+      $("#bank-dep").addEventListener("click",()=>{
+        const n=Math.max(1,Math.floor(+($("#bank-amt").value||0)));
+        if(state.coins<n){ toast("You don't have that many coins!"); return; }
+        state.coins-=n; state.bank+=n; save(); applyTopbar();
+        $("#bank-bal").textContent=state.bank; toast(`Deposited ${n} 🪙!`);
+      });
+      $("#bank-wd").addEventListener("click",()=>{
+        const n=Math.max(1,Math.floor(+($("#bank-amt").value||0)));
+        if(state.bank<n){ toast("Not that much in savings!"); return; }
+        state.bank-=n; state.coins+=n; save(); applyTopbar();
+        $("#bank-bal").textContent=state.bank; toast(`Withdrew ${n} 🪙!`);
+      });
+    }},
+  post:{emoji:"✉️", name:"Post Office", blurb:"Send letters, make friends!", npcs:[],
+    render(el){
+      const mail=state.mail.slice().reverse();
+      let h=`<h2>📬 Mailbox</h2>`;
+      h+= mail.length? mail.map(m=>`<div class="mail-item"><span class="from">${m.from}:</span> ${m.text}<div style="font-size:11px;color:var(--ink-soft)">Day ${m.day}</div></div>`).join("")
+        : `<p class="hint">No mail yet. Send someone a letter!</p>`;
+      h+=`<hr class="soft"><h2>✍️ Send a letter (2 🪙)</h2>
+        <div class="profile-row"><label>To:</label><select id="mail-to">${Object.keys(NPCS).map(id=>`<option value="${id}">${NPCS[id].name}</option>`).join("")}</select></div>
+        <div class="profile-row"><label>Note:</label><select id="mail-msg">
+          <option>You are awesome!</option><option>Want to play at the park later?</option>
+          <option>Thanks for being a great neighbor!</option><option>Your shop is my favorite!</option>
+        </select></div>
+        <div class="center"><button class="btn small" id="mail-send">Send 💌</button></div>`;
+      el.innerHTML=h;
+      $("#mail-send").addEventListener("click",()=>{
+        if(!spendCoins(2)) return;
+        const id=$("#mail-to").value, msg=$("#mail-msg").value;
+        bumpStat("community",3); questEvent("mail");
+        state.pendingReplies=state.pendingReplies||[];
+        state.pendingReplies.push(id); save();
+        toast(`Letter sent to ${NPCS[id].name}! 💌 (+3 Community)`);
+        openPlace("post");
+      });
+    }},
+  library:{emoji:"📚", name:"Twig & Tale Library", blurb:"Check out a book and grow your Smarts!", npcs:["tansy","marigold"],
+    render(el){
+      el.innerHTML=`<h2>Books to borrow</h2>`+BOOKS.map(b=>{
+        const done=state.books.includes(b.id);
+        return `<div class="book ${done?"done":""}" data-book="${b.id}"><div class="t">${b.emoji} ${b.title}</div><div style="font-size:13px;color:var(--ink-soft)">${done?"Finished! Read again?":"3 pages · +8 Smarts"}</div></div>`;
+      }).join("");
+      el.querySelectorAll("[data-book]").forEach(d=>d.addEventListener("click",()=>readBook(d.dataset.book)));
+    }},
+  school:{emoji:"🏫", name:"Schoolhouse", blurb:"Take a quiz and earn Smarts!", npcs:["bramble"],
+    render(el){
+      el.innerHTML=`<p class="hint">Answer 5 questions. Each correct answer: +2 Smarts. All 5 right: bonus 10 🪙!</p>
+        <div class="center"><button class="btn green" id="quiz-start">Start quiz 📝</button></div><div id="quiz-box"></div>`;
+      $("#quiz-start").addEventListener("click",()=>runQuiz($("#quiz-box"), SCHOOL_QUIZ, (score)=>{
+        bumpStat("smarts", score*2); state.quizzesDone++; questEvent("quiz"); save();
+        if(score===5){ addCoins(10); }
+      }));
+    }},
+  salon:{emoji:"💇", name:"Snip & Swirl", blurb:"A fresh look for 15 Berry Coins!", npcs:["poppy"],
+    render(el){
+      const av=state.avatar||{hair:"bob",hairColor:"#6b4a2f",skin:"#f2c9a0",shirt:"#e2548b",pants:"#4a5a8a"};
+      let d={hair:av.hair, hairColor:av.hairColor};
+      el.innerHTML=`<div class="center" id="salon-preview"></div>
+        <h2 class="center">Style</h2><div class="option-grid" id="salon-hair"></div>
+        <h2 class="center">Color</h2><div class="option-grid" id="salon-color"></div>
+        <div class="center mt"><button class="btn gold" id="salon-buy">New look! 15 🪙</button></div>`;
+      const paint=()=>{ $("#salon-preview").innerHTML=avatarSVG(Object.assign({},av,d),130); };
+      const mk=(id,items,key,isSwatch)=>{
+        const host=$(id); host.innerHTML="";
+        items.forEach(v=>{
+          const b=document.createElement("button"); b.className="pick"+(isSwatch?" swatch":""); b.type="button";
+          if(isSwatch) b.style.background=v; else b.textContent=v[0].toUpperCase()+v.slice(1);
+          const rp=()=>b.classList.toggle("selected", d[key]===v);
+          b.addEventListener("click",()=>{ d[key]=v; $$(id+" .pick").forEach(x=>x.classList.remove("selected")); rp(); paint(); });
+          rp(); host.appendChild(b);
+        });
+      };
+      mk("#salon-hair",HAIRS,"hair",false); mk("#salon-color",HAIR_COLORS,"hairColor",true); paint();
+      $("#salon-buy").addEventListener("click",()=>{
+        if(!spendCoins(15)) return;
+        state.avatar.hair=d.hair; state.avatar.hairColor=d.hairColor; save(); applyTopbar();
+        toast("Looking sharp! 💇✨");
+      });
+    }},
+  museum:{emoji:"🏛️", name:"Berrybrook Museum", blurb:"Marvel at town history!", npcs:["willa"],
+    render(el){
+      el.innerHTML=`<h2>Exhibits</h2>`+EXHIBITS.map(x=>`<div class="exhibit"><div class="t">${x.t}</div><div style="font-size:14px;">${x.d}</div></div>`).join("")+
+        `<hr class="soft"><div class="center"><button class="btn green" id="mus-quiz">Museum quiz 🧠 (+coins!)</button></div><div id="mus-box"></div>`;
+      $("#mus-quiz").addEventListener("click",()=>runQuiz($("#mus-box"), MUSEUM_QUIZ, (score)=>{
+        const c=score*3; addCoins(c); bumpStat("smarts",score); questEvent("quiz"); save();
+      }));
+    }},
+  townhall:{emoji:"🎖️", name:"Town Hall", blurb:"Your citizen profile!", npcs:["moss"],
+    render(el){
+      const s=state.stats;
+      const bar=(lbl,v)=>`<div class="stat-row"><span class="lbl">${lbl}</span><div class="stat-bar"><i style="width:${v}%"></i></div><span class="val">${v}</span></div>`;
+      el.innerHTML=`
+        <div class="center" style="font-size:52px;">${state.avatar?avatarSVG(state.avatar,70):""}</div>
+        <h2 class="center">${state.avatar?state.avatar.name:""}'s Citizen Card</h2>
+        ${bar("❤️ Health",s.health)}${bar("🏃 Fitness",s.fitness)}${bar("🧠 Smarts",s.smarts)}${bar("🤝 Community",s.community)}${bar("🍽️ Hunger",s.hunger)}
+        <hr class="soft"><h2>About me</h2>
+        <div class="profile-row"><label>Favorite color:</label><select id="pf-color">${["Pink","Blue","Green","Purple","Yellow","Red"].map(c=>`<option ${state.profile.color===c?"selected":""}>${c}</option>`).join("")}</select></div>
+        <div class="profile-row"><label>Hobby:</label><select id="pf-hobby">${["Reading","Sports","Music","Art","Gaming","Cooking"].map(c=>`<option ${state.profile.hobby===c?"selected":""}>${c}</option>`).join("")}</select></div>
+        <div class="profile-row"><label>Music:</label><select id="pf-music">${["Pop","Rock","Jazz","Classical","Chiptune"].map(c=>`<option ${state.profile.music===c?"selected":""}>${c}</option>`).join("")}</select></div>
+        <div class="center"><button class="btn small" id="pf-save">Save profile</button></div>
+        <hr class="soft"><h2 class="center">🏆 Trophy Case</h2><div class="trophy-case" id="th-trophies"></div>`;
+      $("#pf-save").addEventListener("click",()=>{
+        state.profile={color:$("#pf-color").value,hobby:$("#pf-hobby").value,music:$("#pf-music").value};
+        save(); toast("Profile saved! ✨");
+      });
+      const tc=$("#th-trophies");
+      const keys=Object.keys(state.trophies);
+      tc.innerHTML=keys.length? keys.map(k=>`<div class="trophy">🏆 ${GAMES[k]?GAMES[k].name:k}: ${state.trophies[k]}</div>`).join("") : `<p class="hint">No trophies yet — play games at the Game Hall!</p>`;
+    }},
+  community:{emoji:"🤝", name:"Hearth Hall", blurb:"Quests, events, and good neighbors!", npcs:["moss","miso"],
+    render(el){
+      const doneToday=state.bakeSaleDay===state.day;
+      el.innerHTML=`<h2>📋 Quest Board</h2><div id="quest-board"></div>
+        <hr class="soft"><h2>🎪 Daily Event: Bake Sale</h2>
+        <p class="hint">Donate 10 🪙 to the town bake sale for +6 Community!</p>
+        <div class="center"><button class="btn gold" id="bake-btn" ${doneToday?"disabled":""}>${doneToday?"Thanks for donating today! 💛":"Donate 10 🪙"}</button></div>`;
+      renderQuests($("#quest-board"));
+      $("#bake-btn").addEventListener("click",()=>{
+        if(!spendCoins(10)) return;
+        state.bakeSaleDay=state.day; bumpStat("community",6); save();
+        toast("The whole town thanks you! 🧁 (+6 Community)");
+        openPlace("community");
+      });
+    }},
+  park:{emoji:"🌳", name:"Thimbleberry Park", blurb:"Fresh air, fishing, and good deeds!", npcs:["flint","barnaby"],
+    render(el){
+      el.innerHTML=`<div class="center" style="font-size:56px;">🌳🦆🌳</div>
+        <div class="option-grid">
+          <button class="btn green" id="park-fish">🎣 Go fishing</button>
+          <button class="btn green" id="park-clean">🧹 Park cleanup</button>
+          <button class="btn gold" id="park-duck">🦆 Feed ducks (3 🪙)</button>
+        </div>
+        <p class="hint">Tip: you need a fishing rod from Marbles &amp; Mischief to fish!</p>`;
+      $("#park-fish").addEventListener("click",()=>{
+        if(!state.inventory.some(i=>i.id==="rod")){ say("Coach Flint 🦅","You'll need a fishing rod first — Marbles & Mischief sells them!"); return; }
+        openGame("fishing");
+      });
+      $("#park-clean").addEventListener("click",()=>openGame("cleanup"));
+      $("#park-duck").addEventListener("click",()=>{
+        if(!spendCoins(3)) return;
+        bumpStat("community",2); questEvent("duck"); save();
+        toast("The ducks are delighted! 🦆 (+2 Community)");
+      });
+    }},
+  studio:{emoji:"🎵", name:"Songbird Studio", blurb:"Tap to the beat!", npcs:["wren"],
+    render(el){
+      el.innerHTML=`<div class="center" style="font-size:56px;">🎤🎹🥁</div>
+        <p class="hint">Wren's rhythm challenge: tap HIT when the note is in the golden zone!</p>
+        <div class="center"><button class="btn" id="studio-play">Play Rhythm Game 🎵</button></div>`;
+      $("#studio-play").addEventListener("click",()=>openGame("rhythm"));
+    }}
+};
+
+/* ---------- Library reading ---------- */
+function readBook(id){
+  const b=BOOKS.find(x=>x.id===id); let page=0;
+  const card=$("#place-card");
+  const draw=()=>{
+    card.innerHTML=`<h1>${b.emoji} ${b.title}</h1>
+      <p class="hint">Page ${page+1} of ${b.pages.length}</p>
+      <div class="scene-card" style="font-size:17px;line-height:1.7;">${b.pages[page]}</div>
+      <div class="back-row">
+        ${page>0?`<button class="btn small" id="pg-prev">← Back</button>`:""}
+        ${page<b.pages.length-1?`<button class="btn small green" id="pg-next">Next →</button>`:`<button class="btn small gold" id="pg-done">Finish book 📚</button>`}
+      </div>`;
+    const pv=$("#pg-prev"), nx=$("#pg-next"), dn=$("#pg-done");
+    if(pv) pv.addEventListener("click",()=>{page--;draw();});
+    if(nx) nx.addEventListener("click",()=>{page++;draw();});
+    if(dn) dn.addEventListener("click",()=>{
+      if(!state.books.includes(id)){ state.books.push(id); bumpStat("smarts",8); questEvent("book"); save(); toast("Book finished! +8 Smarts! 📚"); }
+      openPlace("library");
+    });
+  };
+  draw();
+}
+
+/* ---------- Generic quiz runner ---------- */
+function runQuiz(host, questions, onDone){
+  let i=0, score=0;
+  const draw=()=>{
+    if(i>=questions.length){
+      host.innerHTML=`<div class="center mt" style="font-size:20px;font-weight:bold;">Score: ${score}/${questions.length}! ${score===questions.length?"🌟 Perfect!":"🎉"}</div>`;
+      onDone(score); return;
+    }
+    const q=questions[i];
+    host.innerHTML=`<div class="quiz-q">${q.q}</div><div class="quiz-opts">${
+      q.opts.map((o,oi)=>`<button class="pick" data-oi="${oi}">${o}</button>`).join("")
+    }</div>`;
+    host.querySelectorAll(".pick").forEach(b=>b.addEventListener("click",()=>{
+      if(+b.dataset.oi===q.a){ score++; toast("Correct! ✅"); } else toast(`Oops! The answer was: ${q.opts[q.a]}`);
+      i++; setTimeout(draw, 700);
+    }));
+  };
+  draw();
+}
+/* ================= Shops ================= */
+const SHOPS={
+  grocery:{name:"🍎 Honeycrisp Market", hint:"Fresh snacks restore Hunger and Health. Tap Buy, then eat from your inventory!",
+    items:[
+      {id:"apple", name:"Crisp Apple", price:3, kind:"food", hunger:15, health:5, emoji:"🍎"},
+      {id:"berrytart", name:"Berry Tart", price:6, kind:"food", hunger:25, health:8, emoji:"🥧"},
+      {id:"veggie", name:"Veggie Basket", price:8, kind:"food", hunger:30, health:15, emoji:"🥦"},
+      {id:"cheese", name:"Cheese Wheel", price:10, kind:"food", hunger:35, health:10, emoji:"🧀"},
+      {id:"cake", name:"Fancy Cake", price:15, kind:"food", hunger:45, health:5, emoji:"🍰"}
+    ]},
+  clothing:{name:"👕 Dapper Daisy", hint:"New outfits! Buying applies the look instantly.",
+    items:[
+      {id:"sh1", name:"Ruby Tee", price:12, kind:"shirt", val:"#e2548b", emoji:"👕"},
+      {id:"sh2", name:"Ocean Tee", price:12, kind:"shirt", val:"#4f8fd0", emoji:"👕"},
+      {id:"sh3", name:"Lime Tee", price:12, kind:"shirt", val:"#5cb85c", emoji:"👕"},
+      {id:"sh4", name:"Grape Tee", price:14, kind:"shirt", val:"#9a6fd0", emoji:"👕"},
+      {id:"pa1", name:"Denim Pants", price:12, kind:"pants", val:"#4a5a8a", emoji:"👖"},
+      {id:"pa2", name:"Forest Pants", price:14, kind:"pants", val:"#3f7a4f", emoji:"👖"}
+    ]},
+  furniture:{name:"🪑 The Gilded Twig", hint:"Buy furniture, then place it in My House!",
+    items:[
+      {id:"chair", name:"Cozy Chair", price:15, kind:"furniture", emoji:"🪑"},
+      {id:"table", name:"Round Table", price:25, kind:"furniture", emoji:"🍽️"},
+      {id:"lamp", name:"Glow Lamp", price:20, kind:"furniture", emoji:"🛋️"},
+      {id:"rug", name:"Soft Rug", price:18, kind:"furniture", emoji:"🟧"},
+      {id:"bed", name:"Comfy Bed", price:40, kind:"furniture", emoji:"🛏️"},
+      {id:"shelf", name:"Bookshelf", price:35, kind:"furniture", emoji:"📚"},
+      {id:"plant", name:"Potted Fern", price:12, kind:"furniture", emoji:"🪴"},
+      {id:"art", name:"Sunny Painting", price:30, kind:"furniture", emoji:"🖼️"}
+    ]},
+  toys:{name:"🪀 Marbles & Mischief", hint:"Toys make pets happy. A fishing rod unlocks pond fishing!",
+    items:[
+      {id:"ball", name:"Bouncy Ball", price:10, kind:"toy", emoji:"⚽"},
+      {id:"plush", name:"Plush Fox", price:20, kind:"toy", emoji:"🧸"},
+      {id:"puzzle", name:"Puzzle Box", price:25, kind:"toy", emoji:"🧩"},
+      {id:"kite", name:"Rainbow Kite", price:18, kind:"toy", emoji:"🪁"},
+      {id:"rod", name:"Fishing Rod", price:30, kind:"tool", emoji:"🎣", unique:true}
+    ]},
+  pets:{name:"🐾 The Cozy Coop", hint:"Adopt a forever friend! Feed and play with them every day.",
+    items:[
+      {id:"pet-fox", name:"Adopt: Kit the Fox", price:50, kind:"adopt", species:"fox", emoji:"🦊"},
+      {id:"pet-owl", name:"Adopt: Hoot the Owl", price:60, kind:"adopt", species:"owl", emoji:"🦉"},
+      {id:"pet-turtle", name:"Adopt: Puddles the Turtle", price:45, kind:"adopt", species:"turtle", emoji:"🐢"},
+      {id:"petfood", name:"Pet Food", price:5, kind:"petfood", emoji:"🦴"},
+      {id:"toymouse", name:"Toy Mouse", price:8, kind:"pettoy", emoji:"🐭"}
+    ]}
+};
+function openShop(id){
+  const s=SHOPS[id];
+  $("#shop-title").textContent=s.name;
+  $("#shop-hint").textContent=s.hint;
+  const grid=$("#shop-grid"); grid.innerHTML="";
+  s.items.forEach(it=>{
+    const d=document.createElement("div"); d.className="shop-item";
+    let fx="";
+    if(it.kind==="food") fx=`+${it.hunger} Hunger, +${it.health} Health`;
+    if(it.kind==="adopt") fx=`A loyal buddy!`;
+    if(it.kind==="toy") fx=`Pet playtime!`;
+    if(it.kind==="petfood") fx=`Feed your pet`;
+    if(it.kind==="tool") fx=`Unlocks pond fishing`;
+    if(it.kind==="furniture") fx=`For your house`;
+    if(it.kind==="shirt"||it.kind==="pants") fx=`New look!`;
+    const owned = it.unique && state.inventory.some(x=>x.id===it.id);
+    d.innerHTML=`<div class="emoji">${it.emoji}</div><div class="nm">${it.name}</div><div class="pr">${it.price} 🪙</div><div class="fx">${fx}</div>`;
+    const b=document.createElement("button"); b.className="btn small gold"; b.textContent=owned?"Owned ✓":"Buy";
+    b.disabled=!!owned;
+    b.addEventListener("click",()=>buyItem(id,it));
+    d.appendChild(b); grid.appendChild(d);
+  });
+  showScreen("screen-shop");
+}
+function buyItem(shopId, it){
+  if(it.kind==="adopt" && state.pet){ toast("You already have a pet buddy! 🐾"); return; }
+  if(!spendCoins(it.price)) return;
+  if(it.kind==="shirt"){ state.avatar.shirt=it.val; toast("New shirt! Looking great! 👕"); }
+  else if(it.kind==="pants"){ state.avatar.pants=it.val; toast("New pants! Looking great! 👖"); }
+  else if(it.kind==="furniture"){ state.furniture.push(it.id); toast(`${it.name} added! Place it in My House 🏠`); }
+  else if(it.kind==="adopt"){ state.pet={species:it.species, name:it.name.split(": ")[1], happy:80, fed:80}; questEvent("pet"); toast(`You adopted ${state.pet.name}! 🐾`); }
+  else { state.inventory.push({id:it.id, kind:it.kind, name:it.name, emoji:it.emoji, hunger:it.hunger||0, health:it.health||0}); toast(`${it.name} bought!`); }
+  save(); applyTopbar(); openShop(shopId);
+}
+function eatItem(idx){
+  const it=state.inventory[idx];
+  if(!it || it.kind!=="food") return;
+  bumpStat("hunger",it.hunger); bumpStat("health",it.health);
+  state.inventory.splice(idx,1); save();
+  toast(`Yum! ${it.name} ${it.emoji} (+${it.hunger} Hunger)`);
+  renderInvBar();
+}
+function renderInvBar(){
+  const host=$("#inv-bar-top"); if(!host) return;
+  const foods=state.inventory.map((it,i)=>({it,i})).filter(x=>x.it.kind==="food");
+  host.innerHTML = foods.length? `<span style="font-size:13px;font-weight:bold;">🎒 Tap food to eat:</span>`+foods.map(x=>
+    `<button class="inv-item" data-eat="${x.i}"><span class="emoji">${x.it.emoji}</span>${x.it.name}</button>`).join("")
+    : `<span style="font-size:13px;color:var(--ink-soft)">🎒 No snacks — visit Honeycrisp Market!</span>`;
+  host.querySelectorAll("[data-eat]").forEach(b=>b.addEventListener("click",()=>eatItem(+b.dataset.eat)));
+}
+
+/* ================= House ================= */
+const FURN_EMOJI={chair:"🪑",table:"🍽️",lamp:"🛋️",rug:"🟧",bed:"🛏️",shelf:"📚",plant:"🪴",art:"🖼️"};
+const FURN_NAME={chair:"Cozy Chair",table:"Round Table",lamp:"Glow Lamp",rug:"Soft Rug",bed:"Comfy Bed",shelf:"Bookshelf",plant:"Potted Fern",art:"Sunny Painting"};
+let selectedFurn=null;
+function renderHouse(){
+  const grid=$("#house-grid"); grid.innerHTML="";
+  for(let i=0;i<16;i++){
+    const c=document.createElement("div");
+    const f=state.house[i];
+    c.className="house-cell"+(f?" filled":"");
+    c.textContent=f?FURN_EMOJI[f]:"";
+    c.addEventListener("click",()=>{
+      if(state.house[i]){ // pick up
+        state.furniture.push(state.house[i]); delete state.house[i]; save(); renderHouse();
+      } else if(selectedFurn){
+        state.house[i]=selectedFurn;
+        state.furniture.splice(state.furniture.indexOf(selectedFurn),1);
+        selectedFurn=null; questEvent("decorate"); save(); renderHouse();
+        toast("Placed! 🏠");
+      }
+    });
+    grid.appendChild(c);
+  }
+  const inv=$("#house-inv"); inv.innerHTML="";
+  if(!state.furniture.length) inv.innerHTML=`<span style="font-size:13px;color:var(--ink-soft)">No furniture yet — visit The Gilded Twig! 🪑</span>`;
+  state.furniture.forEach(f=>{
+    const b=document.createElement("button");
+    b.className="inv-item"+(selectedFurn===f?" selected":"");
+    b.innerHTML=`<span class="emoji">${FURN_EMOJI[f]}</span>${FURN_NAME[f]}`;
+    b.addEventListener("click",()=>{ selectedFurn=(selectedFurn===f?null:f); renderHouse(); });
+    inv.appendChild(b);
+  });
+}
+
+/* ================= Pets ================= */
+const PET_EMOJI={fox:"🦊",owl:"🦉",turtle:"🐢"};
+function renderPetWidget(){
+  const w=$("#pet-widget");
+  if(!state.pet){ w.style.display="none"; return; }
+  w.style.display="block";
+  $("#pet-widget-name").textContent=state.pet.name;
+  $("#pet-widget-emoji").textContent=PET_EMOJI[state.pet.species];
+  $("#pet-happy-bar").style.width=state.pet.happy+"%";
+  $("#pet-happy-val").textContent=state.pet.happy;
+  $("#pet-fed-bar").style.width=state.pet.fed+"%";
+  $("#pet-fed-val").textContent=state.pet.fed;
+}
+$("#pet-feed").addEventListener("click",()=>{
+  if(!state.pet) return;
+  const fi=state.inventory.findIndex(i=>i.id==="petfood");
+  if(fi>=0){ state.inventory.splice(fi,1); }
+  else if(!spendCoins(2)){ return; }
+  state.pet.fed=clamp(state.pet.fed+25,0,100); state.pet.happy=clamp(state.pet.happy+5,0,100);
+  save(); renderPetWidget(); toast(`${state.pet.name} munches happily! 🦴`);
+});
+$("#pet-play").addEventListener("click",()=>{
+  if(!state.pet) return;
+  const hasToy=state.inventory.some(i=>i.kind==="toy"||i.kind==="pettoy");
+  if(!hasToy){ toast("Buy a toy first — Marbles & Mischief has them! 🪀"); return; }
+  state.pet.happy=clamp(state.pet.happy+20,0,100); state.pet.fed=clamp(state.pet.fed-5,0,100);
+  bumpStat("fitness",2); save(); renderPetWidget();
+  toast(`Playtime! ${state.pet.name} is thrilled! 🎉`);
+});
+
+/* ================= Quests ================= */
+const QUESTS=[
+  {id:"q-play", giver:"Barnaby", title:"Game Rookie", desc:"Play 3 mini-games", event:"play", target:3, reward:20},
+  {id:"q-fish", giver:"Coach Flint", title:"Gone Fishin'", desc:"Catch 3 fish", event:"fish", target:3, reward:25},
+  {id:"q-pet", giver:"Miso", title:"New Friend", desc:"Adopt a pet", event:"pet", target:1, reward:30},
+  {id:"q-bank", giver:"Alder", title:"Junior Saver", desc:"Open a bank account", event:"bank", target:1, reward:15},
+  {id:"q-book", giver:"Tansy", title:"Bookworm", desc:"Finish reading a book", event:"book", target:1, reward:20},
+  {id:"q-deco", giver:"Marigold", title:"Home Sweet Home", desc:"Place 4 pieces of furniture", event:"decorate", target:4, reward:30},
+  {id:"q-quiz", giver:"Prof. Bramble", title:"Star Student", desc:"Take 2 quizzes", event:"quiz", target:2, reward:20},
+  {id:"q-mail", giver:"Mayor Moss", title:"Friendly Neighbor", desc:"Send 2 letters", event:"mail", target:2, reward:15},
+  {id:"q-trophy", giver:"Dex", title:"Champion", desc:"Win 3 trophies", event:"trophy", target:3, reward:40},
+];
+function questEvent(ev){
+  let changed=false;
+  QUESTS.forEach(q=>{
+    if(q.event!==ev || state.quests[q.id]==="done") return;
+    state.quests[q.id]=(state.quests[q.id]||0)+1; changed=true;
+    if(state.quests[q.id]>=q.target){
+      state.quests[q.id]="done"; addCoins(q.reward);
+      setTimeout(()=>say("📋 Quest complete!", `"${q.title}" done! ${NPCS[q.giver]?NPCS[q.giver].name:""} gave you ${q.reward} 🪙!`),400);
+    }
+  });
+  if(changed) save();
+}
+function renderQuests(host){
+  host.innerHTML=QUESTS.map(q=>{
+    const st=state.quests[q.id];
+    const done=st==="done";
+    const prog=done? q.target : (st||0);
+    return `<div class="quest ${done?"done":""}"><div class="t">${done?"✅":"📌"} ${q.title} <span style="font-weight:normal;font-size:12px;">(from ${q.giver})</span></div>
+      <div>${q.desc}</div><div class="prog">${prog}/${q.target} · Reward: ${q.reward} 🪙</div></div>`;
+  }).join("");
+}
+
+/* ================= Newspaper ================= */
+const FUN_NEWS=[
+  ["Duck Parade Waddles Through Town","A line of seventeen ducks marched down the lane this morning, led by one very confident duckling. Traffic was delayed by cuteness."],
+  ["Giant Sandwich Spotted at Picnic","Witnesses report a sandwich 'the size of a pillow' at Thimbleberry Park. The owner declined to share. An investigation is ongoing."],
+  ["Library Discovers Book Is Actually Two Books","Librarian Tansy confirmed that the thickest book on the shelf is, in fact, two books stuck together. 'Mystery solved,' she said."],
+  ["Local Fox Buries Lunch, Forgets Location","Barnaby the fox buried a sandwich for later and now cannot find it. 'It could be anywhere,' he said. 'That's the beauty of it.'"],
+  ["Museum Rock Still Just Sitting There","The famous rock exhibit continued to sit impressively this week, drawing crowds of up to three visitors."]
+];
+function renderPaper(){
+  const heads=[];
+  const troKeys=Object.keys(state.trophies);
+  if(troKeys.length) heads.push([`${state.avatar.name} Wins Big at the Game Hall!`,`Local hero ${state.avatar.name} has now earned ${troKeys.length} troph${troKeys.length>1?"ies":"y"}! When asked for comment, they said: "Play more games."`]);
+  if(state.pet) heads.push([`New Pet in Town: ${state.pet.name}!`,`${state.pet.name} the ${state.pet.species} has moved to Berrybrook and is already the most popular resident on the block. Treats were served.`]);
+  if(state.books.length) heads.push([`Local Reader Finishes ${state.books.length} Book${state.books.length>1?"s":""}!`,`Tansy the librarian presented ${state.avatar.name} with a gold star sticker. "A reader is a leader," she whispered.`]);
+  if(state.bankOpen && state.bank>=100) heads.push([`Savings Milestone!`,`Alder the banker confirms ${state.avatar.name} has saved over 100 Berry Coins. "A saver is a... also good," he said.`]);
+  while(heads.length<3) heads.push(pick(FUN_NEWS));
+  $("#paper-body").innerHTML=`
+    <h1>📰 The Berrybrook Bugle</h1>
+    <div class="dateline">Day ${state.day} · Price: one smile</div>
+    ${heads.map(h=>`<h3>${h[0]}</h3><p>${h[1]}</p>`).join("")}
+    <h3>Weather</h3><p>${pick(["Sunny with a chance of rainbows.","Cloudy, perfect kite weather.","A light breeze, ideal for picnics.","Cozy and warm all day."])}</p>`;
+}
+
+/* ================= Stats screen ================= */
+function renderStats(){
+  const s=state.stats;
+  const bar=(lbl,v)=>`<div class="stat-row"><span class="lbl">${lbl}</span><div class="stat-bar"><i style="width:${v}%"></i></div><span class="val">${v}</span></div>`;
+  $("#stats-list").innerHTML=
+    bar("❤️ Health",s.health)+bar("🏃 Fitness",s.fitness)+bar("🧠 Smarts",s.smarts)+bar("🤝 Community",s.community)+bar("🍽️ Hunger",s.hunger)+
+    `<p class="hint">Hunger drops as you play — eat snacks from Honeycrisp Market!</p>`;
+  const keys=Object.keys(state.trophies);
+  $("#trophy-case").innerHTML=keys.length? keys.map(k=>`<div class="trophy">🏆 ${GAMES[k]?GAMES[k].name:"?"}: ${state.trophies[k]}</div>`).join("")
+    : `<p class="hint">No trophies yet — play games at the Game Hall!</p>`;
+}
+/* ================= Game Hall ================= */
+let gameTimers=[];
+function clearGameTimers(){ gameTimers.forEach(t=>{ try{clearInterval(t);}catch(e){} try{clearTimeout(t);}catch(e){} }); gameTimers=[]; }
+function every(ms,fn){ const t=setInterval(fn,ms); gameTimers.push(t); return t; }
+function after(ms,fn){ const t=setTimeout(fn,ms); gameTimers.push(t); return t; }
+
+const GAMES={
+  jumble:{name:"Letter Jumble", emoji:"🔤", cat:"🧠 Smarts", stat:"smarts", statPts:4, trophy:100, desc:"Unscramble words!", instructions:"Tap the letters in order to spell the word. 6 rounds!"},
+  number:{name:"Number Rush", emoji:"🔢", cat:"🧠 Smarts", stat:"smarts", statPts:4, trophy:80, desc:"Fast math!", instructions:"Solve 10 math questions before the timer runs out!"},
+  maze:{name:"Acorn Maze", emoji:"🌰", cat:"🧠 Smarts", stat:"smarts", statPts:4, trophy:200, desc:"Guide the acorn!", instructions:"Use the arrows to guide the acorn to the nest. 2 mazes!"},
+  archery:{name:"Bullseye Archery", emoji:"🏹", cat:"🏃 Fitness", stat:"fitness", statPts:4, trophy:180, desc:"Hit the target!", instructions:"Tap LOOSE when the marker is on the bullseye. 5 arrows!"},
+  rope:{name:"Rope Climb", emoji:"🧗", cat:"🏃 Fitness", stat:"fitness", statPts:4, trophy:150, desc:"Climb fast!", instructions:"Tap CLIMB as fast as you can to reach the top before time runs out!"},
+  hoop:{name:"Hoop Toss", emoji:"🏀", cat:"🏃 Fitness", stat:"fitness", statPts:4, trophy:100, desc:"Swish!", instructions:"Tap SHOOT when the ball lines up with the moving hoop. 6 shots!"},
+  halfpipe:{name:"Half-Pipe Hero", emoji:"🛹", cat:"🏃 Fitness", stat:"fitness", statPts:4, trophy:150, desc:"Shred it!", instructions:"Tap TRICK when the skater is inside the golden zone. 10 tries!"},
+  blaster:{name:"Bubble Blaster", emoji:"🫧", cat:"🎁 Rewards", stat:"health", statPts:3, trophy:150, desc:"Pop the fish!", instructions:"Move with ◀ ▶ (or arrow keys), tap FIRE to shoot bubbles. 45 seconds!"},
+  fishing:{name:"Pond Fishing", emoji:"🎣", cat:"🎁 Rewards", stat:"health", statPts:3, trophy:60, desc:"Catch fish!", instructions:"Cast, wait for the ! splash, then TAP fast to catch! 5 casts."},
+  plinko:{name:"Plinko Drop", emoji:"🎯", cat:"🎁 Rewards", stat:"health", statPts:2, trophy:120, desc:"Lucky drop!", instructions:"Tap DROP and watch your chip bounce to a prize! 5 chips."},
+  cleanup:{name:"Park Cleanup", emoji:"🧹", cat:"🤝 Community", stat:"community", statPts:4, trophy:120, desc:"Tidy the park!", instructions:"Tap trash to collect it (+10). DON'T tap squirrels (-15)! 30 seconds."},
+  defender:{name:"Star Defender", emoji:"🛡️", cat:"🤝 Community", stat:"community", statPts:4, trophy:120, desc:"Save the planet!", instructions:"Tap falling meteors to zap them before they hit Berrybrook! 45 seconds."},
+  critter:{name:"Critter Catch", emoji:"🐾", cat:"🤝 Community", stat:"community", statPts:4, trophy:100, desc:"Match the critter!", instructions:"Memorize the wanted critter, then tap all matches. 6 rounds!"},
+  rhythm:{name:"Songbird Studio", emoji:"🎵", cat:"🎁 Rewards", stat:"health", statPts:3, trophy:150, desc:"Feel the beat!", instructions:"Tap HIT when the note is inside the golden zone. 20 notes!"}
+};
+function renderArcade(){
+  const host=$("#arcade-list"); host.innerHTML="";
+  const cats=["🧠 Smarts","🏃 Fitness","🤝 Community","🎁 Rewards"];
+  cats.forEach(c=>{
+    const h=document.createElement("div"); h.className="game-cat"; h.textContent=c; host.appendChild(h);
+    const grid=document.createElement("div"); grid.className="game-list";
+    Object.keys(GAMES).filter(id=>GAMES[id].cat===c).forEach(id=>{
+      const g=GAMES[id];
+      const b=document.createElement("button"); b.className="game-card";
+      b.innerHTML=`<div class="emoji">${g.emoji}</div><div class="nm">${g.name}</div><div class="ds">${g.desc}</div>
+        <div class="best">${state.trophies[id]?("Best: "+state.trophies[id]):""}${(state.trophyWon&&state.trophyWon[id])?" 🏆":""}</div>`;
+      b.addEventListener("click",()=>openGame(id));
+      grid.appendChild(b);
+    });
+    host.appendChild(grid);
+  });
+}
+function openGame(id){
+  clearGameTimers();
+  const g=GAMES[id];
+  $("#game-title").textContent=g.emoji+" "+g.name;
+  $("#game-instructions").textContent=g.instructions;
+  $("#game-best").textContent=(state.trophies[id]?("Your best: "+state.trophies[id]+" · "):"")+(state.trophyWon&&state.trophyWon[id]?"🏆 Trophy won! ":"Trophy at "+g.trophy+" pts 🏆");
+  $("#game-area").innerHTML=""; $("#game-result").innerHTML="";
+  const st=$("#game-start"); st.style.display="";
+  st.onclick=()=>{ st.style.display="none"; g.start($("#game-area"), score=>finishGame(id,score)); };
+  showScreen("screen-game");
+}
+$("#game-quit").addEventListener("click",()=>{ clearGameTimers(); renderArcade(); showScreen("screen-arcade"); });
+function finishGame(id, score){
+  clearGameTimers();
+  const g=GAMES[id];
+  score=Math.max(0,Math.round(score));
+  const coins=clamp(Math.round(score/6),2,60);
+  addCoins(coins); bumpStat(g.stat,g.statPts); eatHunger();
+  state.gamesPlayed++; questEvent("play");
+  let trophyMsg="";
+  if(score>(state.trophies[id]||0)) state.trophies[id]=score;
+  if(score>=g.trophy && !(state.trophyWon&&state.trophyWon[id])){
+    state.trophyWon=state.trophyWon||{}; state.trophyWon[id]=1;
+    questEvent("trophy"); trophyMsg=`<div style="font-size:22px;">🏆 TROPHY WON! 🏆</div>`;
+  }
+  save();
+  $("#game-result").innerHTML=`<div class="scene-card center" style="margin-top:14px;">
+    ${trophyMsg}<div style="font-size:24px;font-weight:bold;">Score: ${score}</div>
+    <div style="font-size:18px;">+${coins} 🪙 &nbsp; +${g.statPts} ${g.stat}</div>
+    <div class="back-row"><button class="btn small green" id="again-btn">🔁 Play again</button></div></div>`;
+  $("#again-btn").addEventListener("click",()=>openGame(id));
+}
+
+/* ---------- Game: Letter Jumble ---------- */
+const JUMBLE_WORDS=["ACORN","BERRY","MEADOW","SUNNY","PICNIC","TURTLE","RAINBOW","GARDEN","LANTERN","BRIDGE","PUDDLE","CLOVER"];
+GAMES.jumble.start=function(area,done){
+  let round=0, score=0;
+  const draw=()=>{
+    if(round>=6){ done(score); return; }
+    round++;
+    const word=pick(JUMBLE_WORDS);
+    const letters=shuffle(word.split(""));
+    let built="", mistakes=0;
+    area.innerHTML=`<div class="center" style="font-size:15px;font-weight:bold;">Round ${round}/6 · Score ${score}</div>
+      <div class="center" id="j-built" style="font-size:34px;letter-spacing:8px;min-height:52px;margin:10px 0;font-weight:bold;"></div>
+      <div class="option-grid" id="j-letters"></div>
+      <div class="center"><button class="btn small" id="j-clear">Clear ⌫</button></div>`;
+    const host=area.querySelector("#j-letters");
+    const builtEl=area.querySelector("#j-built");
+    const renderBuilt=()=>{ builtEl.textContent=built.split("").join(" "); };
+    const resetLetters=()=>{ host.querySelectorAll(".pick").forEach(x=>{x.disabled=false;x.style.opacity="";}); };
+    letters.forEach((L)=>{
+      const b=document.createElement("button"); b.className="pick"; b.textContent=L; b.style.fontSize="24px";
+      b.addEventListener("click",()=>{
+        if(b.disabled) return;
+        b.disabled=true; b.style.opacity=".3"; built+=L; renderBuilt();
+        if(built.length===word.length){
+          if(built===word){ score+=Math.max(10,20-mistakes*2); toast("Correct! 🎉"); after(600,draw); }
+          else { mistakes++; toast("Not quite — try again!"); after(600,()=>{ built=""; renderBuilt(); resetLetters(); }); }
+        }
+      });
+      host.appendChild(b);
+    });
+    renderBuilt();
+    area.querySelector("#j-clear").addEventListener("click",()=>{ built=""; renderBuilt(); resetLetters(); });
+  };
+  draw();
+};
+
+/* ---------- Game: Number Rush ---------- */
+GAMES.number.start=function(area,done){
+  let q=0, score=0, time=8, timer=null;
+  const draw=()=>{
+    if(q>=10){ done(score); return; }
+    q++;
+    const a=rnd(2,20), b=rnd(2,20), plus=Math.random()<.5;
+    const ans=plus?a+b:a-b;
+    const opts=new Set([ans]);
+    while(opts.size<4) opts.add(ans+rnd(-8,8));
+    const arr=shuffle([...opts]);
+    time=8;
+    area.innerHTML=`<div class="center" style="font-weight:bold;">Q ${q}/10 · Score ${score} · ⏱ <span id="n-time">${time}</span>s</div>
+      <div class="quiz-q" style="font-size:30px;">${a} ${plus?"+":"−"} ${b} = ?</div>
+      <div class="quiz-opts">${arr.map(o=>`<button class="pick" data-v="${o}">${o}</button>`).join("")}</div>`;
+    clearInterval(timer);
+    timer=setInterval(()=>{
+      time--;
+      const t=area.querySelector("#n-time"); if(t) t.textContent=time;
+      if(time<=0){ clearInterval(timer); toast("Time's up!"); after(500,draw); }
+    },1000);
+    gameTimers.push(timer);
+    area.querySelectorAll(".pick").forEach(btn=>btn.addEventListener("click",()=>{
+      clearInterval(timer);
+      if(+btn.dataset.v===ans){ score+=10+time; toast("Correct! ✅"); } else toast(`It was ${ans}!`);
+      after(600,draw);
+    }));
+  };
+  draw();
+};
+
+/* ---------- Game: Acorn Maze ---------- */
+const MAZES=[
+  ["#########","#S....#..#","#.###.#.#","#.#...#.#","#.#.###.#","#...#..G#","#########"],
+  ["###########","#S..#.....#","##.#.###.#","#..#...#.#","#.#####.#.","#.....#..G","###########"]
+];
+GAMES.maze.start=function(area,done){
+  let level=0, t0=Date.now(), mazeMove=null;
+  const keyHandler=e=>{
+    const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];
+    if(m&&mazeMove){ e.preventDefault(); mazeMove(m[0],m[1]); }
+  };
+  const finish=s=>{ document.removeEventListener("keydown",keyHandler); done(s); };
+  document.addEventListener("keydown",keyHandler);
+  const cv=document.createElement("canvas"); cv.width=320; cv.height=300; cv.className="game-canvas";
+  const pad=document.createElement("div"); pad.className="dpad";
+  pad.innerHTML=`<button data-d="up">⬆️</button><button data-d="left">⬅️</button><button data-d="down">⬇️</button><button data-d="right">➡️</button>`;
+  area.innerHTML=""; area.appendChild(cv); area.appendChild(pad);
+  const ctx=cv.getContext("2d");
+  let px=1,py=1;
+  const load=()=>{
+    const M=MAZES[level], cell=40;
+    M.forEach((row,y)=>{ const x=row.indexOf("S"); if(x>=0){px=x;py=y;} });
+    const drawM=()=>{
+      ctx.clearRect(0,0,cv.width,cv.height);
+      const ox=(cv.width-M[0].length*cell)/2, oy=(cv.height-M.length*cell)/2;
+      M.forEach((row,y)=>[...row].forEach((ch,x)=>{
+        const X=ox+x*cell, Y=oy+y*cell;
+        if(ch==="#"){ ctx.fillStyle="#8a6a4a"; ctx.fillRect(X,Y,cell,cell); }
+        else { ctx.fillStyle="#f4ecd8"; ctx.fillRect(X,Y,cell,cell); }
+        if(ch==="G"){ ctx.font="24px serif"; ctx.fillText("🪹",X+6,Y+30); }
+      }));
+      ctx.font="26px serif"; ctx.fillText("🌰",ox+px*cell+6,oy+py*cell+32);
+    };
+    drawM();
+    mazeMove=(dx,dy)=>{
+      const nx=px+dx, ny=py+dy;
+      if(M[ny]&&M[ny][nx]&&M[ny][nx]!=="#"){
+        px=nx; py=ny; drawM();
+        if(M[ny][nx]==="G"){
+          level++;
+          if(level>=MAZES.length){ const secs=(Date.now()-t0)/1000; finish(Math.max(20,300-secs*5)); }
+          else { toast("Maze 2! 🌰"); load(); }
+        }
+      }
+    };
+    pad.querySelectorAll("button").forEach(b=>{
+      b.onclick=()=>{ const d=b.dataset.d; mazeMove(d==="up"?0:d==="down"?0:d==="left"?-1:1, d==="up"?-1:d==="down"?1:0); };
+    });
+  };
+  load();
+};
+
+/* ---------- Game: Bullseye Archery ---------- */
+GAMES.archery.start=function(area,done){
+  let arrows=0, score=0, mx=0, dir=1;
+  const cv=document.createElement("canvas"); cv.width=320; cv.height=260; cv.className="game-canvas";
+  area.innerHTML=""; area.appendChild(cv);
+  const btn=document.createElement("button"); btn.className="btn big-tap"; btn.textContent="🏹 LOOSE!";
+  btn.style.display="block"; btn.style.margin="12px auto"; area.appendChild(btn);
+  const ctx=cv.getContext("2d");
+  const cx=160, cy=130;
+  const draw=()=>{
+    ctx.clearRect(0,0,320,260);
+    const rings=[["#e2548b",70],["#fff",54],["#f5b942",38],["#fff",24],["#e2548b",12]];
+    rings.forEach(r=>{ ctx.fillStyle=r[0]; ctx.beginPath(); ctx.arc(cx,cy,r[1],0,7); ctx.fill(); });
+    ctx.fillStyle="#4a3f55"; ctx.fillRect(cx+mx-3,20,6,220);
+    ctx.font="14px sans-serif"; ctx.fillText(`Arrows: ${5-arrows} · Score: ${Math.round(score)}`,10,18);
+  };
+  draw();
+  const tick=setInterval(()=>{ mx+=dir*7; if(mx>110||mx<-110) dir*=-1; draw(); },40);
+  gameTimers.push(tick);
+  btn.addEventListener("click",()=>{
+    if(arrows>=5) return;
+    arrows++;
+    const pts=Math.max(0,50-Math.abs(mx)*0.45);
+    score+=pts;
+    toast(pts>40?"BULLSEYE! 🎯":pts>20?"Nice shot!":"So close!");
+    if(arrows>=5){ clearInterval(tick); after(800,()=>done(score)); }
+    draw();
+  });
+};
+
+/* ---------- Game: Rope Climb ---------- */
+GAMES.rope.start=function(area,done){
+  let prog=0, t=25;
+  area.innerHTML=`<div class="center" style="font-weight:bold;">⏱ <span id="r-time">${t}</span>s</div>
+    <div style="width:60px;height:220px;background:#e8dcc8;border-radius:12px;margin:10px auto;position:relative;overflow:hidden;">
+      <div id="r-fill" style="position:absolute;bottom:0;width:100%;height:0%;background:var(--grass-dark);"></div>
+      <div style="position:absolute;top:4px;width:100%;text-align:center;font-size:28px;">🧗</div>
+    </div>
+    <div class="center"><button class="btn big-tap green" id="r-climb">CLIMB! 💪</button></div>`;
+  const tick=setInterval(()=>{
+    t-=0.1; prog=Math.max(0,prog-0.55);
+    area.querySelector("#r-fill").style.height=prog+"%";
+    area.querySelector("#r-time").textContent=Math.ceil(t);
+    if(t<=0){ clearInterval(tick); done(prog>=100?200:prog*1.5); }
+    if(prog>=100){ clearInterval(tick); done(200+t*5); }
+  },100);
+  gameTimers.push(tick);
+  area.querySelector("#r-climb").addEventListener("click",()=>{ prog=Math.min(100,prog+4); });
+};
+
+/* ---------- Game: Hoop Toss ---------- */
+GAMES.hoop.start=function(area,done){
+  let shots=0, made=0, hx=160, dir=1, bx=160, flying=false;
+  const cv=document.createElement("canvas"); cv.width=320; cv.height=240; cv.className="game-canvas";
+  area.innerHTML=""; area.appendChild(cv);
+  const btn=document.createElement("button"); btn.className="btn big-tap"; btn.textContent="🏀 SHOOT!";
+  btn.style.display="block"; btn.style.margin="12px auto"; area.appendChild(btn);
+  const ctx=cv.getContext("2d");
+  const draw=()=>{
+    ctx.clearRect(0,0,320,240);
+    ctx.font="40px serif"; ctx.fillText("🏀",hx-20,50);
+    if(flying){ ctx.fillStyle="#e2548b"; ctx.beginPath(); ctx.arc(bx,120,12,0,7); ctx.fill(); }
+    else { ctx.fillStyle="#c98a1e"; ctx.beginPath(); ctx.arc(bx,210,12,0,7); ctx.fill(); }
+    ctx.font="14px sans-serif"; ctx.fillStyle="#4a3f55";
+    ctx.fillText(`Shots left: ${6-shots} · Made: ${made}`,10,18);
+  };
+  draw();
+  const tick=setInterval(()=>{ if(!flying){ hx+=dir*6; if(hx>280||hx<40) dir*=-1; } draw(); },40);
+  gameTimers.push(tick);
+  btn.addEventListener("click",()=>{
+    if(flying||shots>=6) return;
+    flying=true; bx=160;
+    const fly=setInterval(()=>{
+      bx+=(hx-bx)*0.25; draw();
+      if(Math.abs(bx-hx)<8){
+        clearInterval(fly); flying=false; shots++;
+        if(Math.abs(160-hx)<45){ made++; toast("SWISH! 🏀"); } else toast("Miss!");
+        if(shots>=6){ clearInterval(tick); after(800,()=>done(made*25)); }
+        draw();
+      }
+    },40);
+    gameTimers.push(fly);
+  });
+};
+
+/* ---------- Game: Half-Pipe Hero ---------- */
+GAMES.halfpipe.start=function(area,done){
+  let tries=0, combo=0, score=0, sx=40, dir=1, zone=120;
+  const cv=document.createElement("canvas"); cv.width=320; cv.height=200; cv.className="game-canvas";
+  area.innerHTML=""; area.appendChild(cv);
+  const btn=document.createElement("button"); btn.className="btn big-tap gold"; btn.textContent="✨ TRICK!";
+  btn.style.display="block"; btn.style.margin="12px auto"; area.appendChild(btn);
+  const ctx=cv.getContext("2d");
+  const draw=()=>{
+    ctx.clearRect(0,0,320,200);
+    ctx.fillStyle="#cfe6ff"; ctx.beginPath(); ctx.arc(160,230,150,Math.PI,0); ctx.fill();
+    ctx.fillStyle="rgba(245,185,66,.5)"; ctx.fillRect(zone,60,60,120);
+    ctx.font="34px serif"; ctx.fillText("🛹",sx-17,110);
+    ctx.font="14px sans-serif"; ctx.fillStyle="#4a3f55";
+    ctx.fillText(`Tries left: ${10-tries} · Combo x${combo} · Score ${score}`,10,18);
+  };
+  draw();
+  const tick=setInterval(()=>{ sx+=dir*5; if(sx>300||sx<20) dir*=-1; draw(); },40);
+  gameTimers.push(tick);
+  btn.addEventListener("click",()=>{
+    if(tries>=10) return;
+    tries++;
+    if(sx>zone&&sx<zone+60){ combo++; const pts=10*combo; score+=pts; toast(`Sweet! +${pts} ✨`); zone=rnd(20,240); }
+    else { combo=0; toast("Wipeout! 💦"); }
+    if(tries>=10){ clearInterval(tick); after(800,()=>done(score)); }
+    draw();
+  });
+};
+/* ---------- Game: Bubble Blaster ---------- */
+GAMES.blaster.start=function(area,done){
+  let score=0, t=45, px=160;
+  const cv=document.createElement("canvas"); cv.width=320; cv.height=260; cv.className="game-canvas";
+  area.innerHTML=""; area.appendChild(cv);
+  const ctl=document.createElement("div"); ctl.className="dpad";
+  ctl.innerHTML=`<button id="bl-left">◀</button><button id="bl-fire" class="big-tap">🫧 FIRE</button><button id="bl-right">▶</button>`;
+  area.appendChild(ctl);
+  const ctx=cv.getContext("2d");
+  const fish=[]; for(let i=0;i<4;i++) fish.push({x:rnd(20,300), y:rnd(30,130), dir:Math.random()<.5?-1:1, sp:rnd(1,2.5), e:pick(["🐟","🐠","🐡"])});
+  let bubbles=[];
+  const keyHandler=e=>{
+    if(e.key==="ArrowLeft"){ px=Math.max(15,px-18); }
+    if(e.key==="ArrowRight"){ px=Math.min(305,px+18); }
+    if(e.key===" "||e.key==="ArrowUp"){ e.preventDefault(); fire(); }
+  };
+  const finish=s=>{ document.removeEventListener("keydown",keyHandler); done(s); };
+  document.addEventListener("keydown",keyHandler);
+  const fire=()=>{ if(bubbles.length<4) bubbles.push({x:px,y:215}); };
+  ctl.querySelector("#bl-left").onclick=()=>px=Math.max(15,px-30);
+  ctl.querySelector("#bl-right").onclick=()=>px=Math.min(305,px+30);
+  ctl.querySelector("#bl-fire").onclick=fire;
+  const draw=()=>{
+    ctx.clearRect(0,0,320,260);
+    ctx.fillStyle="#bfe3ff"; ctx.fillRect(0,0,320,200);
+    ctx.fillStyle="#e8d9b8"; ctx.fillRect(0,200,320,60);
+    fish.forEach(f=>{ ctx.font="26px serif"; ctx.fillText(f.e, f.x-13, f.y+9); });
+    bubbles.forEach(b=>{ ctx.font="18px serif"; ctx.fillText("🫧", b.x-9, b.y+6); });
+    ctx.font="30px serif"; ctx.fillText("🚤", px-15, 240);
+    ctx.font="14px sans-serif"; ctx.fillStyle="#4a3f55";
+    ctx.fillText(`⏱ ${t}s · Score ${score}`,10,18);
+  };
+  const tick=setInterval(()=>{
+    fish.forEach(f=>{ f.x+=f.dir*f.sp; if(f.x<10||f.x>310) f.dir*=-1; });
+    bubbles.forEach(b=>b.y-=9);
+    bubbles=bubbles.filter(b=>b.y>10);
+    fish.forEach(f=>{
+      const hit=bubbles.findIndex(b=>Math.abs(b.x-f.x)<22&&Math.abs(b.y-f.y)<20);
+      if(hit>=0){ bubbles.splice(hit,1); score+=15; f.x=rnd(20,300); f.y=rnd(30,130); }
+    });
+    draw();
+  },50);
+  gameTimers.push(tick);
+  const clock=setInterval(()=>{ t--; if(t<=0){ clearInterval(tick); clearInterval(clock); finish(score); } },1000);
+  gameTimers.push(clock);
+  draw();
+};
+
+/* ---------- Game: Pond Fishing ---------- */
+GAMES.fishing.start=function(area,done){
+  let casts=0, score=0;
+  const FISH=[["🐟",8],["🐠",12],["🐡",16],["🦐",20],["👢",2]];
+  const draw=()=>{
+    if(casts>=5){ done(score); return; }
+    area.innerHTML=`<div class="center" style="font-weight:bold;">Cast ${casts+1}/5 · Score ${score}</div>
+      <div class="center" style="font-size:64px;margin:14px 0;">🌊🎣</div>
+      <div class="center"><button class="btn big-tap green" id="f-cast">CAST! 🪝</button></div>
+      <div class="center" id="f-msg" style="min-height:30px;font-weight:bold;"></div>`;
+    area.querySelector("#f-cast").addEventListener("click",()=>{
+      area.querySelector("#f-cast").style.display="none";
+      area.querySelector("#f-msg").textContent="Waiting... 🕐";
+      const wait=rnd(1500,4000);
+      const splash=setTimeout(()=>{
+        area.querySelector("#f-msg").textContent="! SPLASH ! Tap NOW! 🐟";
+        const tap=document.createElement("button");
+        tap.className="btn big-tap gold"; tap.textContent="🎣 TAP!";
+        tap.style.display="block"; tap.style.margin="10px auto";
+        area.appendChild(tap);
+        let caught=false;
+        const win=setTimeout(()=>{ if(!caught){ tap.remove(); area.querySelector("#f-msg").textContent="It got away... 💦"; casts++; after(1200,draw); } },1200);
+        gameTimers.push(win);
+        tap.addEventListener("click",()=>{
+          caught=true; clearTimeout(win); tap.remove();
+          const f=pick(FISH); score+=f[1]; casts++;
+          state.fishCaught++; questEvent("fish");
+          area.querySelector("#f-msg").textContent=`Caught ${f[0]}! +${f[1]} pts!`;
+          after(1200,draw);
+        });
+      },wait);
+      gameTimers.push(splash);
+    });
+  };
+  draw();
+};
+
+/* ---------- Game: Plinko Drop ---------- */
+GAMES.plinko.start=function(area,done){
+  let chips=0, score=0;
+  const cv=document.createElement("canvas"); cv.width=320; cv.height=300; cv.className="game-canvas";
+  area.innerHTML=""; area.appendChild(cv);
+  const btn=document.createElement("button"); btn.className="btn big-tap gold"; btn.textContent="🎯 DROP!";
+  btn.style.display="block"; btn.style.margin="12px auto"; area.appendChild(btn);
+  const ctx=cv.getContext("2d");
+  const slots=[5,10,20,50,20,10,5];
+  const pegs=[];
+  for(let r=0;r<5;r++) for(let c=0;c<7;c++) pegs.push({x:40+c*40+(r%2?20:0), y:50+r*38});
+  const draw=(chip)=>{
+    ctx.clearRect(0,0,320,300);
+    pegs.forEach(p=>{ ctx.fillStyle="#9a6fd0"; ctx.beginPath(); ctx.arc(p.x,p.y,5,0,7); ctx.fill(); });
+    slots.forEach((v,i)=>{ ctx.fillStyle=i===3?"#f5b942":"#cfe6ff"; ctx.fillRect(10+i*43,262,40,30); ctx.fillStyle="#4a3f55"; ctx.font="13px sans-serif"; ctx.fillText(v,22+i*43,282); });
+    if(chip){ ctx.fillStyle="#e2548b"; ctx.beginPath(); ctx.arc(chip.x,chip.y,10,0,7); ctx.fill(); }
+    ctx.fillStyle="#4a3f55"; ctx.font="14px sans-serif";
+    ctx.fillText(`Chips left: ${5-chips} · Score ${score}`,10,18);
+  };
+  draw(null);
+  btn.addEventListener("click",()=>{
+    if(chips>=5) return;
+    chips++; btn.disabled=true;
+    const chip={x:rnd(110,210), y:20, vy:2.5};
+    const fall=setInterval(()=>{
+      chip.vy+=0.35; chip.y+=chip.vy;
+      pegs.forEach(p=>{ if(Math.abs(chip.y-p.y)<8&&Math.abs(chip.x-p.x)<12) chip.x+=rnd(-24,24); });
+      chip.x=Math.max(15,Math.min(305,chip.x));
+      draw(chip);
+      if(chip.y>=262){
+        clearInterval(fall);
+        const si=clamp(Math.floor((chip.x-10)/43),0,6);
+        score+=slots[si]; toast(`+${slots[si]} pts! 🎯`);
+        draw(null); btn.disabled=false;
+        if(chips>=5) after(800,()=>done(score));
+      }
+    },40);
+    gameTimers.push(fall);
+  });
+};
+
+/* ---------- Game: Park Cleanup ---------- */
+GAMES.cleanup.start=function(area,done){
+  let score=0, t=30;
+  area.innerHTML=`<div class="center" style="font-weight:bold;">⏱ <span id="c-time">${t}</span>s · Score <span id="c-score">${score}</span></div>
+    <div id="c-field" style="position:relative;width:320px;max-width:100%;height:250px;background:#dff0d8;border-radius:16px;margin:10px auto;overflow:hidden;"></div>
+    <p class="hint">Tap trash (+10). NOT squirrels (−15)!</p>`;
+  const field=area.querySelector("#c-field");
+  const spawn=setInterval(()=>{
+    if(t<=0) return;
+    const isSquirrel=Math.random()<0.3;
+    const b=document.createElement("button");
+    b.textContent=isSquirrel?"🐿️":pick(["🍌","📰","🍶","🧃"]);
+    b.style.cssText=`position:absolute;left:${rnd(5,85)}%;top:${rnd(5,80)}%;font-size:30px;background:none;border:none;cursor:pointer;`;
+    b.addEventListener("click",()=>{
+      if(isSquirrel){ score=Math.max(0,score-15); toast("Hey! That's a squirrel! 🐿️"); }
+      else { score+=10; }
+      area.querySelector("#c-score").textContent=score;
+      b.remove();
+    });
+    field.appendChild(b);
+    setTimeout(()=>b.remove(),2500);
+  },800);
+  gameTimers.push(spawn);
+  const clock=setInterval(()=>{
+    t--; area.querySelector("#c-time").textContent=t;
+    if(t<=0){ clearInterval(spawn); clearInterval(clock); done(score); }
+  },1000);
+  gameTimers.push(clock);
+};
+
+/* ---------- Game: Star Defender ---------- */
+GAMES.defender.start=function(area,done){
+  let score=0, t=45;
+  const cv=document.createElement("canvas"); cv.width=320; cv.height=280; cv.className="game-canvas";
+  area.innerHTML=""; area.appendChild(cv);
+  const ctx=cv.getContext("2d");
+  let meteors=[];
+  const draw=()=>{
+    ctx.clearRect(0,0,320,280);
+    ctx.fillStyle="#1c1c3a"; ctx.fillRect(0,0,320,240);
+    ctx.font="44px serif"; ctx.fillText("🌍",138,278);
+    meteors.forEach(m=>{ ctx.font="26px serif"; ctx.fillText("☄️",m.x-13,m.y+9); });
+    ctx.fillStyle="#fff"; ctx.font="14px sans-serif";
+    ctx.fillText(`⏱ ${t}s · Score ${score} — tap meteors!`,10,20);
+  };
+  const spawn=setInterval(()=>{ if(t>0&&meteors.length<6) meteors.push({x:rnd(20,300),y:-10,sp:rnd(1.2,2.6)}); },700);
+  gameTimers.push(spawn);
+  const fall=setInterval(()=>{
+    meteors.forEach(m=>m.y+=m.sp);
+    meteors=meteors.filter(m=>{
+      if(m.y>235){ score=Math.max(0,score-20); toast("Berrybrook got hit! 💥"); return false; }
+      return true;
+    });
+    draw();
+  },50);
+  gameTimers.push(fall);
+  cv.addEventListener("click",e=>{
+    const r=cv.getBoundingClientRect();
+    const x=(e.clientX-r.left)*(cv.width/r.width), y=(e.clientY-r.top)*(cv.height/r.height);
+    const i=meteors.findIndex(m=>Math.abs(m.x-x)<28&&Math.abs(m.y-y)<28);
+    if(i>=0){ meteors.splice(i,1); score+=15; draw(); }
+  });
+  const clock=setInterval(()=>{ t--; if(t<=0){ clearInterval(spawn); clearInterval(fall); clearInterval(clock); done(score); } },1000);
+  gameTimers.push(clock);
+  draw();
+};
+
+/* ---------- Game: Critter Catch ---------- */
+const CRITTERS=["🐰","🦊","🐸","🐢","🦔","🐭","🐥","🦆"];
+GAMES.critter.start=function(area,done){
+  let round=0, score=0;
+  const draw=()=>{
+    if(round>=6){ done(score); return; }
+    round++;
+    const wanted=pick(CRITTERS);
+    let found=0, mistakes=0;
+    area.innerHTML=`<div class="center" style="font-weight:bold;">Round ${round}/6 · Score ${score}</div>
+      <div class="center" style="font-size:22px;margin:8px;">Memorize: <span style="font-size:44px;">${wanted}</span></div>
+      <div class="option-grid" id="cr-grid"></div>`;
+    const grid=area.querySelector("#cr-grid");
+    const showGrid=()=>{
+      const cells=shuffle([wanted,wanted,wanted,...Array.from({length:9},()=>pick(CRITTERS.filter(c=>c!==wanted)))]);
+      grid.innerHTML="";
+      cells.forEach(c=>{
+        const b=document.createElement("button"); b.className="pick"; b.textContent=c; b.style.fontSize="30px";
+        b.addEventListener("click",()=>{
+          if(b.disabled) return;
+          b.disabled=true;
+          if(c===wanted){ found++; b.style.background="#d8f0d8"; toast("Got one! ✅");
+            if(found>=3){ score+=Math.max(5,20-mistakes*5); after(700,draw); }
+          } else { mistakes++; b.style.background="#f8d8d8"; toast("Not that one!"); }
+        });
+        grid.appendChild(b);
+      });
+    };
+    after(1800,showGrid);
+  };
+  draw();
+};
+
+/* ---------- Game: Songbird Studio (rhythm) ---------- */
+GAMES.rhythm.start=function(area,done){
+  let notesLeft=20, score=0, speed=2.2;
+  const cv=document.createElement("canvas"); cv.width=320; cv.height=200; cv.className="game-canvas";
+  area.innerHTML=""; area.appendChild(cv);
+  const btn=document.createElement("button"); btn.className="btn big-tap"; btn.textContent="🎵 HIT!";
+  btn.style.display="block"; btn.style.margin="12px auto"; area.appendChild(btn);
+  const ctx=cv.getContext("2d");
+  const ZONE={x:225,w:55};
+  let notes=[];
+  const draw=()=>{
+    ctx.clearRect(0,0,320,200);
+    ctx.fillStyle="rgba(245,185,66,.45)"; ctx.fillRect(ZONE.x,20,ZONE.w,160);
+    ctx.fillStyle="#4a3f55"; ctx.font="13px sans-serif"; ctx.fillText("HIT ZONE",ZONE.x+2,16);
+    notes.forEach(n=>{ ctx.font="30px serif"; ctx.fillText("🎵",n.x-15,n.y+10); });
+    ctx.fillStyle="#4a3f55"; ctx.font="14px sans-serif";
+    ctx.fillText(`Notes left: ${notesLeft} · Score ${score}`,10,196);
+  };
+  const spawner=setInterval(()=>{
+    if(notesLeft<=0){ clearInterval(spawner); return; }
+    notesLeft--; speed+=0.06;
+    notes.push({x:-20, y:rnd(50,160)});
+  },900);
+  gameTimers.push(spawner);
+  const tick=setInterval(()=>{
+    notes.forEach(n=>n.x+=speed);
+    notes=notes.filter(n=>n.x<345);
+    draw();
+    if(notesLeft<=0&&!notes.length){ clearInterval(tick); clearInterval(spawner); done(score); }
+  },40);
+  gameTimers.push(tick);
+  btn.addEventListener("click",()=>{
+    if(!notes.length) return;
+    let best=null, bd=1e9;
+    notes.forEach(n=>{ const d=Math.abs(n.x-(ZONE.x+ZONE.w/2)); if(d<bd){bd=d;best=n;} });
+    if(bd<=ZONE.w/2){ notes.splice(notes.indexOf(best),1); score+=10; toast("Perfect! 🎵"); }
+    else if(bd<=ZONE.w/2+45){ notes.splice(notes.indexOf(best),1); score+=5; toast("Good!"); }
+    else toast("Miss!");
+    draw();
+  });
+  draw();
+};
+
+/* ================= Final wiring ================= */
+const REPLIES=[
+  "Thanks for the lovely letter! You're the best neighbor ever. 💌",
+  "Your letter made my whole day! Let's hang out at the park soon!",
+  "What a sweet note! I put it right on my fridge. 📬",
+  "Aww, thank you! You're invited to my next picnic! 🧺"
+];
+const _dailyLogin=dailyLogin;
+dailyLogin=function(){
+  const before=state.mail.length;
+  _dailyLogin();
+  if(state.pendingReplies&&state.pendingReplies.length){
+    state.pendingReplies.forEach(id=>{
+      const n=NPCS[id];
+      if(n) state.mail.push({from:n.name, text:pick(REPLIES), day:state.day});
+    });
+    state.pendingReplies=[];
+    save();
+    if(state.mail.length>before) setTimeout(()=>toast("💌 New mail at the Post Office!"),1500);
+  }
+};
+(function(){
+  const card=document.querySelector("#screen-town .scene-card");
+  if(card&&!$("#inv-bar-top")){
+    const d=document.createElement("div");
+    d.id="inv-bar-top"; d.className="inv-bar"; d.style.marginTop="12px";
+    card.appendChild(d);
+  }
+})();
+const _renderTown=renderTown;
+renderTown=function(){ _renderTown(); renderInvBar(); };
+
+/* ================= Init ================= */
+(function(){
+  if(state.avatar){ dailyLogin(); applyTopbar(); renderTown(); showScreen("screen-town"); }
+  else { applyTopbar(); showScreen("screen-welcome"); }
+})();
 </script>
 </body>
 </html>
