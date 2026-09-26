@@ -54,6 +54,8 @@ body{
   text-decoration:none; box-shadow:0 4px 12px rgba(0,0,0,.18); white-space:nowrap;
 }
 #arcade-back:active{transform:scale(.94);}
+/* When the topbar is visible, drop the button below it so they don't overlap */
+body.with-topbar #arcade-back{top:74px;}
 /* ---------- Screens ---------- */
 main{flex:1; position:relative; overflow:hidden;}
 .screen{
@@ -447,6 +449,7 @@ function showScreen(id){
   /* Topbar (buddy chip, coin purse, stats, music) is visible once the player
      is in town; keep it hidden on the welcome and creator screens. */
   $("#topbar").classList.toggle("hidden", id==="screen-welcome"||id==="screen-creator");
+  document.body.classList.toggle("with-topbar", !(id==="screen-welcome"||id==="screen-creator"));
 }
 function applyTopbar(){
   $("#coin-count").textContent=state.coins;
