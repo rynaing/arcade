@@ -334,8 +334,16 @@ async function joinRoom(code){
   ch.on('broadcast',{event:'finish'},({payload})=>{ onRemoteFinish(payload); });
   ch.on('broadcast',{event:'tolobby'},()=>{ backToLobby(); });
   ch.on('broadcast',{event:'track'},({payload})=>{ S.track=payload.idx; buildTrack(payload.idx); renderTrackPicks(); toast(`Track: ${TRACKS[payload.idx].name}`); });
-  const st=await ch.subscribe();
-  if(st!=='SUBSCRIBED'){ setErr('menu-err','Could not connect. Check your connection and retry.'); return; }
+  const subOk=await new Promise(res=>{
+    let done=false;
+    const to=setTimeout(()=>{ if(!done){ done=true; res(false); } },10000);
+    ch.subscribe(status=>{
+      if(done) return;
+      if(status==='SUBSCRIBED'){ done=true; clearTimeout(to); res(true); }
+      else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){ done=true; clearTimeout(to); res(false); }
+    });
+  });
+  if(!subOk){ setErr('menu-err','Could not connect. Check your connection and retry.'); return; }
   const existing=Object.values(S.players);
   S.color=PALETTE[existing.length % PALETTE.length];
   await ch.track({id:myId,name:myName,color:S.color,ready:false,joinedAt:Date.now(),racing:false});
