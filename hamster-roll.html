@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Hamster Roll - Mossbell Arcade</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0b1020; font-family:'Trebuchet MS','Segoe UI',sans-serif; color:#fff; }
+  #game-canvas { position:fixed; inset:0; display:block; }
+  .screen { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; padding:20px; }
+  .hidden { display:none !important; }
+  .panel { background:rgba(13,20,40,.92); border:2px solid #2b3a67; border-radius:18px; padding:28px 32px; max-width:520px; width:100%; box-shadow:0 12px 50px rgba(0,0,0,.6); backdrop-filter:blur(6px); }
+  h1.title { font-size:44px; text-align:center; margin-bottom:4px; background:linear-gradient(180deg,#ffe27a,#ff9d3c); -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow:0 3px 0 rgba(0,0,0,.25); letter-spacing:1px; }
+  .subtitle { text-align:center; color:#9fb2dd; margin-bottom:22px; font-size:14px; }
+  .row { display:flex; gap:10px; margin-top:12px; }
+  input[type=text] { flex:1; padding:12px 14px; border-radius:10px; border:2px solid #2b3a67; background:#0a0f22; color:#fff; font-size:16px; outline:none; }
+  input[type=text]:focus { border-color:#ffb43c; }
+  button { cursor:pointer; border:none; border-radius:10px; font-weight:800; font-size:15px; padding:12px 18px; color:#1a1206; background:linear-gradient(180deg,#ffd76a,#ff9d3c); box-shadow:0 4px 0 #a85f14; transition:transform .06s; font-family:inherit; }
+  button:active { transform:translateY(3px); box-shadow:0 1px 0 #a85f14; }
+  button.secondary { background:linear-gradient(180deg,#5f7bd9,#3c56b0); color:#fff; box-shadow:0 4px 0 #24336e; }
+  button.secondary:active { box-shadow:0 1px 0 #24336e; }
+  button:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+  .btn-block { width:100%; margin-top:10px; padding:14px; font-size:17px; }
+  .divider { display:flex; align-items:center; gap:12px; margin:18px 0 6px; color:#5f6f9c; font-size:13px; }
+  .divider::before,.divider::after { content:''; flex:1; height:1px; background:#2b3a67; }
+  .err { color:#ff7b7b; font-size:13px; min-height:20px; text-align:center; margin-top:8px; }
+  /* lobby */
+  #lobby .panel { max-width:620px; }
+  .room-code { font-size:38px; letter-spacing:10px; font-weight:900; color:#ffd76a; text-align:center; margin:6px 0 2px; }
+  .room-hint { text-align:center; color:#9fb2dd; font-size:13px; margin-bottom:14px; }
+  #player-list { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:12px; min-height:40px; }
+  .player-chip { display:flex; align-items:center; gap:8px; background:#141c38; border:2px solid #2b3a67; border-radius:999px; padding:6px 14px 6px 8px; font-size:14px; font-weight:700; }
+  .player-chip .dot { width:18px; height:18px; border-radius:50%; }
+  .player-chip .rdy { font-size:11px; color:#7bed6f; }
+  .player-chip.host .tag { font-size:10px; background:#ffb43c; color:#1a1206; border-radius:6px; padding:1px 6px; font-weight:900; }
+  #chat-box { height:170px; overflow-y:auto; background:#0a0f22; border:2px solid #2b3a67; border-radius:10px; padding:10px 12px; margin-bottom:8px; font-size:14px; }
+  #chat-box .msg { margin-bottom:6px; line-height:1.35; word-wrap:break-word; }
+  #chat-box .msg .n { font-weight:800; }
+  #chat-box .msg.sys { color:#8fa0cc; font-style:italic; }
+  #chat-box .msg .t { color:#5f6f9c; font-size:11px; margin-right:6px; }
+  /* hud */
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:5; }
+  #hud .topbar { position:absolute; top:10px; left:0; right:0; display:flex; justify-content:center; gap:14px; }
+  .hud-pill { background:rgba(10,15,34,.78); border:2px solid #2b3a67; border-radius:999px; padding:8px 18px; font-size:16px; font-weight:800; }
+  #hud-pos { color:#ffd76a; }
+  #standings { position:absolute; top:64px; right:10px; background:rgba(10,15,34,.7); border:2px solid #2b3a67; border-radius:12px; padding:8px 12px; font-size:13px; min-width:150px; }
+  #standings .srow { display:flex; align-items:center; gap:8px; margin:3px 0; font-weight:700; }
+  #standings .sdot { width:12px; height:12px; border-radius:50%; }
+  #countdown { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:8; pointer-events:none; }
+  #countdown span { font-size:120px; font-weight:900; color:#ffd76a; text-shadow:0 6px 0 rgba(0,0,0,.4); }
+  #toast { position:fixed; bottom:110px; left:50%; transform:translateX(-50%); background:rgba(10,15,34,.9); border:2px solid #ffb43c; color:#ffd76a; border-radius:12px; padding:10px 20px; font-weight:800; z-index:9; pointer-events:none; opacity:0; transition:opacity .3s; font-size:15px; text-align:center; max-width:90vw; }
+  /* results */
+  #results .panel { max-width:560px; }
+  .res-row { display:flex; align-items:center; gap:12px; padding:10px 14px; background:#141c38; border-radius:10px; margin-bottom:8px; font-size:16px; font-weight:700; }
+  .res-row .medal { font-size:22px; width:30px; text-align:center; }
+  .res-row .time { margin-left:auto; color:#ffd76a; font-variant-numeric:tabular-nums; }
+  .res-row .dnf { margin-left:auto; color:#8fa0cc; font-size:13px; }
+  /* joystick */
+  #joy { position:fixed; bottom:26px; left:26px; width:130px; height:130px; border-radius:50%; background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.25); z-index:6; display:none; touch-action:none; }
+  #joy-knob { position:absolute; width:56px; height:56px; border-radius:50%; background:rgba(255,213,106,.85); left:37px; top:37px; }
+  .kbd-hint { text-align:center; color:#8fa0cc; font-size:13px; margin-top:14px; }
+  @media (max-width:600px){ h1.title{font-size:34px;} .panel{padding:20px;} #standings{display:none;} }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+
+<div id="menu" class="screen">
+  <div class="panel">
+    <h1 class="title">🐹 Hamster Roll</h1>
+    <div class="subtitle">roll · race · rumble &mdash; multiplayer hamster ball racing</div>
+    <input type="text" id="name-input" maxlength="14" placeholder="your hamster name" style="width:100%">
+    <button class="btn-block" id="btn-create">Create room</button>
+    <div class="divider">or</div>
+    <div class="row">
+      <input type="text" id="code-input" maxlength="4" placeholder="CODE" style="text-transform:uppercase; max-width:110px; text-align:center; font-weight:900; letter-spacing:4px;">
+      <button class="secondary" id="btn-join" style="flex:1">Join room</button>
+    </div>
+    <div class="divider">or</div>
+    <button class="btn-block secondary" id="btn-solo">Solo practice</button>
+    <div class="err" id="menu-err"></div>
+    <div class="kbd-hint">⌨️ WASD / arrows to roll &nbsp;·&nbsp; 3 laps &nbsp;·&nbsp; don't fall off</div>
+  </div>
+</div>
+
+<div id="lobby" class="screen hidden">
+  <div class="panel">
+    <h1 class="title" style="font-size:30px">Lobby</h1>
+    <div class="room-code" id="room-code">----</div>
+    <div class="room-hint">share the code &mdash; friends join from the arcade</div>
+    <div id="player-list"></div>
+    <div id="chat-box"></div>
+    <div class="row">
+      <input type="text" id="chat-input" maxlength="120" placeholder="chat...">
+      <button class="secondary" id="btn-send">Send</button>
+    </div>
+    <div class="row">
+      <button class="secondary" id="btn-ready" style="flex:1">Ready ✓</button>
+      <button id="btn-start" style="flex:2" disabled>Start race</button>
+    </div>
+    <div class="row"><button class="secondary btn-block" id="btn-leave" style="margin-top:0">Leave</button></div>
+    <div class="err" id="lobby-err"></div>
+  </div>
+</div>
+
+<div id="hud" class="hidden">
+  <div class="topbar">
+    <div class="hud-pill" id="hud-time">0:00.0</div>
+    <div class="hud-pill" id="hud-pos">1st</div>
+    <div class="hud-pill" id="hud-lap">Lap 1/3</div>
+  </div>
+  <div id="standings"></div>
+</div>
+<div id="countdown" class="hidden"><span id="count-num">3</span></div>
+
+<div id="results" class="screen hidden">
+  <div class="panel">
+    <h1 class="title" style="font-size:32px">🏁 Results</h1>
+    <div id="res-list" style="margin:16px 0"></div>
+    <div id="chat-box2" style="height:110px; overflow-y:auto; background:#0a0f22; border:2px solid #2b3a67; border-radius:10px; padding:10px 12px; margin-bottom:8px; font-size:14px;"></div>
+    <div class="row">
+      <input type="text" id="chat-input2" maxlength="120" placeholder="chat...">
+      <button class="secondary" id="btn-send2">Send</button>
+    </div>
+    <div class="row">
+      <button id="btn-again" style="flex:1">Back to lobby</button>
+      <button class="secondary" id="btn-leave2" style="flex:1">Leave</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="joy"><div id="joy-knob"></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+/* ================= config ================= */
+const SUPABASE_URL = 'https://ukrxoqsvyvlyeblubjeo.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const LAPS = 3;
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const PALETTE = ['#ff5b5b','#4da3ff','#ffd23f','#7bed6f','#c77dff','#ff9f43'];
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const myId = Math.random().toString(36).slice(2,10);
+let myName = localStorage.getItem('hr-name') || '';
+if (myName) $('name-input').value = myName;
+
+const S = { // session state
+  mode:'menu', room:null, channel:null, players:{}, order:[],
+  color:'#ff5b5b', ready:false, host:false,
+  racing:false, countdownAt:0, raceStart:0, finished:false, finishTime:0,
+  nextGate:0, laps:0, dizzy:0, results:[], soloBest: parseFloat(localStorage.getItem('hr-best')||'0'),
+};
+
+/* ================= tiny audio ================= */
+let AC=null;
+function beep(freq,dur=0.12,type='square',vol=0.15){
+  try{
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.type=type; o.frequency.value=freq; g.gain.value=vol;
+    o.connect(g); g.connect(AC.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime+dur);
+    o.stop(AC.currentTime+dur);
+  }catch(e){}
+}
+function toast(msg, ms=2400){
+  const t=$('toast'); t.textContent=msg; t.style.opacity=1;
+  clearTimeout(t._h); t._h=setTimeout(()=>t.style.opacity=0, ms);
+}
+function fmtTime(ms){
+  if(!ms || ms<=0) return '--:--.-';
+  const m=Math.floor(ms/60000), s=Math.floor(ms%60000/1000), d=Math.floor(ms%1000/100);
+  return m+':'+String(s).padStart(2,'0')+'.'+d;
+}
+function ordinal(n){ return n+(['th','st','nd','rd'][ (n%100>10&&n%100<14)?0 : Math.min(n%10,4) ]||'th'); }
+
+/* ================= chat ================= */
+function addChat(boxId, name, text, color, sys=false){
+  const box=$(boxId); const div=document.createElement('div');
+  div.className='msg'+(sys?' sys':'');
+  const t=new Date(); const ts=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
+  if(sys){ div.textContent=text; }
+  else{
+    const s=document.createElement('span'); s.className='t'; s.textContent=ts; div.appendChild(s);
+    const n=document.createElement('span'); n.className='n'; n.style.color=color||'#fff'; n.textContent=name+': '; div.appendChild(n);
+    const b=document.createElement('span'); b.textContent=text; div.appendChild(b);
+  }
+  box.appendChild(div); box.scrollTop=box.scrollHeight;
+  while(box.children.length>80) box.removeChild(box.firstChild);
+}
+function sendChat(text){
+  text=(text||'').trim(); if(!text) return;
+  if(S.mode==='lobby'||S.mode==='results'){
+    S.channel.send({type:'broadcast',event:'chat',payload:{id:myId,name:myName,text}});
+    addChat(S.mode==='lobby'?'chat-box':'chat-box2', myName, text, S.color);
+  }
+}
+$('btn-send').onclick=()=>{ sendChat($('chat-input').value); $('chat-input').value=''; };
+$('chat-input').addEventListener('keydown',e=>{ if(e.key==='Enter') $('btn-send').click(); });
+$('btn-send2').onclick=()=>{ sendChat($('chat-input2').value); $('chat-input2').value=''; };
+$('chat-input2').addEventListener('keydown',e=>{ if(e.key==='Enter') $('btn-send2').click(); });
+
+/* ================= rooms + netcode ================= */
+function makeCode(){ let c=''; for(let i=0;i<4;i++) c+=CODE_CHARS[Math.floor(Math.random()*CODE_CHARS.length)]; return c; }
+function setErr(id,msg){ $(id).textContent=msg||''; }
+
+function showScreen(name){
+  for(const s of ['menu','lobby','hud','results']) $(s).classList.add('hidden');
+  $('countdown').classList.add('hidden');
+  if(name==='race'){ $('hud').classList.remove('hidden'); }
+  else if(name) $(name).classList.remove('hidden');
+  S.mode = name==='race' ? 'racing' : name;
+}
+
+async function joinRoom(code){
+  code=(code||'').toUpperCase().trim();
+  myName=($('name-input').value||'').trim().slice(0,14)||'Hamster';
+  localStorage.setItem('hr-name',myName);
+  if(!/^[A-Z2-9]{4}$/.test(code)){ setErr('menu-err','Enter the 4-letter room code.'); return; }
+  setErr('menu-err','');
+  S.room=code; S.ready=false; S.solo=false; S.order=[];
+  const ch=sb.channel('hr:'+code,{config:{presence:{key:myId},broadcast:{ack:false}}});
+  S.channel=ch;
+  ch.on('presence',{event:'sync'},()=>{ renderRoster(); });
+  ch.on('presence',{event:'join'},({newPresences})=>{
+    for(const p of newPresences){ if(p.id!==myId){ addChat('chat-box',null,`${p.name} joined the room`,null,true); beep(660,0.08); } }
+    renderRoster();
+  });
+  ch.on('presence',{event:'leave'},({leftPresences})=>{
+    for(const p of leftPresences){ delete S.players[p.id]; addChat('chat-box',null,`${p.name} left`,null,true); }
+    renderRoster();
+  });
+  ch.on('broadcast',{event:'chat'},({payload})=>{ addChat(S.mode==='lobby'?'chat-box':'chat-box2', payload.name, payload.text, payload.color); });
+  ch.on('broadcast',{event:'pos'},({payload})=>{ onRemotePos(payload); });
+  ch.on('broadcast',{event:'start'},({payload})=>{ beginRace(payload.at); });
+  ch.on('broadcast',{event:'finish'},({payload})=>{ onRemoteFinish(payload); });
+  ch.on('broadcast',{event:'tolobby'},()=>{ backToLobby(); });
+  const st=await ch.subscribe();
+  if(st!=='SUBSCRIBED'){ setErr('menu-err','Could not connect. Check your connection and retry.'); return; }
+  // pick color: first free in palette by join order
+  const existing=Object.values(S.players);
+  S.color=PALETTE[existing.length % PALETTE.length];
+  await ch.track({id:myId,name:myName,color:S.color,ready:false,joinedAt:Date.now(),racing:false});
+  // check if a race is already in progress
+  await new Promise(r=>setTimeout(r,600));
+  const racingNow=Object.values(S.players).some(p=>p.racing);
+  if(racingNow){
+    await leaveRoom();
+    setErr('menu-err','That room is mid-race — try again in a bit.');
+    return;
+  }
+  $('room-code').textContent=code;
+  $('chat-box').innerHTML='';
+  addChat('chat-box',null,`Welcome, ${myName}! Share code ${code} with friends.`,null,true);
+  showScreen('lobby');
+  renderRoster();
+}
+
+async function leaveRoom(){
+  try{ if(S.channel){ await S.channel.untrack(); await sb.removeChannel(S.channel); } }catch(e){}
+  S.channel=null; S.room=null; S.players={}; S.order=[]; S.ready=false; S.host=false;
+  S.racing=false; S.finished=false; S.results=[];
+  for(const id of Object.keys(remoteBalls)){ scene.remove(remoteBalls[id].group); delete remoteBalls[id]; }
+  showScreen('menu');
+}
+
+function amHost(){
+  const ps=Object.values(S.players);
+  if(!ps.length) return true;
+  return ps.slice().sort((a,b)=>a.joinedAt-b.joinedAt)[0].id===myId;
+}
+
+function renderRoster(){
+  // rebuild players from presence state
+  if(S.channel){
+    const st=S.channel.presenceState();
+    S.players={};
+    for(const k of Object.keys(st)){ const p=st[k][0]; S.players[p.id]=p; }
+  }
+  S.order=Object.values(S.players).sort((a,b)=>a.joinedAt-b.joinedAt);
+  S.host=amHost();
+  const list=$('player-list'); list.innerHTML='';
+  for(const p of S.order){
+    const d=document.createElement('div'); d.className='player-chip'+(p.id===myId&&S.host?' host':'');
+    d.innerHTML=`<span class="dot" style="background:${p.color}"></span><span>${escapeHtml(p.name)}</span>`+
+      (p.id===myId&&S.host?'<span class="tag">HOST</span>':'')+
+      (p.ready?'<span class="rdy">ready ✓</span>':'');
+    list.appendChild(d);
+  }
+  const others=S.order.filter(p=>p.id!==myId);
+  const allReady=others.length>0 && others.every(p=>p.ready);
+  $('btn-start').disabled=!(S.host && (others.length===0 || allReady));
+  $('btn-start').textContent = others.length===0 ? 'Start race (solo)' : (allReady?'Start race':'Waiting for ready…');
+  $('btn-ready').textContent=S.ready?'Not ready':'Ready ✓';
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+$('btn-create').onclick=()=>joinRoom(makeCode());
+$('btn-join').onclick=()=>joinRoom($('code-input').value);
+$('code-input').addEventListener('keydown',e=>{ if(e.key==='Enter') $('btn-join').click(); });
+$('btn-leave').onclick=leaveRoom;
+$('btn-leave2').onclick=leaveRoom;
+$('btn-ready').onclick=async()=>{
+  S.ready=!S.ready;
+  await S.channel.track({id:myId,name:myName,color:S.color,ready:S.ready,joinedAt:Date.now(),racing:false});
+  renderRoster();
+};
+$('btn-start').onclick=()=>{
+  if(!S.host) return;
+  S.channel.send({type:'broadcast',event:'start',payload:{at:Date.now()+3500}});
+  beginRace(Date.now()+3500);
+};
+$('btn-again').onclick=()=>{
+  if(S.solo){ beginRace(Date.now()+2500); return; }
+  if(S.host && S.channel) S.channel.send({type:'broadcast',event:'tolobby'});
+  backToLobby();
+};
+$('btn-solo').onclick=()=>{
+  myName=($('name-input').value||'').trim().slice(0,14)||'Hamster';
+  localStorage.setItem('hr-name',myName);
+  S.color=PALETTE[0]; S.solo=true; S.order=[];
+  beginRace(Date.now()+2500);
+};
+async function backToLobby(){
+  S.racing=false; S.finished=false; S.results=[]; S.ready=false;
+  if(S.channel) await S.channel.track({id:myId,name:myName,color:S.color,ready:false,joinedAt:Date.now(),racing:false});
+  for(const id of Object.keys(remoteBalls)){ scene.remove(remoteBalls[id].group); delete remoteBalls[id]; }
+  showScreen('lobby'); renderRoster();
+}
+
+/* ================= three.js scene ================= */
+const canvas=$('game-canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0b1020);
+scene.fog=new THREE.Fog(0x0b1020,60,160);
+const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,0.1,400);
+addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+
+scene.add(new THREE.HemisphereLight(0xbdd4ff,0x1a2340,0.9));
+const sun=new THREE.DirectionalLight(0xfff2d8,1.1); sun.position.set(30,60,20); scene.add(sun);
+
+// starfield + ground glow far below
+{
+  const g=new THREE.BufferGeometry(); const pts=[];
+  for(let i=0;i<600;i++){ const a=Math.random()*Math.PI*2, r=120+Math.random()*120; pts.push(Math.cos(a)*r, 20+Math.random()*120, Math.sin(a)*r); }
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+  scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0x8fa0ff,size:0.7,transparent:true,opacity:0.7})));
+  const grid=new THREE.GridHelper(400,40,0x22335f,0x16224a); grid.position.y=-30; scene.add(grid);
+}
+
+/* ---- track: AABB boxes {x1,z1,x2,z2,y1,y2} ---- */
+const solids=[]; // collidable
+const boosts=[];
+function addBox(x1,z1,x2,z2,y1,y2,color,opts={}){
+  const w=x2-x1,d=z2-z1,h=y2-y1;
+  const geo=new THREE.BoxGeometry(w,h,d);
+  const mat=new THREE.MeshStandardMaterial({color,roughness:0.85,metalness:0.05});
+  const m=new THREE.Mesh(geo,mat);
+  m.position.set((x1+x2)/2,(y1+y2)/2,(z1+z2)/2);
+  scene.add(m);
+  if(opts.solid!==false) solids.push({x1,z1,x2,z2,y1,y2});
+  return m;
+}
+const GRASS=0x2f9e5f, GRASS2=0x2a8f56, WALLC=0xffd76a, BRIDGEC=0xb07a3f;
+
+function buildTrack(){
+  // straights (top y=0, base -4)
+  addBox(-2,-5, 42,5, -4,0, GRASS);            // S_AB north straight
+  addBox(35,5, 45,-5, -4,0, GRASS);            // corner B
+  addBox(35,-32, 45,2, -4,0, GRASS);           // S_BC east straight
+  addBox(35,-35, 45,-25, -4,0, GRASS);         // corner C
+  addBox(-2,-35, 14,-25, -4,0, GRASS);         // S_CD west part
+  addBox(14,-32, 26,-28, -4,0, BRIDGEC);       // narrow bridge!
+  addBox(26,-35, 42,-25, -4,0, GRASS);         // S_CD east part
+  addBox(-5,-35, 5,-25, -4,0, GRASS);          // corner D
+  addBox(-5,-32, 5,2, -4,0, GRASS);            // S_DA west straight
+  addBox(-5,-5, 5,5, -4,0, GRASS);             // corner A
+  // outer walls (y 0..2.5)
+  addBox(-2,5, 42,6, 0,2.5, WALLC);
+  addBox(-2,-36, 42,-35, 0,2.5, WALLC);
+  addBox(44,-35, 45,5, 0,2.5, WALLC);
+  addBox(-6,-35, -5,5, 0,2.5, WALLC);
+  // bridge rails (low, y 0..0.9 — bumpable but you can still fall)
+  addBox(14,-32.4, 26,-32, 0,0.9, WALLC);
+  addBox(14,-28, 26,-27.6, 0,0.9, WALLC);
+  // slalom blocks on north straight
+  addBox(15,-3.5, 17,-1.5, 0,1.5, 0xe05b5b);
+  addBox(21,1.5, 23,3.5, 0,1.5, 0xe05b5b);
+  addBox(27,-3.5, 29,-1.5, 0,1.5, 0xe05b5b);
+  // start gantry posts (decor)
+  addBox(5.6,-5.4, 6.4,-4.6, 0,5, WALLC,{solid:false});
+  addBox(5.6,4.6, 6.4,5.4, 0,5, WALLC,{solid:false});
+  const beam=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,10.8),new THREE.MeshStandardMaterial({color:0xffd76a}));
+  beam.position.set(6,5,0); scene.add(beam);
+  // checkered start line
+  for(let i=0;i<5;i++)for(let j=0;j<2;j++){
+    const sq=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.06,1),new THREE.MeshBasicMaterial({color:(i+j)%2?0x111111:0xffffff}));
+    sq.position.set(6,0.03,-4+i*2); scene.add(sq);
+  }
+  // boost pads (visual + zones)
+  const padMat=new THREE.MeshBasicMaterial({color:0x37e0ff,transparent:true,opacity:0.75});
+  for(const [x1,z1,x2,z2,dx,dz] of [[37,-14,43,-10,0,-1],[37,-24,43,-20,0,-1]]){
+    const pad=new THREE.Mesh(new THREE.PlaneGeometry(x2-x1,z2-z1),padMat);
+    pad.rotation.x=-Math.PI/2; pad.position.set((x1+x2)/2,0.05,(z1+z2)/2); scene.add(pad);
+    boosts.push({x1,z1,x2,z2,dx,dz});
+    // chevrons
+    for(let k=0;k<3;k++){
+      const ch=new THREE.Mesh(new THREE.ConeGeometry(0.7,1.6,3),new THREE.MeshBasicMaterial({color:0xbff4ff}));
+      ch.rotation.x = dz<0 ? Math.PI : 0; ch.rotation.z = Math.PI/2;
+      ch.position.set((x1+x2)/2,0.15,z1-1-k*1.4); scene.add(ch);
+    }
+  }
+}
+buildTrack();
+
+// gates: [x,z] in order; g0 = start/finish
+const GATES=[[6,0],[20,0],[34,0],[40,-10],[40,-22],[34,-30],[20,-30],[8,-30],[0,-22],[0,-8]];
+const GATE_R=5;
+{
+  const ringGeo=new THREE.TorusGeometry(GATE_R,0.18,8,40);
+  GATES.forEach(([x,z],i)=>{
+    const ring=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:i===0?0xffd76a:0x37e0ff,transparent:true,opacity:0.55}));
+    ring.rotation.x=Math.PI/2; ring.position.set(x,1.2,z); scene.add(ring);
+  });
+}
+function spawnPos(i){
+  const spots=[[1,-3],[1,-1],[1,1],[1,3],[-1,-3],[-1,3]];
+  const s=spots[i%spots.length]; return new THREE.Vector3(s[0],2,s[1]);
+}
+
+/* ---- hamster-in-a-ball ---- */
+function makeHamster(color){
+  const g=new THREE.Group();
+  const ball=new THREE.Mesh(new THREE.SphereGeometry(0.62,24,18),
+    new THREE.MeshPhongMaterial({color:0xcfe8ff,transparent:true,opacity:0.30,shininess:120,specular:0x99ccff}));
+  g.add(ball);
+  const ham=new THREE.Group();
+  const fur=new THREE.MeshStandardMaterial({color:0xd9a066,roughness:0.9});
+  const body=new THREE.Mesh(new THREE.SphereGeometry(0.30,16,12),fur); body.scale.set(1,0.9,1.15); ham.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.20,16,12),fur); head.position.set(0,0.16,0.30); ham.add(head);
+  const earG=new THREE.SphereGeometry(0.07,10,8);
+  for(const sx of [-1,1]){ const e=new THREE.Mesh(earG,fur); e.position.set(sx*0.11,0.34,0.28); ham.add(e); }
+  const eyeG=new THREE.SphereGeometry(0.045,10,8); const eyeM=new THREE.MeshBasicMaterial({color:0x1a1a1a});
+  for(const sx of [-1,1]){ const e=new THREE.Mesh(eyeG,eyeM); e.position.set(sx*0.09,0.20,0.46); ham.add(e); }
+  const nose=new THREE.Mesh(new THREE.SphereGeometry(0.035,8,6),new THREE.MeshBasicMaterial({color:0xff8fa0}));
+  nose.position.set(0,0.14,0.50); ham.add(nose);
+  // colored racing stripe so you can tell players apart
+  const stripe=new THREE.Mesh(new THREE.TorusGeometry(0.62,0.07,8,32),new THREE.MeshBasicMaterial({color}));
+  stripe.rotation.x=Math.PI/2; g.add(stripe);
+  g.add(ham); g.userData.ham=ham; g.userData.ball=ball;
+  return g;
+}
+
+// name labels
+function makeLabel(text,color){
+  const c=document.createElement('canvas'); c.width=256; c.height=64;
+  const x=c.getContext('2d'); x.font='bold 34px Trebuchet MS'; x.textAlign='center';
+  x.strokeStyle='rgba(0,0,0,.8)'; x.lineWidth=6; x.strokeText(text,128,42);
+  x.fillStyle=color; x.fillText(text,128,42);
+  const t=new THREE.CanvasTexture(c);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false}));
+  s.scale.set(3.4,0.85,1); return s;
+}
+
+/* ---- local player physics ---- */
+const ball={ pos:new THREE.Vector3(0,2,0), vel:new THREE.Vector3(), r:0.55, grounded:false };
+const playerMesh=makeHamster(PALETTE[0]); scene.add(playerMesh);
+let playerLabel=null;
+const keys={};
+addEventListener('keydown',e=>{ keys[e.key.toLowerCase()]=true; if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault(); });
+addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+// camera-relative input
+let camYaw=Math.PI/2; // facing +X initially
+const joyVec={x:0,y:0};
+function inputVec(){
+  let x=0,z=0;
+  if(keys['a']||keys['arrowleft'])x-=1; if(keys['d']||keys['arrowright'])x+=1;
+  if(keys['w']||keys['arrowup'])z-=1; if(keys['s']||keys['arrowdown'])z+=1;
+  x+=joyVec.x; z+=joyVec.y;
+  const l=Math.hypot(x,z); if(l>1){x/=l;z/=l;}
+  // rotate by camera yaw: screen-up = camera forward
+  const s=Math.sin(camYaw),c=Math.cos(camYaw);
+  return {x:x*c - z*s, z:x*s + z*c};
+}
+function collideWorld(){
+  ball.grounded=false;
+  for(const b of solids){
+    const cx=clamp(ball.pos.x,b.x1,b.x2), cy=clamp(ball.pos.y,b.y1,b.y2), cz=clamp(ball.pos.z,b.z1,b.z2);
+    let dx=ball.pos.x-cx, dy=ball.pos.y-cy, dz=ball.pos.z-cz;
+    const d2=dx*dx+dy*dy+dz*dz;
+    if(d2 < ball.r*ball.r){
+      let d=Math.sqrt(d2), nx,ny,nz;
+      if(d>1e-6){ nx=dx/d; ny=dy/d; nz=dz/d; }
+      else{ // center inside box: push along smallest penetration axis
+        const px=Math.min(ball.pos.x-b.x1,b.x2-ball.pos.x), py=Math.min(ball.pos.y-b.y1,b.y2-ball.pos.y), pz=Math.min(ball.pos.z-b.z1,b.z2-ball.pos.z);
+        if(py<=px&&py<=pz){ nx=0;ny=1;nz=0; d=0; } else if(px<=pz){ nx=1;ny=0;nz=0; d=0; } else { nx=0;ny=0;nz=1; d=0; }
+      }
+      const push=ball.r-d;
+      ball.pos.x+=nx*push; ball.pos.y+=ny*push; ball.pos.z+=nz*push;
+      const vn=ball.vel.x*nx+ball.vel.y*ny+ball.vel.z*nz;
+      if(vn<0){ ball.vel.x-=1.4*vn*nx; ball.vel.y-=1.4*vn*ny; ball.vel.z-=1.4*vn*nz; }
+      if(ny>0.7) ball.grounded=true;
+    }
+  }
+}
+function respawn(){
+  const gi=(S.nextGate+ GATES.length -1)%GATES.length;
+  const [gx,gz]=GATES[gi];
+  ball.pos.set(gx,2.5,gz); ball.vel.set(0,0,0);
+  S.dizzy=1.6; toast('💫 dizzy!'); beep(220,0.25,'sawtooth',0.12);
+}
+function stepPhysics(dt, racing){
+  const ctl = S.dizzy>0 ? 0.35 : 1;
+  if(S.dizzy>0) S.dizzy-=dt;
+  if(racing && !S.finished){
+    const iv=inputVec();
+    const acc=(ball.grounded?30:13)*ctl;
+    ball.vel.x+=iv.x*acc*dt; ball.vel.z+=iv.z*acc*dt;
+  }
+  ball.vel.y-=26*dt;
+  // boost pads
+  for(const p of boosts){
+    if(ball.pos.x>p.x1&&ball.pos.x<p.x2&&ball.pos.z>p.z1&&ball.pos.z<p.z2&&Math.abs(ball.pos.y)<2){
+      ball.vel.x+=p.dx*36*dt; ball.vel.z+=p.dz*36*dt;
+    }
+  }
+  // speed cap (soft)
+  const hs=Math.hypot(ball.vel.x,ball.vel.z), max=ball.grounded?15:22;
+  if(hs>max){ const k=max/hs; ball.vel.x*=k; ball.vel.z*=k; }
+  ball.pos.x+=ball.vel.x*dt; ball.pos.y+=ball.vel.y*dt; ball.pos.z+=ball.vel.z*dt;
+  collideWorld();
+  if(ball.grounded){
+    const f=1-(racing?0.35:1.6)*dt; ball.vel.x*=f; ball.vel.z*=f;
+  }
+  // fell off
+  if(ball.pos.y<-8 && racing && !S.finished) respawn();
+  // gates
+  if(racing && !S.finished){
+    const [gx,gz]=GATES[S.nextGate];
+    const d=Math.hypot(ball.pos.x-gx,ball.pos.z-gz);
+    if(d<GATE_R && Math.abs(ball.pos.y)<4){
+      if(S.nextGate===0){
+        S.laps++;
+        if(S.laps>LAPS){ doFinish(); }
+        else { $('hud-lap').textContent=`Lap ${S.laps}/${LAPS}`; beep(880,0.15); toast(`Lap ${S.laps}/${LAPS}`); }
+      } else if(S.nextGate===3){ beep(520,0.1); }
+      S.nextGate=(S.nextGate+1)%GATES.length;
+    }
+  }
+}
+
+/* ================= race flow ================= */
+const remoteBalls={}; // id -> {group,label,target,prog,finished,finishTime,name,color}
+let posTimer=0, resultsShown=false, firstFinishAt=0;
+
+function setPlayerColor(c){
+  playerMesh.traverse(o=>{ if(o.geometry && o.geometry.type==='TorusGeometry') o.material.color.set(c); });
+}
+function refreshLabel(){
+  if(playerLabel) playerMesh.remove(playerLabel);
+  playerLabel=makeLabel(myName||'Hamster', S.color);
+  playerLabel.position.y=1.5; playerMesh.add(playerLabel);
+}
+
+function beginRace(at){
+  S.solo = S.solo || false;
+  ball.pos.copy(spawnPos(S.order.findIndex(p=>p.id===myId)<0?0:S.order.findIndex(p=>p.id===myId)));
+  ball.vel.set(0,0,0);
+  S.laps=0; S.nextGate=0; S.dizzy=0; S.finished=false; S.finishTime=0;
+  S.racing=false; S.countdownAt=at; S.results=[]; resultsShown=false; firstFinishAt=0;
+  setPlayerColor(S.color); refreshLabel();
+  $('hud-lap').textContent=`Lap 1/${LAPS}`;
+  $('hud-pos').textContent='—';
+  showScreen('race');
+  $('countdown').classList.remove('hidden');
+  if(S.channel) S.channel.track({id:myId,name:myName,color:S.color,ready:S.ready,joinedAt:Date.now(),racing:true});
+  // spawn remote meshes for everyone present
+  for(const p of S.order){ if(p.id!==myId) ensureRemote(p); }
+}
+
+function ensureRemote(p){
+  if(remoteBalls[p.id]) return remoteBalls[p.id];
+  const group=makeHamster(p.color);
+  const label=makeLabel(p.name,p.color); label.position.y=1.5; group.add(label);
+  const sp=spawnPos(S.order.findIndex(q=>q.id===p.id));
+  group.position.copy(sp);
+  scene.add(group);
+  const rb={group,target:sp.clone(),prog:0,finished:false,finishTime:0,name:p.name,color:p.color,laps:0,nextGate:0};
+  remoteBalls[p.id]=rb; return rb;
+}
+
+function onRemotePos(pl){
+  if(pl.id===myId || !S.racing) return;
+  let rb=remoteBalls[pl.id];
+  if(!rb){ const p=S.players[pl.id]; if(!p) return; rb=ensureRemote(p); }
+  rb.target.set(pl.p[0],pl.p[1],pl.p[2]);
+  rb.prog=pl.prog; rb.laps=pl.lap; rb.nextGate=pl.gate;
+  // soft bump
+  const d=rb.target.distanceTo(ball.pos);
+  if(d<1.4 && d>0.01 && !S.finished){
+    const push=(1.4-d)*10;
+    const nx=(ball.pos.x-rb.target.x)/d, nz=(ball.pos.z-rb.target.z)/d;
+    ball.vel.x+=nx*push; ball.vel.z+=nz*push;
+  }
+}
+
+function myProgress(){
+  const frac = S.nextGate===0 ? GATES.length : S.nextGate;
+  const [gx,gz]=GATES[S.nextGate];
+  const d=Math.hypot(ball.pos.x-gx,ball.pos.z-gz);
+  return S.laps*GATES.length + frac - d/100;
+}
+
+function racePositions(){
+  const arr=[{id:myId,name:myName+' (you)',color:S.color,prog:S.finished?1e9:myProgress(),finished:S.finished,time:S.finishTime}];
+  for(const id of Object.keys(remoteBalls)){
+    const rb=remoteBalls[id];
+    arr.push({id,name:rb.name,color:rb.color,prog:rb.finished?1e9:rb.prog,finished:rb.finished,time:rb.finishTime});
+  }
+  arr.sort((a,b)=>b.prog-a.prog);
+  return arr;
+}
+
+function doFinish(){
+  S.finished=true; S.finishTime=Date.now()-S.raceStart;
+  beep(1040,0.3,'square',0.18); setTimeout(()=>beep(1318,0.4,'square',0.18),180);
+  toast(`🏁 Finished! ${fmtTime(S.finishTime)}`);
+  if(S.channel) S.channel.send({type:'broadcast',event:'finish',payload:{id:myId,name:myName,time:S.finishTime}});
+  if(S.solo){
+    if(!S.soloBest || S.finishTime<S.soloBest){ S.soloBest=S.finishTime; localStorage.setItem('hr-best',String(S.finishTime)); toast(`🏁 New best! ${fmtTime(S.finishTime)} 🎉`); }
+    setTimeout(()=>showResults(),1800);
+  } else {
+    S.results.push({id:myId,name:myName,color:S.color,time:S.finishTime});
+    firstFinishAt=firstFinishAt||Date.now();
+    maybeShowResults();
+  }
+}
+function onRemoteFinish(pl){
+  if(S.results.some(r=>r.id===pl.id)) return;
+  S.results.push({id:pl.id,name:pl.name,color:(S.players[pl.id]||{}).color||'#fff',time:pl.time});
+  const rb=remoteBalls[pl.id]; if(rb){ rb.finished=true; rb.finishTime=pl.time; }
+  firstFinishAt=firstFinishAt||Date.now();
+  addChat('chat-box2',null,`🏁 ${pl.name} finished in ${fmtTime(pl.time)}`,null,true);
+  maybeShowResults();
+}
+function maybeShowResults(){
+  if(resultsShown || S.solo) return;
+  const total=Object.keys(S.players).length||1;
+  const allIn=S.results.length>=total;
+  const timedOut=firstFinishAt && Date.now()-firstFinishAt>25000;
+  if(allIn||timedOut) showResults();
+}
+function showResults(){
+  resultsShown=true; S.racing=false;
+  const list=$('res-list'); list.innerHTML='';
+  const medals=['🥇','🥈','🥉'];
+  const fin=S.results.slice().sort((a,b)=>a.time-b.time);
+  // DNFs: everyone else, ordered by progress
+  const dnfIds=Object.keys(S.players).filter(id=>!fin.some(r=>r.id===id));
+  if(S.solo) dnfIds.length=0;
+  fin.forEach((r,i)=>{
+    const d=document.createElement('div'); d.className='res-row';
+    d.innerHTML=`<span class="medal">${medals[i]||'🏅'}</span><span class="sdot" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${r.color}"></span><span>${escapeHtml(r.name)}</span><span class="time">${fmtTime(r.time)}</span>`;
+    list.appendChild(d);
+  });
+  if(S.solo){
+    const d=document.createElement('div'); d.className='res-row';
+    d.innerHTML=`<span class="medal">🐹</span><span>${escapeHtml(myName)}</span><span class="time">${fmtTime(S.finishTime)}</span>`;
+    list.appendChild(d);
+    const b=document.createElement('div'); b.className='res-row';
+    b.innerHTML=`<span class="medal">⭐</span><span>Best</span><span class="time">${fmtTime(S.soloBest)}</span>`;
+    list.appendChild(b);
+  }
+  for(const id of dnfIds){
+    const p=S.players[id]; if(!p) continue;
+    const d=document.createElement('div'); d.className='res-row';
+    d.innerHTML=`<span class="medal">💫</span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${p.color}"></span><span>${escapeHtml(p.name)}</span><span class="dnf">did not finish</span>`;
+    list.appendChild(d);
+  }
+  $('btn-again').textContent = S.solo ? 'Race again' : (S.host?'Back to lobby':'Back to lobby');
+  showScreen('results');
+}
+
+/* ================= camera + main loop ================= */
+const camDir=new THREE.Vector3(1,0,0);
+const camPos=new THREE.Vector3(-8,5,0);
+function updateCamera(dt){
+  const hs=Math.hypot(ball.vel.x,ball.vel.z);
+  if(hs>3){ camDir.set(ball.vel.x/hs,0,ball.vel.z/hs); }
+  const want=new THREE.Vector3().copy(ball.pos).addScaledVector(camDir,-8).add(new THREE.Vector3(0,4.6,0));
+  camPos.lerp(want,1-Math.pow(0.001,dt));
+  let wob=0;
+  if(S.dizzy>0){ wob=Math.sin(performance.now()*0.03)*0.5*S.dizzy; }
+  camera.position.copy(camPos);
+  camYaw=Math.atan2(camDir.x,-camDir.z); // screen-up = camera forward
+  const look=new THREE.Vector3().copy(ball.pos).addScaledVector(camDir,3.5); look.y+=1+wob;
+  camera.lookAt(look);
+}
+function updateMesh(dt){
+  playerMesh.position.copy(ball.pos);
+  // roll the ball
+  const hs=Math.hypot(ball.vel.x,ball.vel.z);
+  if(hs>0.1){
+    const axis=new THREE.Vector3(ball.vel.z,0,-ball.vel.x).normalize();
+    playerMesh.userData.ball.rotateOnWorldAxis(axis,hs*dt/0.62);
+  }
+  const ham=playerMesh.userData.ham;
+  if(S.dizzy>0){ ham.rotation.y+=dt*14; }
+  else{
+    ham.rotation.y*=0.9;
+    ham.rotation.z=clamp(-ball.vel.x*0.02,-0.3,0.3);
+    ham.rotation.x=clamp(ball.vel.z*0.02,-0.3,0.3);
+  }
+  for(const id of Object.keys(remoteBalls)){
+    const rb=remoteBalls[id];
+    rb.group.position.lerp(rb.target,1-Math.pow(0.0001,dt));
+  }
+}
+function updateHUD(){
+  if(S.racing && !S.finished) $('hud-time').textContent=fmtTime(Date.now()-S.raceStart);
+  else if(S.finished) $('hud-time').textContent=fmtTime(S.finishTime);
+  if(S.mode==='racing'){
+    const pos=racePositions();
+    const myIdx=pos.findIndex(p=>p.id===myId);
+    $('hud-pos').textContent=ordinal(myIdx+1);
+    const st=$('standings'); st.innerHTML='';
+    pos.slice(0,6).forEach((p,i)=>{
+      const d=document.createElement('div'); d.className='srow';
+      d.innerHTML=`<span>${i+1}</span><span class="sdot" style="background:${p.color}"></span><span>${escapeHtml(p.name.replace(' (you)',''))}</span>${p.finished?'<span>🏁</span>':''}`;
+      st.appendChild(d);
+    });
+  }
+}
+const clock=new THREE.Clock();
+function loop(){
+  requestAnimationFrame(loop);
+  const dt=Math.min(clock.getDelta(),1/30);
+  const now=Date.now();
+  // countdown
+  if(S.countdownAt && !S.racing){
+    const remain=S.countdownAt-now;
+    const cd=$('countdown'), num=$('count-num');
+    if(remain>0){
+      const n=Math.ceil(remain/1000);
+      if(num.textContent!=String(n)){ num.textContent=n; beep(440+n*110,0.12); }
+    } else {
+      S.countdownAt=0; S.racing=true; S.raceStart=now;
+      num.textContent='GO!'; beep(880,0.3);
+      setTimeout(()=>cd.classList.add('hidden'),700);
+      toast(S.solo?'GO! 🏁':'GO! 🏁');
+    }
+  }
+  if(S.mode==='racing'||S.mode==='results'||S.mode==='menu'){
+    stepPhysics(dt, S.racing && !S.finished);
+    // broadcast position
+    if(S.racing && !S.finished && S.channel){
+      posTimer+=dt;
+      if(posTimer>0.09){ posTimer=0;
+        S.channel.send({type:'broadcast',event:'pos',payload:{id:myId,p:[ball.pos.x,ball.pos.y,ball.pos.z],v:[ball.vel.x,ball.vel.z],lap:S.laps,gate:S.nextGate,prog:myProgress()}});
+      }
+    }
+    if(S.mode==='racing' && !resultsShown && !S.solo && firstFinishAt) maybeShowResults();
+    updateMesh(dt); updateCamera(dt); updateHUD();
+  }
+  renderer.render(scene,camera);
+}
+loop();
+
+/* ================= touch joystick ================= */
+if('ontouchstart' in window){
+  const joy=$('joy'), knob=$('joy-knob');
+  joy.style.display='block';
+  let jid=null;
+  const setKnob=(dx,dy)=>{ knob.style.left=(37+dx)+'px'; knob.style.top=(37+dy)+'px'; };
+  joy.addEventListener('pointerdown',e=>{ jid=e.pointerId; joy.setPointerCapture(jid); });
+  joy.addEventListener('pointermove',e=>{
+    if(e.pointerId!==jid) return;
+    const r=joy.getBoundingClientRect();
+    let dx=e.clientX-(r.left+65), dy=e.clientY-(r.top+65);
+    const l=Math.hypot(dx,dy), max=45;
+    if(l>max){ dx=dx/l*max; dy=dy/l*max; }
+    setKnob(dx,dy); joyVec.x=dx/max; joyVec.y=dy/max;
+  });
+  const end=e=>{ if(e.pointerId===jid){ jid=null; setKnob(0,0); joyVec.x=0; joyVec.y=0; } };
+  joy.addEventListener('pointerup',end); joy.addEventListener('pointercancel',end);
+}
+</script>
+</body>
+</html>
