@@ -782,7 +782,7 @@ function beginTrack(){
 function fmt(ms){if(ms==null||!isFinite(ms))return'--:--';const s=Math.max(0,ms/1000);const m=Math.floor(s/60);return m+':'+(s%60).toFixed(1).padStart(4,'0');}
 function updateHud(){
   const racing=S.race&&S.race.phase==='race';
-  $('h-time').textContent=S.race?(racing?fmt(S.race.left):curTrack().name):'';
+  $('h-time').textContent=S.race?(racing?fmt(S.race.elapsed):curTrack().name):'';
   $('h-boost').textContent='⚡×'+me.boosts;
   $('h-coins').textContent='🪙'+me.coins;
   $('hurry').style.display=(racing&&S.race.left<60000)?'flex':'none';
