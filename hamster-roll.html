@@ -359,7 +359,7 @@ function draw(t,now){
     ctx.fillStyle='rgba(128,237,255,.35)';ctx.beginPath();ctx.arc(0,0,20,0,7);ctx.fill();
     ctx.fillStyle='#ffe45e';ctx.beginPath();ctx.moveTo(2,-14);ctx.lineTo(-8,2);ctx.lineTo(-1,2);ctx.lineTo(-2,14);ctx.lineTo(8,-2);ctx.lineTo(1,-2);ctx.closePath();ctx.fill();ctx.restore();}
   // remote ghosts
-  for(const id in S.remotes){const r=S.remotes[id];if(r.track!==S.track)continue;drawHamster(r.x,r.y,r.roll||0,1,r.color,r.name,false,now);}
+  for(const id in S.remotes){const r=S.remotes[id];if(r.track!==S.track)continue;drawHamster(r.rx??r.x,r.ry??r.y,r.roll||0,1,r.color,r.name,false,now);}
   // me
   if(S.race)drawHamster(me.x,me.y,me.roll,me.face,me.color,myName||'You',me.dizzy>0,now);
   // particles
@@ -449,7 +449,7 @@ function drawMinimap(){
   for(const id in S.remotes){
     const r=S.remotes[id];
     if(r.track!==S.track||r.fin)continue;
-    dot(r.x,r.color||'#fff',(r.name||'?').charAt(0).toUpperCase(),false);
+    dot(r.rx??r.x,r.color||'#fff',(r.name||'?').charAt(0).toUpperCase(),false);
   }
   if(!me.finished&&!me.dnf)dot(me.x,me.color||'#fff',(myName||'?').charAt(0).toUpperCase(),true);
 }
@@ -571,7 +571,7 @@ async function joinRoom(code,isHost){
   ch.on('presence',{event:'join'},({newPresences})=>{for(const p of newPresences)if(p.id!==myId){lobbyChat(null,p.name+' joined the room',true);beep(660,.08);}renderRoster();});
   ch.on('presence',{event:'leave'},({leftPresences})=>{for(const p of leftPresences){delete S.players[p.id];delete S.remotes[p.id];lobbyChat(null,p.name+' left',true);}renderRoster();});
   ch.on('broadcast',{event:'chat'},({payload})=>{if(payload.id!==myId){lobbyChat(payload.name,payload.text);raceChat(payload.name,payload.text);}});
-  ch.on('broadcast',{event:'pos'},({payload})=>{if(payload.id===myId)return;S.remotes[payload.id]={...payload};});
+  ch.on('broadcast',{event:'pos'},({payload})=>{if(payload.id===myId)return;const o=S.remotes[payload.id];S.remotes[payload.id]={...payload,rx:o?o.rx:payload.x,ry:o?o.ry:payload.y};});
   ch.on('broadcast',{event:'finish'},({payload})=>{
     const arr=S.finishes[payload.track]=S.finishes[payload.track]||[];
     const ix=arr.findIndex(f=>f.id===payload.id);
@@ -662,6 +662,7 @@ function loop(now){
       stepParts(dt);
       r.waitT-=dt;if(r.waitT<=0&&!r.advanced){r.advanced=true;$('results').style.display='none';advanceTrack();}
     }
+    for(const id in S.remotes){const rm=S.remotes[id];const ek=Math.min(1,14*dt);rm.rx+=(rm.x-rm.rx)*ek;rm.ry+=(rm.y-rm.ry)*ek;}
     draw(r.t,now);drawMinimap();
   }else{
     drawMenuScene(now);
