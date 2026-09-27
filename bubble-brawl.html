@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Bubble Brawl · Mossbell Arcade</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:#101828 radial-gradient(1200px 700px at 50% -10%,#1d3a5f 0%,#101828 60%);color:#eef4ff;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100%;padding:10px;overflow-x:hidden}
+a.home{color:#9fc1ff;text-decoration:none;font-size:13px;margin-bottom:6px;opacity:.85}
+a.home:hover{opacity:1;text-decoration:underline}
+.hud{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;max-width:640px}
+.chip{background:rgba(20,34,58,.85);border:1px solid #2c4a75;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.chip b{color:#ffd76a}
+#wrap{position:relative}
+canvas{display:block;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.55),0 0 0 3px #27436b;max-width:96vw;height:auto;touch-action:none;background:#1a2b1f}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,14,26,.78);border-radius:14px;z-index:5;backdrop-filter:blur(2px)}
+.overlay.hidden{display:none}
+.dialog{background:#16263f;border:1px solid #33507e;border-radius:16px;padding:26px 30px;max-width:420px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.dialog h1{font-size:30px;margin-bottom:6px;color:#8fd8ff;text-shadow:0 2px 0 #123}
+.dialog h2{font-size:24px;margin-bottom:8px;color:#8fd8ff}
+.dialog p{font-size:14px;line-height:1.55;color:#c6d8f2;margin-bottom:10px}
+.dialog .keys{font-size:13px;background:#0e1a30;border-radius:10px;padding:10px 12px;margin:10px 0;color:#9fc1ff;line-height:1.9}
+.dialog .keys kbd{background:#27436b;border-radius:6px;padding:2px 8px;font-family:inherit;border:1px solid #3c5f92}
+button.big{background:linear-gradient(180deg,#4fc3ff,#2b7fd4);border:none;color:#fff;font-weight:800;font-size:17px;padding:12px 34px;border-radius:999px;cursor:pointer;margin-top:8px;box-shadow:0 4px 0 #1a4f86,0 6px 16px rgba(0,0,0,.4);font-family:inherit}
+button.big:active{transform:translateY(3px);box-shadow:0 1px 0 #1a4f86}
+#touch{position:absolute;inset:auto 0 0 0;display:none;justify-content:space-between;align-items:flex-end;padding:0 10px 10px;z-index:4;pointer-events:none}
+#touch.on{display:flex}
+.tpad{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,54px);gap:4px;pointer-events:auto}
+.tbtn{background:rgba(30,55,95,.72);border:1px solid #3c5f92;color:#cfe6ff;font-size:22px;border-radius:12px;touch-action:none;user-select:none}
+.tbtn:active{background:rgba(70,120,190,.85)}
+#dropBtn{width:84px;height:84px;border-radius:50%;font-size:34px;background:rgba(43,127,212,.8);border:2px solid #7cc4ff;pointer-events:auto;touch-action:none}
+#dropBtn:active{background:rgba(80,170,255,.95)}
+.hint{font-size:12px;color:#8aa3c7;margin-top:8px;text-align:center;max-width:620px;line-height:1.6}
+</style>
+</head>
+<body>
+<a class="home" href="./index.html">← Mossbell Arcade</a>
+<div class="hud">
+<span class="chip">Round <b id="hRound">1</b></span>
+<span class="chip">Score <b id="hScore">0</b></span>
+<span class="chip">⏱ <b id="hTime">0:00</b></span>
+<span class="chip" id="hBots">🤖 <b>3</b> left</span>
+<span class="chip" id="hStats" title="Balloons · Speed · Range">💧<b>1</b> 👟<b>1</b> 🎯<b>2</b></span>
+</div>
+<div id="wrap">
+<canvas id="cv" width="600" height="520"></canvas>
+<div class="overlay" id="menuOv"><div class="dialog">
+<h1>🫧 Bubble Brawl</h1>
+<p>Drop <b>water balloons</b> in the maze and splash your rivals! Caught by a splash? You're trapped in a <b>bubble</b> for 3 seconds — get splashed again while bubbled and you <b>pop</b>. Last blob standing wins.</p>
+<div class="keys"><kbd>←↑↓→</kbd> or <kbd>WASD</kbd> move &nbsp;·&nbsp; <kbd>Space</kbd> drop balloon<br>Blast crates for 💧 balloons, 👟 speed, 🎯 range</div>
+<button class="big" id="startBtn">Start</button>
+</div></div>
+<div class="overlay hidden" id="winOv"><div class="dialog">
+<h2>🏆 Round <span id="wRound">1</span> cleared!</h2>
+<p id="wText"></p>
+<button class="big" id="nextBtn">Next round</button>
+</div></div>
+<div class="overlay hidden" id="loseOv"><div class="dialog">
+<h2>💥 You popped!</h2>
+<p id="lText"></p>
+<button class="big" id="retryBtn">Try again</button>
+</div></div>
+<div id="touch"><div class="tpad">
+<span></span><button class="tbtn" data-k="up">▲</button><span></span>
+<button class="tbtn" data-k="left">◀</button><button class="tbtn" data-k="down">▼</button><button class="tbtn" data-k="right">▶</button>
+<span></span><span></span><span></span>
+</div><button id="dropBtn">💧</button></div>
+</div>
+<p class="hint">Tip: your own balloons splash you too — always leave yourself an escape route.</p>
+<script>
+"use strict";
+/* ===== audio (tiny synth) ===== */
+let AC=null;
+function audio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function tone(f,d,type,vol,slide){const ac=audio();if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,ac.currentTime);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),ac.currentTime+d);g.gain.setValueAtTime(vol||.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}
+function sfx(n){if(n==='place')tone(300,.12,'sine',.15,200);else if(n==='boom'){tone(120,.35,'sawtooth',.2,-70);tone(700,.25,'sine',.08,-500)}else if(n==='pow')tone(660,.12,'square',.08,330);else if(n==='bubble'){tone(500,.2,'sine',.12,300);setTimeout(()=>tone(700,.15,'sine',.1,200),120)}else if(n==='pop'){tone(900,.08,'square',.14,-600);setTimeout(()=>tone(1400,.1,'square',.1,-900),70)}else if(n==='win')[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.22,'triangle',.12),i*130));else if(n==='lose')[400,300,220,150].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sawtooth',.1),i*150))}
+
+/* ===== constants & state ===== */
+const COLS=15,ROWS=13,CELL=40,W=COLS*CELL,H=ROWS*CELL;
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const $=id=>document.getElementById(id);
+let grid=[],balloons=[],flames=[],powerups=[],particles=[];
+let players=[],round=1,score=0,roundTime=0,state='menu',shake=0,last=0;
+let popCount=0;
+
+const BOTS=[
+ {name:'Bloop',color:'#4aa8ff',dark:'#2b6fd4'},
+ {name:'Splash',color:'#51d88a',dark:'#2f9e5f'},
+ {name:'Drizzle',color:'#b07fe8',dark:'#7d4fc0'}
+];
+const SKEY=(x,y)=>x+','+y;
+const inB=(x,y)=>x>=0&&y>=0&&x<COLS&&y<ROWS;
+const tileSolid=(x,y)=>!inB(x,y)||grid[y][x]===1||grid[y][x]===2;
+
+function buildGrid(){
+ grid=[];
+ for(let y=0;y<ROWS;y++){grid[y]=[];for(let x=0;x<COLS;x++){
+  grid[y][x]=(x===0||y===0||x===COLS-1||y===ROWS-1||(x%2===0&&y%2===0))?1:0;
+ }}
+ const clear=[[1,1],[2,1],[1,2],[COLS-2,1],[COLS-3,1],[COLS-2,2],[1,ROWS-2],[2,ROWS-2],[1,ROWS-3],[COLS-2,ROWS-2],[COLS-3,ROWS-2],[COLS-2,ROWS-3]];
+ const clearSet=new Set(clear.map(c=>SKEY(c[0],c[1])));
+ for(let y=1;y<ROWS-1;y++)for(let x=1;x<COLS-1;x++){
+  if(grid[y][x]===0&&!clearSet.has(SKEY(x,y))&&Math.random()<0.62)grid[y][x]=2;
+ }
+}
+
+function makePlayers(){
+ players=[];
+ const spots=[[1,1],[COLS-2,1],[1,ROWS-2],[COLS-2,ROWS-2]];
+ const defs=[{name:'You',color:'#ff7b8a',dark:'#d44a5c',isBot:false},
+  {name:BOTS[0].name,color:BOTS[0].color,dark:BOTS[0].dark,isBot:true},
+  {name:BOTS[1].name,color:BOTS[1].color,dark:BOTS[1].dark,isBot:true},
+  {name:BOTS[2].name,color:BOTS[2].color,dark:BOTS[2].dark,isBot:true}];
+ for(let i=0;i<4;i++){
+  const[tx,ty]=spots[i],d=defs[i];
+  players.push({id:i,name:d.name,color:d.color,dark:d.dark,isBot:d.isBot,
+   x:tx*CELL+CELL/2,y:ty*CELL+CELL/2,r:13,
+   alive:true,bubbled:0,invuln:0,
+   baseSpeed:d.isBot?132+Math.min(40,(round-1)*9):150,speed:0,
+   maxBalloons:1,range:2,active:0,
+   dir:null,moving:false,face:1,walkPh:Math.random()*6,
+   ai:{think:0,dir:null,fleeing:false,aggro:.35+Math.min(.4,(round-1)*.08)+Math.random()*.2}});
+  players[i].speed=players[i].baseSpeed;
+ }
+}
+
+function resetRound(){
+ buildGrid();balloons=[];flames=[];powerups=[];particles=[];
+ makePlayers();roundTime=0;popCount=0;shake=0;
+ $('menuOv').classList.add('hidden');$('winOv').classList.add('hidden');$('loseOv').classList.add('hidden');
+ state='play';updateHud();
+}
+
+/* ===== movement & collision ===== */
+function balloonAt(tx,ty){for(const b of balloons)if(b.tx===tx&&b.ty===ty)return b;return null}
+function solidFor(p,tx,ty){
+ if(tileSolid(tx,ty))return true;
+ const b=balloonAt(tx,ty);
+ if(b&&!b.escaped.has(p.id))return true;
+ return false;
+}
+function collideCircle(p,nx,ny){
+ const r=p.r-3;
+ for(const[ox,oy]of[[-r,-r],[r,-r],[-r,r],[r,r]]){
+  const tx=Math.floor((nx+ox)/CELL),ty=Math.floor((ny+oy)/CELL);
+  if(solidFor(p,tx,ty))return true;
+ }
+ return false;
+}
+function movePlayer(p,dx,dy,dt){
+ if(dx===0&&dy===0){p.moving=false;return}
+ p.moving=true;
+ if(dx!==0)p.face=dx>0?1:-1;
+ const sp=p.speed*dt;
+ // corner assist: nudge toward lane center when blocked
+ let nx=p.x+dx*sp;
+ if(collideCircle(p,nx,p.y)){
+  const cy=Math.floor(p.y/CELL)*CELL+CELL/2,off=cy-p.y;
+  if(Math.abs(off)>1&&Math.abs(off)<CELL/2){
+   const ny2=p.y+Math.sign(off)*Math.min(Math.abs(off),sp*1.4);
+   if(!collideCircle(p,p.x,ny2))p.y=ny2;
+  }
+ }else p.x=nx;
+ let ny=p.y+dy*sp;
+ if(collideCircle(p,p.x,ny)){
+  const cx=Math.floor(p.x/CELL)*CELL+CELL/2,off=cx-p.x;
+  if(Math.abs(off)>1&&Math.abs(off)<CELL/2){
+   const nx2=p.x+Math.sign(off)*Math.min(Math.abs(off),sp*1.4);
+   if(!collideCircle(p,nx2,p.y))p.x=nx2;
+  }
+ }else p.y=ny;
+ p.x=Math.max(p.r,Math.min(W-p.r,p.x));p.y=Math.max(p.r,Math.min(H-p.r,p.y));
+ p.walkPh+=dt*10;
+ // balloons become solid once you step off their tile
+ const tx=Math.floor(p.x/CELL),ty=Math.floor(p.y/CELL);
+ for(const b of balloons)if(b.tx!==tx||b.ty!==ty)b.escaped.add(p.id);
+}
+
+/* ===== balloons & splashes ===== */
+function dropBalloon(p){
+ if(state!=='play'||!p.alive||p.bubbled>0)return;
+ const tx=Math.floor(p.x/CELL),ty=Math.floor(p.y/CELL);
+ if(balloonAt(tx,ty)||p.active>=p.maxBalloons)return;
+ balloons.push({tx,ty,fuse:2.5,range:p.range,owner:p.id,escaped:new Set([p.id])});
+ p.active++;sfx('place');
+ burst(tx*CELL+CELL/2,ty*CELL+CELL/2,p.color,4,60);
+}
+const boomQueue=[];
+function detonate(b){
+ const bi=balloons.indexOf(b);if(bi<0)return;
+ balloons.splice(bi,1);
+ const owner=players[b.owner];if(owner)owner.active=Math.max(0,owner.active-1);
+ const tiles=[[b.tx,b.ty]];
+ for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){
+  for(let i=1;i<=b.range;i++){
+   const tx=b.tx+dx*i,ty=b.ty+dy*i;
+   if(!inB(tx,ty)||grid[ty][tx]===1)break;
+   tiles.push([tx,ty]);
+   if(grid[ty][tx]===2){break} // crate stops blast
+  }
+ }
+ const now=performance.now()/1000;
+ for(const[tx,ty]of tiles){
+  if(grid[ty][tx]===2){
+   grid[ty][tx]=0;
+   if(Math.random()<0.35){
+    const types=['bomb','speed','range'];
+    powerups.push({tx,ty,type:types[Math.floor(Math.random()*3)],ph:Math.random()*6});
+   }
+   burst(tx*CELL+CELL/2,ty*CELL+CELL/2,'#c98d5e',8,90);
+  }
+  flames.push({tx,ty,until:now+0.55});
+  splashFx(tx,ty);
+  const other=balloonAt(tx,ty);
+  if(other&&other!==b)boomQueue.push(other);
+ }
+ shake=Math.min(10,shake+5);sfx('boom');
+}
+function updateBalloons(dt){
+ for(const b of balloons)b.fuse-=dt;
+ const due=balloons.filter(b=>b.fuse<=0);
+ for(const b of due)boomQueue.push(b);
+ while(boomQueue.length)detonate(boomQueue.pop());
+ const now=performance.now()/1000;
+ flames=flames.filter(f=>f.until>now);
+}
+
+/* ===== bubble / pop ===== */
+function flameAt(tx,ty){
+ const now=performance.now()/1000;
+ for(const f of flames)if(f.tx===tx&&f.ty===ty&&f.until>now)return true;
+ return false;
+}
+function bubblePlayer(p){
+ p.bubbled=3;p.invuln=Math.max(p.invuln,0.7);sfx('bubble');
+ burst(p.x,p.y,'#bfe9ff',12,120);
+}
+function popPlayer(p){
+ p.alive=false;p.bubbled=0;sfx('pop');
+ burst(p.x,p.y,p.color,22,180);burst(p.x,p.y,'#ffffff',10,120);
+ if(!p.isBot){
+  popCount++;
+  endRound(false);
+ }else{
+  popCount++;score+=250;
+  if(players.filter(q=>q.isBot&&q.alive).length===0)endRound(true);
+ }
+ updateHud();
+}
+function updateHits(dt){
+ for(const p of players){
+  if(!p.alive)continue;
+  if(p.invuln>0)p.invuln-=dt;
+  if(p.bubbled>0){
+   p.bubbled-=dt;
+   const tx=Math.floor(p.x/CELL),ty=Math.floor(p.y/CELL);
+   if(p.invuln<=0&&flameAt(tx,ty)){popPlayer(p);continue}
+   if(p.bubbled<=0){p.invuln=1.5}
+   continue;
+  }
+  if(p.invuln>0)continue;
+  const tx=Math.floor(p.x/CELL),ty=Math.floor(p.y/CELL);
+  if(flameAt(tx,ty))bubblePlayer(p);
+ }
+ // powerup pickup
+ for(const p of players){
+  if(!p.alive||p.bubbled>0)continue;
+  const tx=Math.floor(p.x/CELL),ty=Math.floor(p.y/CELL);
+  for(let i=powerups.length-1;i>=0;i--){
+   const pu=powerups[i];
+   if(pu.tx===tx&&pu.ty===ty){
+    if(pu.type==='bomb')p.maxBalloons=Math.min(5,p.maxBalloons+1);
+    else if(pu.type==='speed')p.speed=Math.min(230,p.speed+22);
+    else p.range=Math.min(6,p.range+1);
+    powerups.splice(i,1);sfx('pow');
+    burst(p.x,p.y,'#ffe27a',8,80);
+    if(!p.isBot)updateHud();
+   }
+  }
+ }
+}
+
+/* ===== particles ===== */
+function burst(x,y,color,n,spd){
+ for(let i=0;i<n;i++){
+  const a=Math.random()*Math.PI*2,s=spd*(0.4+Math.random()*0.8);
+  particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.5+Math.random()*.4,t:0,color,r:2+Math.random()*3});
+ }
+}
+function splashFx(tx,ty){
+ burst(tx*CELL+CELL/2,ty*CELL+CELL/2,'#7cc4ff',6,110);
+ burst(tx*CELL+CELL/2,ty*CELL+CELL/2,'#e8f7ff',3,70);
+}
+function updateParticles(dt){
+ for(let i=particles.length-1;i>=0;i--){
+  const pt=particles[i];pt.t+=dt;
+  if(pt.t>=pt.life){particles.splice(i,1);continue}
+  pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.vy+=220*dt;pt.vx*=.98;
+ }
+}
+
+/* ===== bot AI ===== */
+function dangerSet(){
+ const s=new Set(),now=performance.now()/1000;
+ for(const f of flames)if(f.until>now)s.add(SKEY(f.tx,f.ty));
+ for(const b of balloons){
+  if(b.fuse>1.1)continue;
+  s.add(SKEY(b.tx,b.ty));
+  for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){
+   for(let i=1;i<=b.range;i++){
+    const tx=b.tx+dx*i,ty=b.ty+dy*i;
+    if(!inB(tx,ty)||grid[ty][tx]===1)break;
+    s.add(SKEY(tx,ty));
+    if(grid[ty][tx]===2)break;
+   }
+  }
+ }
+ return s;
+}
+function walkable(tx,ty,self){
+ if(tileSolid(tx,ty))return false;
+ const b=balloonAt(tx,ty);
+ if(b&&!b.escaped.has(self.id))return false;
+ return true;
+}
+function bfsNext(sx,sy,isTarget){
+ // returns first-step direction toward nearest target tile
+ const key=SKEY(sx,sy),prev={[key]:null},q=[[sx,sy]],seen=new Set([key]);
+ const dirs=[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']];
+ while(q.length){
+  const[cx,cy]=q.shift();
+  if(isTarget(cx,cy)&&!(cx===sx&&cy===sy)){
+   let k=SKEY(cx,cy);
+   while(prev[k]!==key)k=prev[k];
+   const[fx,fy]=k.split(',').map(Number);
+   return fx>sx?'right':fx<sx?'left':fy>sy?'down':'up';
+  }
+  for(const[dx,dy]of dirs){
+   const nx=cx+dx,ny=cy+dy,k=SKEY(nx,ny);
+   if(seen.has(k)||tileSolid(nx,ny))continue;
+   const b=balloonAt(nx,ny);
+   if(b)continue; // don't path through balloons
+   seen.add(k);prev[k]=SKEY(cx,cy);q.push([nx,ny]);
+  }
+ }
+ return null;
+}
+function botThink(p){
+ const tx=Math.floor(p.x/CELL),ty=Math.floor(p.y/CELL);
+ const danger=dangerSet(),ai=p.ai;
+ const dirs=[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']];
+ const safeDirs=dirs.filter(([dx,dy])=>!danger.has(SKEY(tx+dx,ty+dy))&&walkable(tx+dx,ty+dy,p));
+ if(danger.has(SKEY(tx,ty))){
+  ai.dir=safeDirs.length?safeDirs[Math.floor(Math.random()*safeDirs.length)][2]:null;
+  ai.fleeing=true;return;
+ }
+ if(ai.fleeing){
+  if(safeDirs.length&&!safeDirs.some(d=>d[2]===ai.dir))ai.dir=safeDirs[0][2];
+  if(!danger.has(SKEY(tx,ty)))ai.fleeing=false;else return;
+ }
+ // grab nearby powerup
+ const puDir=bfsNext(tx,ty,(x,y)=>powerups.some(q=>q.tx===x&&q.ty===y));
+ // adjacent crate or enemy in blast line?
+ let adjacentCrate=false;
+ for(const[dx,dy]of dirs)if(inB(tx+dx,ty+dy)&&grid[ty+dy][tx+dx]===2)adjacentCrate=true;
+ let enemyNear=false;
+ for(const q of players){
+  if(q===p||!q.alive)continue;
+  const qx=Math.floor(q.x/CELL),qy=Math.floor(q.y/CELL);
+  if((qx===tx||qy===ty)&&(Math.abs(qx-tx)+Math.abs(qy-ty))<=p.range+1&&Math.random()<ai.aggro)enemyNear=true;
+ }
+ if((adjacentCrate||enemyNear)&&!balloonAt(tx,ty)&&p.active<p.maxBalloons&&safeDirs.length>0){
+  dropBalloon(p);ai.dir=safeDirs[0][2];ai.fleeing=true;return;
+ }
+ if(puDir&&Math.random()<.7){ai.dir=puDir;return}
+ // hunt: crates nearly gone -> chase nearest rival
+ let cratesLeft=0;for(let yy=0;yy<ROWS;yy++)for(let xx=0;xx<COLS;xx++)if(grid[yy][xx]===2)cratesLeft++;
+ if(cratesLeft<12){
+  let tgt=null,best=1e9;
+  for(const q of players){if(q===p||!q.alive)continue;const d=Math.abs(q.x-p.x)+Math.abs(q.y-p.y);if(d<best){best=d;tgt=q}}
+  if(tgt){
+   const qx=Math.floor(tgt.x/CELL),qy=Math.floor(tgt.y/CELL);
+   const dist=Math.abs(qx-tx)+Math.abs(qy-ty);
+   if((qx===tx||qy===ty)&&dist<=p.range&&dist>0&&!balloonAt(tx,ty)&&p.active<p.maxBalloons&&safeDirs.length>0){
+    dropBalloon(p);ai.dir=safeDirs[0][2];ai.fleeing=true;return;
+   }
+   const chase=bfsNext(tx,ty,(x,y)=>x===qx&&y===qy);
+   if(chase){ai.dir=chase;return}
+  }
+ }
+ const crateDir=bfsNext(tx,ty,(x,y)=>{for(const[dx,dy]of dirs)if(inB(x+dx,y+dy)&&grid[y+dy][x+dx]===2)return true;return false});
+ if(crateDir){ai.dir=crateDir;return}
+ const wander=dirs.filter(([dx,dy])=>walkable(tx+dx,ty+dy,p)&&!danger.has(SKEY(tx+dx,ty+dy)));
+ ai.dir=wander.length?wander[Math.floor(Math.random()*wander.length)][2]:(Math.random()<.05?null:ai.dir);
+}
+function updateBots(dt){
+ for(const p of players){
+  if(!p.isBot||!p.alive||p.bubbled>0)continue;
+  p.ai.think-=dt;
+  if(p.ai.think<=0){p.ai.think=.18;botThink(p)}
+  const d=p.ai.dir;
+  movePlayer(p,d==='left'?-1:d==='right'?1:0,d==='up'?-1:d==='down'?1:0,dt);
+ }
+}
+
+/* ===== round flow & HUD ===== */
+function fmtT(s){s=Math.floor(s);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+function updateHud(){
+ $('hRound').textContent=round;$('hScore').textContent=score;$('hTime').textContent=fmtT(roundTime);
+ const bl=players.filter(p=>p.isBot&&p.alive).length;
+ $('hBots').innerHTML='🤖 <b>'+bl+'</b> left';
+ const me=players[0];
+ if(me)$('hStats').innerHTML='💧<b>'+me.maxBalloons+'</b> 👟<b>'+Math.round((me.speed-150)/22+1)+'</b> 🎯<b>'+me.range+'</b>';
+}
+function endRound(won){
+ if(state!=='play')return;
+ if(won){
+  state='win';
+  const bonus=Math.max(0,Math.round(600-roundTime))*2;
+  score+=1000+bonus;
+  $('wRound').textContent=round;
+  $('wText').innerHTML='All rivals popped! <b>+'+(1000+bonus)+'</b> pts <span style="opacity:.7">(time bonus +'+bonus+')</span><br>Score: <b>'+score+'</b>';
+  $('winOv').classList.remove('hidden');sfx('win');
+ }else{
+  state='lose';
+  $('lText').innerHTML='You survived <b>'+fmtT(roundTime)+'</b> and popped <b>'+popCount+'</b> rival'+(popCount===1?'':'s')+'.<br>Score: <b>'+score+'</b>';
+  $('loseOv').classList.remove('hidden');sfx('lose');
+ }
+ updateHud();
+}
+
+/* ===== rendering ===== */
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function draw(){
+ ctx.save();
+ if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.88;if(shake<.3)shake=0}
+ // grass
+ for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  ctx.fillStyle=(x+y)%2?'#22402a':'#1e3a25';
+  ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
+ }
+ // powerups
+ ctx.textAlign='center';ctx.textBaseline='middle';
+ for(const pu of powerups){
+  const cx=pu.tx*CELL+CELL/2,cy=pu.ty*CELL+CELL/2+Math.sin(performance.now()/300+pu.ph)*3;
+  ctx.fillStyle='rgba(255,255,255,.14)';
+  ctx.beginPath();ctx.arc(cx,cy,15,0,7);ctx.fill();
+  ctx.font='20px serif';
+  ctx.fillText(pu.type==='bomb'?'💧':pu.type==='speed'?'👟':'🎯',cx,cy);
+ }
+ // walls & crates
+ for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  const v=grid[y][x],px=x*CELL,py=y*CELL;
+  if(v===1){
+   ctx.fillStyle='#3a4a63';rr(px+1,py+1,CELL-2,CELL-2,7);ctx.fill();
+   ctx.fillStyle='#4d6284';rr(px+5,py+5,CELL-10,CELL-16,5);ctx.fill();
+  }else if(v===2){
+   ctx.fillStyle='#8a5a2e';rr(px+4,py+4,CELL-8,CELL-8,6);ctx.fill();
+   ctx.strokeStyle='#6e441f';ctx.lineWidth=2.5;
+   ctx.beginPath();ctx.moveTo(px+4,py+4);ctx.lineTo(px+CELL-4,py+CELL-4);ctx.moveTo(px+CELL-4,py+4);ctx.lineTo(px+4,py+CELL-4);ctx.stroke();
+   ctx.fillStyle='#a9743d';rr(px+8,py+8,CELL-16,10,4);ctx.fill();
+  }
+ }
+ // balloons
+ const now=performance.now()/1000;
+ for(const b of balloons){
+  const cx=b.tx*CELL+CELL/2,cy=b.ty*CELL+CELL/2;
+  const pulse=1+Math.sin(now*(b.fuse<1?18:8))*.06;
+  const owner=players[b.owner];
+  ctx.fillStyle=owner?owner.color:'#4aa8ff';
+  ctx.beginPath();ctx.ellipse(cx,cy-4,13*pulse,15*pulse,0,0,7);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.45)';
+  ctx.beginPath();ctx.ellipse(cx-5,cy-10,4*pulse,6*pulse,-.4,0,7);ctx.fill();
+  ctx.fillStyle=owner?owner.dark:'#2b6fd4';
+  ctx.beginPath();ctx.moveTo(cx-3,cy+11);ctx.lineTo(cx+3,cy+11);ctx.lineTo(cx,cy+16);ctx.closePath();ctx.fill();
+  // fuse spark
+  if(b.fuse<1){ctx.fillStyle='#ffd76a';ctx.beginPath();ctx.arc(cx+Math.random()*8-4,cy-20,2.5,0,7);ctx.fill()}
+ }
+ // flames (water splash)
+ for(const f of flames){
+  if(f.until<=now)continue;
+  const cx=f.tx*CELL+CELL/2,cy=f.ty*CELL+CELL/2;
+  const a=Math.min(1,(f.until-now)/.2);
+  ctx.globalAlpha=a;
+  ctx.fillStyle='#5db9ff';ctx.beginPath();ctx.arc(cx,cy,15,0,7);ctx.fill();
+  ctx.fillStyle='#d8f1ff';ctx.beginPath();ctx.arc(cx-4,cy-4,7,0,7);ctx.fill();
+  ctx.fillStyle='#5db9ff';
+  for(let i=0;i<3;i++){const ang=now*9+i*2.1;ctx.beginPath();ctx.arc(cx+Math.cos(ang)*16,cy+Math.sin(ang)*16,4,0,7);ctx.fill()}
+  ctx.globalAlpha=1;
+ }
+ // players
+ for(const p of players){
+  if(!p.alive)continue;
+  const blink=p.invuln>0&&Math.floor(now*10)%2===0;
+  if(blink)ctx.globalAlpha=.35;
+  const bob=p.moving?Math.sin(p.walkPh)*2:0;
+  const by=p.y+bob;
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(p.x,p.y+13,11,4,0,0,7);ctx.fill();
+  // feet
+  ctx.fillStyle=p.dark;
+  const step=p.moving?Math.sin(p.walkPh)*3:0;
+  ctx.beginPath();ctx.ellipse(p.x-7,p.y+11+step,5,4,0,0,7);ctx.fill();
+  ctx.beginPath();ctx.ellipse(p.x+7,p.y+11-step,5,4,0,0,7);ctx.fill();
+  // body
+  ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,by,p.r,0,7);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.3)';ctx.beginPath();ctx.arc(p.x-5,by-6,5,0,7);ctx.fill();
+  // eyes
+  const ex=p.face*3;
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x-5+ex,by-3,4.4,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+5+ex,by-3,4.4,0,7);ctx.fill();
+  ctx.fillStyle='#1a2436';ctx.beginPath();ctx.arc(p.x-5+ex*1.6,by-3,2.1,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+5+ex*1.6,by-3,2.1,0,7);ctx.fill();
+  // bubble trap
+  if(p.bubbled>0){
+   const wob=Math.sin(now*10)*2;
+   ctx.strokeStyle='rgba(190,235,255,.9)';ctx.lineWidth=3;
+   ctx.beginPath();ctx.arc(p.x,by,20+wob,0,7);ctx.stroke();
+   ctx.fillStyle='rgba(190,235,255,.18)';
+   ctx.beginPath();ctx.arc(p.x,by,20+wob,0,7);ctx.fill();
+   ctx.fillStyle='rgba(255,255,255,.75)';
+   ctx.beginPath();ctx.arc(p.x-8,by-10,4,0,7);ctx.fill();
+   ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';
+   ctx.fillText(Math.ceil(p.bubbled),p.x,by-28);
+  }
+  if(p.isBot){ctx.fillStyle='rgba(255,255,255,.75)';ctx.font='10px sans-serif';ctx.fillText(p.name,p.x,by-20-(p.bubbled>0?14:0))}
+  ctx.globalAlpha=1;
+ }
+ // particles
+ for(const pt of particles){
+  ctx.globalAlpha=1-pt.t/pt.life;ctx.fillStyle=pt.color;
+  ctx.beginPath();ctx.arc(pt.x,pt.y,pt.r,0,7);ctx.fill();
+ }
+ ctx.globalAlpha=1;
+ ctx.restore();
+}
+
+/* ===== input ===== */
+const keys={};
+addEventListener('keydown',e=>{
+ if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();
+ if(e.repeat)return;
+ keys[e.key.toLowerCase()]=true;
+ if(e.key===' '){audio();if(state==='play')dropBalloon(players[0])}
+});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
+const touch={up:false,down:false,left:false,right:false};
+document.querySelectorAll('.tbtn').forEach(b=>{
+ const k=b.dataset.k;
+ const on=e=>{e.preventDefault();audio();touch[k]=true};
+ const off=e=>{e.preventDefault();touch[k]=false};
+ b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);
+ b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off);
+});
+$('dropBtn').addEventListener('pointerdown',e=>{e.preventDefault();audio();if(state==='play')dropBalloon(players[0])});
+if('ontouchstart'in window)$('touch').classList.add('on');
+function playerDir(){
+ let dx=0,dy=0;
+ if(keys['arrowleft']||keys['a']||touch.left)dx-=1;
+ if(keys['arrowright']||keys['d']||touch.right)dx+=1;
+ if(keys['arrowup']||keys['w']||touch.up)dy-=1;
+ if(keys['arrowdown']||keys['s']||touch.down)dy+=1;
+ return[dx,dy];
+}
+
+/* ===== main loop ===== */
+let hudT=0;
+function loop(t){
+ requestAnimationFrame(loop);
+ const dt=Math.min(.05,(t-last)/1000||.016);last=t;
+ if(state==='play'){
+  roundTime+=dt;
+  const me=players[0];
+  if(me.alive&&me.bubbled<=0){const[dx,dy]=playerDir();movePlayer(me,dx,dy,dt)}
+  updateBots(dt);
+  updateBalloons(dt);
+  updateHits(dt);
+  updateParticles(dt);
+  hudT+=dt;if(hudT>.25){hudT=0;updateHud()}
+ }
+ draw();
+}
+$('startBtn').addEventListener('click',()=>{audio();resetRound()});
+$('nextBtn').addEventListener('click',()=>{audio();round++;resetRound()});
+$('retryBtn').addEventListener('click',()=>{audio();resetRound()});
+buildGrid();makePlayers();updateHud();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
