@@ -375,6 +375,13 @@ function stepPlayer(p,dt,t){
         }
       }
     }
+    // Safety net: if player tunneled below terrain (fast movement), snap back to surface
+    {
+      const sy=surfY(t,p.x);
+      if(sy!==null&&p.y>sy+R+30){
+        p.y=sy-R+1;p.vy=Math.min(0,p.vy);p.grounded=true;p.jumpsUsed=0;p.movedSinceJump=false;
+      }
+    }
     // bumpers: pinball bounce + spin kick
     for(const b of t.bumpers||[]){
       const dx=p.x-b.x,dy=p.y-b.y,d=Math.hypot(dx,dy),rr2=R+b.r;
