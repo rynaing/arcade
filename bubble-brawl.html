@@ -122,6 +122,92 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL='https://ukrxoqsvyvlyeblubjeo.supabase.co';
 const SUPABASE_KEY='sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
 const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
+/* ===== Multiplayer room logic ===== */
+function setErr(t){const e=$('menu-err');if(e)e.textContent=t;}
+function toast(t,ms){const d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 18px;border-radius:999px;z-index:9999;font:14px sans-serif';document.body.appendChild(d);setTimeout(()=>d.remove(),ms||1500);}
+async function joinRoom(code,isHost){
+  code=(code||'').toUpperCase().trim();
+  myName=($('name-input').value||'').trim().slice(0,14)||'Player';
+  try{localStorage.setItem('bb-name',myName);}catch(e){}
+  if(!/^[A-Z2-9]{4}$/.test(code)){setErr('Enter the 4-letter room code.');return;}
+  setErr('');
+  const ch=sb.channel('bb:'+code,{config:{presence:{key:myId},broadcast:{ack:false}}});
+  S.channel=ch;S.room=code;S.players={};S.solo=false;
+  ch.on('presence',{event:'sync'},renderRoster);
+  ch.on('presence',{event:'join'},({newPresences})=>{for(const p of newPresences)if(p.id!==myId){lobbyChat(null,p.name+' joined the room',true);}renderRoster();});
+  ch.on('presence',{event:'leave'},({leftPresences})=>{for(const p of leftPresences){delete S.players[p.id];lobbyChat(null,p.name+' left',true);}renderRoster();});
+  ch.on('broadcast',{event:'chat'},({payload})=>{if(payload.id!==myId)lobbyChat(payload.name,payload.text);});
+  ch.on('broadcast',{event:'start'},()=>{startMultiplayerMatch();});
+  const ok=await new Promise(res=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;res(false);}},10000);
+    ch.subscribe(st=>{if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(true);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'){done=true;clearTimeout(to);res(false);}});});
+  if(!ok){setErr('Could not connect. Check your connection and retry.');return;}
+  const existing=Object.values(ch.presenceState()).flat();
+  const myColor=PALETTE[existing.length%PALETTE.length];
+  await ch.track({id:myId,name:myName,color:myColor,joinedAt:Date.now()});
+  await new Promise(r=>setTimeout(r,600));
+  $('menuOv').style.display='none';$('lobby').style.display='flex';S.screen='lobby';
+  $('room-code').textContent=code;$('chat-box').innerHTML='';
+  lobbyChat(null,'Welcome to room '+code+'! Host starts the match.',true);
+  renderRoster();
+}
+function isHost(){
+  const ps=Object.values(S.players);
+  if(!ps.length)return false;
+  return ps.slice().sort((a,b)=>a.joinedAt-b.joinedAt)[0].id===myId;
+}
+function renderRoster(){
+  if(!S.channel)return;
+  S.players={};
+  for(const arr of Object.values(S.channel.presenceState()))for(const p of arr)S.players[p.id]=p;
+  const ps=Object.values(S.players).sort((a,b)=>a.joinedAt-b.joinedAt);
+  let html='';
+  for(let i=0;i<8;i++){
+    const p=ps[i];
+    if(p){
+      const you=p.id===myId;
+      html+='<div class="pslot filled"><div class="avatar">🫧</div><div class="pdot" style="background:'+p.color+'"></div><div class="pname">'+esc(p.name)+(you?' (you)':'')+'</div>'+(isHost()&&you?'<div class="crown">👑 host</div>':'')+'</div>';
+    }else{
+      html+='<div class="pslot empty" data-invite="1"><div class="plus">＋</div><div class="invite">INVITE</div></div>';
+    }
+  }
+  $('roster').innerHTML=html;
+  $('roster').querySelectorAll('[data-invite]').forEach(el=>el.onclick=copyInvite);
+  $('btn-start').style.display=isHost()?'inline-block':'none';
+  $('lobby-hint').textContent=isHost()?'You are the host — start when everyone is in!':'Waiting for the host to start…';
+}
+function copyInvite(){
+  const url=location.origin+location.pathname+'?room='+$('room-code').textContent;
+  (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Invite link copied! 📋',1500)).catch(()=>{prompt('Copy your invite link:',url);});
+}
+function lobbyChat(name,text,sys){
+  const d=document.createElement('div');if(sys)d.className='sys';
+  d.textContent=sys?text:(name+': '+text);
+  const b=$('chat-box');b.appendChild(d);b.scrollTop=b.scrollHeight;
+}
+function sendChat(){
+  const inp=$('chat-in');const t=inp.value.trim();if(!t||!S.channel)return;
+  S.channel.send({type:'broadcast',event:'chat',payload:{id:myId,name:myName,text:t}});
+  lobbyChat(myName,t);inp.value='';
+}
+function startMultiplayerMatch(){
+  $('lobby').style.display='none';
+  toast('Match starting!',1500);
+  if(typeof startGame==='function')startGame();
+}
+/* ===== Button wiring ===== */
+$('btn-create').onclick=()=>joinRoom(Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join(''),true);
+$('btn-join').onclick=()=>{const r=$('join-row');r.style.display=r.style.display==='none'?'block':'none';};
+$('btn-go').onclick=()=>joinRoom($('code-input').value,false);
+$('btn-copy').onclick=copyInvite;
+$('btn-leave').onclick=async()=>{try{await S.channel.unsubscribe();}catch(e){}S.channel=null;S.room=null;S.solo=true;$('lobby').style.display='none';$('menuOv').style.display='flex';S.screen='menu';};
+$('btn-start').onclick=()=>{if(S.channel)S.channel.send({type:'broadcast',event:'start',payload:{}});startMultiplayerMatch();};
+$('chat-send').onclick=sendChat;
+$('chat-in').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();e.stopPropagation();});
+try{
+  const m=location.search.match(/room=([A-Z2-9]{4})/i);
+  if(m){$('join-row').style.display='block';$('code-input').value=m[1].toUpperCase();}
+  const saved=localStorage.getItem('bb-name');if(saved)$('name-input').value=saved;
+}catch(e){}
 const myId='b'+Math.random().toString(36).slice(2,10);
 let myName=localStorage.getItem('bb-name')||'';
 const S={screen:'menu',room:null,channel:null,players:{},solo:true};
