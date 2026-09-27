@@ -82,7 +82,7 @@
 <body>
 <div id="wrap"><canvas id="cv"></canvas></div>
 
-<div id="hud"><div id="hud-inner">
+<div id="dbg" style="display:none;position:fixed;top:10px;left:10px;background:#900;color:#fff;font:12px monospace;padding:8px;z-index:9999;"></div><div id="hud"><div id="hud-inner">
   <span class="chip" id="h-track">Track 1/4</span>
   <span class="t" id="h-time">0:45.0</span>
   <span class="chip" id="h-boost">⚡×0</span>
@@ -922,6 +922,7 @@ $('race-chat-in').addEventListener('keydown',e=>{e.stopPropagation();if(e.key===
 /* ================= main loop ================= */
 let last=performance.now(),posT=0;
 function loop(now){
+  try{
   const dt=Math.min(.033,(now-last)/1000);last=now;
   if(S.screen==='race'&&S.race){
     const r=S.race;
@@ -952,6 +953,11 @@ function loop(now){
     draw(r.t,now);drawMinimap();
   }else{
     drawMenuScene(now);
+  }
+  }catch(err){
+    const d=document.getElementById('dbg');
+    if(d){d.style.display='block';d.textContent='ERR: '+err.message;}
+    console.error(err);
   }
   requestAnimationFrame(loop);
 }
