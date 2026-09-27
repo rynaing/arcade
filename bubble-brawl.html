@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Bubble Brawl · Ryan Cake Studios</title>
+<title>Bubble Brawl · Mossbell Arcade</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -34,10 +34,44 @@ button.big:active{transform:translateY(3px);box-shadow:0 1px 0 #1a4f86}
 #dropBtn{width:84px;height:84px;border-radius:50%;font-size:34px;background:rgba(43,127,212,.8);border:2px solid #7cc4ff;pointer-events:auto;touch-action:none}
 #dropBtn:active{background:rgba(80,170,255,.95)}
 .hint{font-size:12px;color:#8aa3c7;margin-top:8px;text-align:center;max-width:640px;line-height:1.6}
+
+/* ===== multiplayer lobby & chat ===== */
+.ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,14,26,.82);border-radius:14px;z-index:6;backdrop-filter:blur(2px)}
+.ov[style*="none"]{display:none!important}
+.lobby-card{max-width:min(94vw,600px)!important;width:100%}
+.lobby-title{font-size:28px;font-weight:900;color:#fff;line-height:1.15;margin-bottom:6px;
+ text-shadow:3px 3px 0 #e8590c,-2px -2px 0 #e8590c,2px -2px 0 #e8590c,-2px 2px 0 #e8590c,0 4px 0 #b5651d;letter-spacing:1px}
+.lobby-title span{color:#ffd166}
+.lobby-room{font-size:15px;color:#c6d8f2;margin:6px 0}
+.lobby-room #room-code{font-size:22px;font-weight:900;color:#ffd166;letter-spacing:3px}
+#roster{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;justify-content:center;margin:14px auto;max-width:480px}
+.pslot{background:#22305c;border:3px solid #4a5a8a;border-radius:16px;padding:10px 6px;min-height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.pslot.filled{border-color:#ffd166;background:#2a3a6e}
+.pslot .avatar{font-size:30px;line-height:1}
+.pslot .pname{font-size:12px;font-weight:bold;color:#fff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pslot .pdot{width:12px;height:12px;border-radius:50%;border:2px solid #fff3}
+.pslot.empty{cursor:pointer;border-style:dashed;opacity:.7}
+.pslot.empty:hover{opacity:1;border-color:#ffd166}
+.pslot.empty .invite{font-size:13px;font-weight:900;color:#ffd166}
+.pslot.empty .plus{font-size:26px;color:#8b93b8}
+.pslot .crown{font-size:13px}
+.hintline{font-size:13px;color:#9fc1ff;margin:8px 0}
+#chat-box{background:#0e1a30;border-radius:10px;padding:8px 10px;height:90px;overflow-y:auto;text-align:left;font-size:13px;margin:10px 0 6px;color:#dbe7ff}
+#chat-box .sys{color:#8aa3c7;font-style:italic}
+#chat-row{display:flex;gap:6px}
+#chat-in{flex:1;font-size:14px;padding:8px 10px;border-radius:10px;border:2px solid #33507e;background:#0e1a30;color:#fff;font-family:inherit}
+button.mini{font-size:13px;padding:6px 12px;margin:2px;background:#27436b;border:1px solid #3c5f92;color:#cfe6ff;border-radius:999px;cursor:pointer;font-weight:700;font-family:inherit}
+button.mini:hover{background:#33507e}
+#menu-err{color:#ff8a8a;font-size:13px;min-height:18px;margin-top:6px}
+#name-input,.code-input{font-size:15px;padding:9px 12px;border-radius:10px;border:2px solid #33507e;background:#0e1a30;color:#fff;font-family:inherit;text-align:center;margin:4px}
+#race-chat{position:fixed;left:10px;bottom:10px;width:250px;z-index:6;display:none}
+#race-chat-msgs{font-size:12px;color:#fff;text-shadow:1px 1px 0 #000}
+#race-chat-msgs div{background:rgba(10,14,30,.65);border-radius:8px;padding:3px 8px;margin:3px 0;display:inline-block;clear:both;float:left;max-width:100%}
+#race-chat-in{display:none;width:100%;font-size:13px;padding:6px 8px;border-radius:8px;border:2px solid #4a5a8a;background:#1a2340ee;color:#fff;margin-top:4px;font-family:inherit}
 </style>
 </head>
 <body>
-<a class="home" href="./index.html">← Ryan Cake Studios</a>
+<a class="home" href="./index.html">← Mossbell Arcade</a>
 <div class="hud">
 <span class="chip">⏱ <b id="hTime">5:00</b></span>
 <span class="chip">Score <b id="hScore">0</b></span>
@@ -45,18 +79,37 @@ button.big:active{transform:translateY(3px);box-shadow:0 1px 0 #1a4f86}
 <span class="chip" id="hPips" title="Balloons · Range · Speed (max 13 each)"></span>
 </div>
 <div id="wrap">
-<canvas id="cv" width="760" height="520"></canvas>
+<canvas id="cv" width="950" height="650"></canvas>
 <div class="overlay" id="menuOv"><div class="dialog">
 <h1>🫧 Bubble Brawl</h1>
 <p>Drop <b>water balloons</b> and splash your rivals! A splash <b>stuns</b> you for 6 seconds — get splashed while stunned and you <b>pop</b>. Stunned 3 times on the same tile? You pop too. Last blob standing wins.</p>
 <div class="keys"><kbd>←↑↓→</kbd> or <kbd>WASD</kbd> move &nbsp;·&nbsp; <kbd>Space</kbd> drop balloon<br>Crates drop powerups: 💧 +1 balloon, 🎯 +1 blast range, 👟 speed up (max 13 each)<br>Moves lock in tile-by-tile — plan your route!</div>
-<button class="big" id="startBtn">Start</button>
+<input type="text" id="name-input" maxlength="14" placeholder="Your name"><br>
+<button class="big" id="startBtn">▶ Solo vs Bots</button><br>
+<button class="big" id="btn-create" style="background:linear-gradient(180deg,#ffb84d,#e8590c);box-shadow:0 4px 0 #a33d00,0 6px 16px rgba(0,0,0,.4)">🎪 Create Room</button>
+<button class="big" id="btn-join" style="background:linear-gradient(180deg,#7bed9f,#2f9e5f);box-shadow:0 4px 0 #1d6b3f,0 6px 16px rgba(0,0,0,.4)">🔑 Join Room</button>
+<div id="join-row" style="display:none;margin-top:8px">
+<input type="text" id="code-input" class="code-input" maxlength="4" placeholder="CODE" style="width:110px;text-transform:uppercase">
+<button class="big" id="btn-go" style="padding:9px 24px;font-size:15px">Go</button>
+</div>
+<div id="menu-err"></div>
+</div></div>
+<div class="ov" id="lobby" style="display:none"><div class="dialog lobby-card">
+<div class="lobby-title">WAITING TO PLAY<br><span>BUBBLE BRAWL!</span></div>
+<div class="lobby-room">Room <span id="room-code"></span> <button class="mini" id="btn-copy">📋 Copy Invite</button></div>
+<div id="roster"></div>
+<p class="hintline" id="lobby-hint">Waiting for brawlers… host starts the match.</p>
+<button class="big" id="btn-start" style="display:none">💧 Start Match</button><br>
+<button class="mini" id="btn-leave">Leave</button>
+<div id="chat-box"></div>
+<div id="chat-row"><input id="chat-in" maxlength="120" placeholder="Chat…"><button class="mini" id="chat-send">Send</button></div>
 </div></div>
 <div class="overlay hidden" id="endOv"><div class="dialog">
 <h2 id="eTitle">🏆 You win!</h2>
 <p id="eText"></p>
 <button class="big" id="againBtn">Play again</button>
 </div></div>
+<div id="race-chat"><div id="race-chat-msgs"></div><input id="race-chat-in" maxlength="120" placeholder="chat… (Enter to send)"></div>
 <div id="touch"><div class="tpad">
 <span></span><button class="tbtn" data-k="up">▲</button><span></span>
 <button class="tbtn" data-k="left">◀</button><button class="tbtn" data-k="down">▼</button><button class="tbtn" data-k="right">▶</button>
@@ -64,7 +117,17 @@ button.big:active{transform:translateY(3px);box-shadow:0 1px 0 #1a4f86}
 </div><button id="dropBtn">💧</button></div>
 </div>
 <p class="hint">Tip: your own balloons stun you too — always leave yourself an escape route. When the crates run out, wild balloons start raining…</p>
-<script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const SUPABASE_URL='https://ukrxoqsvyvlyeblubjeo.supabase.co';
+const SUPABASE_KEY='sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
+const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
+const myId='b'+Math.random().toString(36).slice(2,10);
+let myName=localStorage.getItem('bb-name')||'';
+const S={screen:'menu',room:null,channel:null,players:{},solo:true};
+const PALETTE=['#ff7b8a','#4aa8ff','#51d88a','#b07fe8','#ffd76a','#ff9d5c','#7bed9f','#54a0ff'];
+const PALETTE_D=['#d44a5c','#2b6fd4','#2f9e5f','#7d4fc0','#c9a13b','#c96a2e','#3fae62','#c04a4a'];
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 "use strict";
 /* ===== audio (tiny synth) ===== */
 let AC=null;
@@ -73,7 +136,7 @@ function tone(f,d,type,vol,slide){const ac=audio();if(!ac)return;const o=ac.crea
 function sfx(n){if(n==='place')tone(300,.12,'sine',.15,200);else if(n==='boom'){tone(120,.35,'sawtooth',.2,-70);tone(700,.25,'sine',.08,-500)}else if(n==='pow')tone(660,.12,'square',.08,330);else if(n==='stun'){tone(500,.2,'sine',.12,300);setTimeout(()=>tone(700,.15,'sine',.1,200),120)}else if(n==='pop'){tone(900,.08,'square',.14,-600);setTimeout(()=>tone(1400,.1,'square',.1,-900),70)}else if(n==='win')[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.22,'triangle',.12),i*130));else if(n==='lose')[400,300,220,150].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sawtooth',.1),i*150))}
 
 /* ===== constants & state ===== */
-const COLS=19,ROWS=13,CELL=40,W=COLS*CELL,H=ROWS*CELL;
+const COLS=19,ROWS=13,CELL=50,W=COLS*CELL,H=ROWS*CELL;
 const MATCH_TIME=300, FUSE=3.0, STUN_TIME=6, KILL_WIN=0.05, RAY_STEP=0.025;
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const $=id=>document.getElementById(id);
@@ -118,7 +181,7 @@ function makePlayers(){
   const[tx,ty]=spots[i],d=defs[i];
   players.push({id:i,name:d.name,color:d.color,dark:d.dark,isBot:d.isBot,
    x:tx*CELL+CELL/2,y:ty*CELL+CELL/2,cx:tx,cy:ty,tx2:null,ty2:null,queuedDir:null,
-   alive:true,knocked:0,invuln:0,strikes:[],r:13,
+   alive:true,knocked:0,invuln:0,strikes:[],r:16,
    spd:0,maxBombs:1,power:1,active:0,
    face:1,walkPh:Math.random()*6,moving:false,
    ai:{think:Math.random()*0.2,dir:null}});
@@ -214,7 +277,7 @@ function detonate(b){
  for(const c of cells){
   flames.push({tx:c.tx,ty:c.ty,start:now+c.at,end:now+c.at+KILL_WIN,vis:now+c.at+0.55});
  }
- shake=Math.min(10,shake+4);sfx('boom');
+ shake=Math.min(12.5,shake+5);sfx('boom');
 }
 function updateBombs(dt){
  for(const b of bombs)b.fuse-=dt;
@@ -298,7 +361,7 @@ function updateHits(dt){
 function burst(x,y,color,n,spd){
  for(let i=0;i<n;i++){
   const a=Math.random()*Math.PI*2,s=spd*(0.4+Math.random()*0.8);
-  particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.5+Math.random()*.4,t:0,color,r:2+Math.random()*3});
+  particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.5+Math.random()*.4,t:0,color,r:2.5+Math.random()*3.75});
  }
 }
 function updateParticles(dt){
@@ -453,34 +516,34 @@ function draw(){
   ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
   const gh=((x*73+y*151)%10)/10;
   if(gh<0.5){
-   ctx.strokeStyle='rgba(20,90,40,.35)';ctx.lineWidth=1.6;
-   const gx=x*CELL+6+gh*28,gy=y*CELL+10+((x*37+y*91)%10);
-   ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(gx+2,gy-7);ctx.moveTo(gx+6,gy);ctx.lineTo(gx+8,gy-6);ctx.stroke();
+   ctx.strokeStyle='rgba(20,90,40,.35)';ctx.lineWidth=2;
+   const gx=x*CELL+7.5+gh*35,gy=y*CELL+12.5+((x*37+y*91)%10)*1.25;
+   ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(gx+2.5,gy-9);ctx.moveTo(gx+7.5,gy);ctx.lineTo(gx+10,gy-7.5);ctx.stroke();
   }
  }
  ctx.textAlign='center';ctx.textBaseline='middle';
  // powerups
  for(const pu of powerups){
-  const cx=pu.tx*CELL+CELL/2,cy=pu.ty*CELL+CELL/2+Math.sin(now*3+pu.ph)*3;
+  const cx=pu.tx*CELL+CELL/2,cy=pu.ty*CELL+CELL/2+Math.sin(now*3+pu.ph)*3.75;
   const glow=pu.type==='bomb'?'#54c8ff':pu.type==='range'?'#ff9d5c':'#ffe27a';
   ctx.fillStyle='rgba(255,255,255,.16)';
-  ctx.beginPath();ctx.arc(cx,cy,15,0,7);ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy,19,0,7);ctx.fill();
   ctx.strokeStyle=glow;ctx.lineWidth=2.5;
-  ctx.beginPath();ctx.arc(cx,cy,15,0,7);ctx.stroke();
-  ctx.font='20px serif';
+  ctx.beginPath();ctx.arc(cx,cy,19,0,7);ctx.stroke();
+  ctx.font='25px serif';
   ctx.fillText(pu.type==='bomb'?'💧':pu.type==='range'?'🎯':'👟',cx,cy);
  }
  // walls & crates
  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
   const v=grid[y][x],px=x*CELL,py=y*CELL;
   if(v===1){
-   ctx.fillStyle='#3a4a63';rr(px+1,py+1,CELL-2,CELL-2,7);ctx.fill();
-   ctx.fillStyle='#4d6284';rr(px+5,py+5,CELL-10,CELL-16,5);ctx.fill();
+   ctx.fillStyle='#3a4a63';rr(px+1,py+1,CELL-2,CELL-2,9);ctx.fill();
+   ctx.fillStyle='#4d6284';rr(px+6,py+6,CELL-12,CELL-20,6);ctx.fill();
   }else if(v===2){
-   ctx.fillStyle='#8a5a2e';rr(px+4,py+4,CELL-8,CELL-8,6);ctx.fill();
-   ctx.strokeStyle='#6e441f';ctx.lineWidth=2.5;
-   ctx.beginPath();ctx.moveTo(px+4,py+4);ctx.lineTo(px+CELL-4,py+CELL-4);ctx.moveTo(px+CELL-4,py+4);ctx.lineTo(px+4,py+CELL-4);ctx.stroke();
-   ctx.fillStyle='#a9743d';rr(px+8,py+8,CELL-16,10,4);ctx.fill();
+   ctx.fillStyle='#8a5a2e';rr(px+5,py+5,CELL-10,CELL-10,7);ctx.fill();
+   ctx.strokeStyle='#6e441f';ctx.lineWidth=3;
+   ctx.beginPath();ctx.moveTo(px+5,py+5);ctx.lineTo(px+CELL-5,py+CELL-5);ctx.moveTo(px+CELL-5,py+5);ctx.lineTo(px+5,py+CELL-5);ctx.stroke();
+   ctx.fillStyle='#a9743d';rr(px+10,py+10,CELL-20,12,5);ctx.fill();
   }
  }
  // bombs
@@ -489,12 +552,12 @@ function draw(){
   const pulse=1+Math.sin(now*(b.fuse<1?18:8))*.06;
   const owner=players[b.owner];
   ctx.fillStyle=owner?owner.color:'#8a93a8';
-  ctx.beginPath();ctx.ellipse(cx,cy-4,13*pulse,15*pulse,0,0,7);ctx.fill();
+  ctx.beginPath();ctx.ellipse(cx,cy-5,16*pulse,19*pulse,0,0,7);ctx.fill();
   ctx.fillStyle='rgba(255,255,255,.45)';
-  ctx.beginPath();ctx.ellipse(cx-5,cy-10,4*pulse,6*pulse,-.4,0,7);ctx.fill();
+  ctx.beginPath();ctx.ellipse(cx-6,cy-12,5*pulse,7.5*pulse,-.4,0,7);ctx.fill();
   ctx.fillStyle=owner?owner.dark:'#5a6376';
-  ctx.beginPath();ctx.moveTo(cx-3,cy+11);ctx.lineTo(cx+3,cy+11);ctx.lineTo(cx,cy+16);ctx.closePath();ctx.fill();
-  if(b.fuse<1){ctx.fillStyle='#ffd76a';ctx.beginPath();ctx.arc(cx+Math.random()*8-4,cy-20,2.5,0,7);ctx.fill()}
+  ctx.beginPath();ctx.moveTo(cx-4,cy+14);ctx.lineTo(cx+4,cy+14);ctx.lineTo(cx,cy+20);ctx.closePath();ctx.fill();
+  if(b.fuse<1){ctx.fillStyle='#ffd76a';ctx.beginPath();ctx.arc(cx+Math.random()*10-5,cy-25,3,0,7);ctx.fill()}
  }
  // splash flames (traveling wavefront)
  for(const f of flames){
@@ -502,10 +565,10 @@ function draw(){
   const cx=f.tx*CELL+CELL/2,cy=f.ty*CELL+CELL/2;
   const a=Math.min(1,(f.vis-now)/.2);
   ctx.globalAlpha=a;
-  ctx.fillStyle='#5db9ff';ctx.beginPath();ctx.arc(cx,cy,15,0,7);ctx.fill();
-  ctx.fillStyle='#d8f1ff';ctx.beginPath();ctx.arc(cx-4,cy-4,7,0,7);ctx.fill();
+  ctx.fillStyle='#5db9ff';ctx.beginPath();ctx.arc(cx,cy,19,0,7);ctx.fill();
+  ctx.fillStyle='#d8f1ff';ctx.beginPath();ctx.arc(cx-5,cy-5,9,0,7);ctx.fill();
   ctx.fillStyle='#5db9ff';
-  for(let i=0;i<3;i++){const ang=now*9+i*2.1;ctx.beginPath();ctx.arc(cx+Math.cos(ang)*16,cy+Math.sin(ang)*16,4,0,7);ctx.fill()}
+  for(let i=0;i<3;i++){const ang=now*9+i*2.1;ctx.beginPath();ctx.arc(cx+Math.cos(ang)*20,cy+Math.sin(ang)*20,5,0,7);ctx.fill()}
   ctx.globalAlpha=1;
  }
  // players
@@ -513,36 +576,36 @@ function draw(){
   if(!p.alive)continue;
   const blink=p.invuln>0&&Math.floor(now*10)%2===0;
   if(blink)ctx.globalAlpha=.35;
-  const bob=p.moving?Math.sin(p.walkPh)*2:0;
+  const bob=p.moving?Math.sin(p.walkPh)*2.5:0;
   const by=p.y+bob;
-  ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(p.x,p.y+13,11,4,0,0,7);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(p.x,p.y+16,14,5,0,0,7);ctx.fill();
   ctx.fillStyle=p.dark;
-  const step=p.moving?Math.sin(p.walkPh)*3:0;
-  ctx.beginPath();ctx.ellipse(p.x-7,p.y+11+step,5,4,0,0,7);ctx.fill();
-  ctx.beginPath();ctx.ellipse(p.x+7,p.y+11-step,5,4,0,0,7);ctx.fill();
+  const step=p.moving?Math.sin(p.walkPh)*4:0;
+  ctx.beginPath();ctx.ellipse(p.x-9,p.y+14+step,6,5,0,0,7);ctx.fill();
+  ctx.beginPath();ctx.ellipse(p.x+9,p.y+14-step,6,5,0,0,7);ctx.fill();
   ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,by,p.r,0,7);ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,.3)';ctx.beginPath();ctx.arc(p.x-5,by-6,5,0,7);ctx.fill();
-  const ex=p.face*3;
+  ctx.fillStyle='rgba(255,255,255,.3)';ctx.beginPath();ctx.arc(p.x-6,by-7,6,0,7);ctx.fill();
+  const ex=p.face*4;
   if(p.knocked>0){
    // dizzy eyes
    ctx.strokeStyle='#1a2436';ctx.lineWidth=2;
    for(const s of[-1,1]){
-    ctx.beginPath();ctx.arc(p.x+s*5+ex,by-3,3.4,0.6,5.7);ctx.stroke();
+    ctx.beginPath();ctx.arc(p.x+s*6+ex,by-4,4.2,0.6,5.7);ctx.stroke();
    }
-   ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';
-   ctx.fillText(Math.ceil(p.knocked),p.x,by-26);
-   ctx.font='18px serif';ctx.fillText('💫',p.x+14,by-22+Math.sin(now*6)*3);
+   ctx.fillStyle='#fff';ctx.font='bold 16px sans-serif';
+   ctx.fillText(Math.ceil(p.knocked),p.x,by-32);
+   ctx.font='22px serif';ctx.fillText('💫',p.x+17,by-27+Math.sin(now*6)*4);
   }else{
-   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x-5+ex,by-3,4.4,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+5+ex,by-3,4.4,0,7);ctx.fill();
-   ctx.fillStyle='#1a2436';ctx.beginPath();ctx.arc(p.x-5+ex*1.6,by-3,2.1,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+5+ex*1.6,by-3,2.1,0,7);ctx.fill();
+   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x-6+ex,by-4,5.5,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+6+ex,by-4,5.5,0,7);ctx.fill();
+   ctx.fillStyle='#1a2436';ctx.beginPath();ctx.arc(p.x-6+ex*1.6,by-4,2.6,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+6+ex*1.6,by-4,2.6,0,7);ctx.fill();
   }
-  if(p.isBot){ctx.fillStyle='rgba(255,255,255,.75)';ctx.font='10px sans-serif';ctx.fillText(p.name,p.x,by-20)}
+  if(p.isBot){ctx.fillStyle='rgba(255,255,255,.75)';ctx.font='12px sans-serif';ctx.fillText(p.name,p.x,by-25)}
   ctx.globalAlpha=1;
  }
  // particles
  for(const pt of particles){
   ctx.globalAlpha=1-pt.t/pt.life;ctx.fillStyle=pt.color;
-  if(pt.text){ctx.font='bold 15px Trebuchet MS';ctx.fillText(pt.text,pt.x,pt.y);}
+  if(pt.text){ctx.font='bold 19px Trebuchet MS';ctx.fillText(pt.text,pt.x,pt.y);}
   else{ctx.beginPath();ctx.arc(pt.x,pt.y,pt.r,0,7);ctx.fill();}
  }
  ctx.globalAlpha=1;
