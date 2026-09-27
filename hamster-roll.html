@@ -146,9 +146,9 @@ const VW=960,VH=540;
 function fit(){const s=Math.min(innerWidth/VW,innerHeight/VH);cv.width=VW*s;cv.height=VH*s;cv.style.width=VW*s+'px';cv.style.height=VH*s+'px';ctx.setTransform(s,0,0,s,0,0);}
 addEventListener('resize',fit);fit();
 
-const G=2000, RUN_A=2200, RUN_MAX=460, AIR_MAX=500, AIR_A=1500, FRIC=1900;
+const G=2000, RUN_A=1800, RUN_MAX=550, AIR_MAX=600, AIR_A=1800, FRIC=1200;
 const JV=[0,-680,-620,-580], WALL_JUMP_X=430, WALL_JUMP_Y=-650, BOOST_AIR=-1080, BOOST_GND=780;
-const LOOP_ENTER=220, LOOP_S=460, TUBE_A=1500, BUMP_BOUNCE=1.25, PAD_V=640, HILL_MAX=700;
+const LOOP_ENTER=220, LOOP_S=460, TUBE_A=1500, BUMP_BOUNCE=1.25, PAD_V=640, HILL_MAX=800;
 const R=15, MAX_BOOST=5;
 const PALETTE=['#ff6b6b','#4ecdc4','#ffd166','#a78bfa','#7bed9f','#ff9ff3','#54a0ff'];
 const $=id=>document.getElementById(id);
