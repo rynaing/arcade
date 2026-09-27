@@ -194,6 +194,7 @@ function startMultiplayerMatch(){
   toast('Match starting!',1500);
   if(typeof startGame==='function')startGame();
 }
+const $=id=>document.getElementById(id);
 /* ===== Button wiring ===== */
 $('btn-create').onclick=()=>joinRoom(Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join(''),true);
 $('btn-join').onclick=()=>{const r=$('join-row');r.style.display=r.style.display==='none'?'block':'none';};
@@ -225,7 +226,7 @@ function sfx(n){if(n==='place')tone(300,.12,'sine',.15,200);else if(n==='boom'){
 const COLS=19,ROWS=13,CELL=50,W=COLS*CELL,H=ROWS*CELL;
 const MATCH_TIME=300, FUSE=3.0, STUN_TIME=6, KILL_WIN=0.05, RAY_STEP=0.025;
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
-const $=id=>document.getElementById(id);
+
 let grid=[],bombs=[],flames=[],powerups=[],particles=[];
 let players=[],state='menu',timeLeft=MATCH_TIME,score=0,kills=0;
 let woodCount=0,stallTimer=-1,stallSpawnT=0,shake=0,last=0;
