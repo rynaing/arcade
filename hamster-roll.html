@@ -759,6 +759,16 @@ function updateHud(){
   $('h-coins').textContent='🪙'+me.coins;
   $('hurry').style.display=(racing&&S.race.left<60000)?'flex':'none';
 }
+function onFinish(p,dnf){
+  if(p.finished||p.dnf)return;
+  const r=S.race;
+  p.finishMs=r?r.elapsed:0;
+  if(dnf){p.dnf=true;}else{p.finished=true;}
+  if(p===me){
+    if(!S.solo&&S.channel)sendFinish(dnf);
+    endTrackForMe();
+  }
+}
 function endTrackForMe(){
   const r=S.race;if(!r||r.done)return;r.done=true;r.phase='done';r.waitT=6;
   S.myResults.push({name:curTrack().name,ms:me.finishMs,dnf:me.dnf,coins:me.coins});
