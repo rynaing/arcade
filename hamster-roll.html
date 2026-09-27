@@ -29,7 +29,25 @@
   #count span{font-size:110px;font-weight:900;color:#ffd166;text-shadow:4px 4px 0 #b5651d,0 0 60px rgba(255,209,102,.6)}
   #bigmsg{position:fixed;top:22%;width:100%;text-align:center;z-index:9;pointer-events:none;font-size:44px;font-weight:900;color:#fff;text-shadow:3px 3px 0 #000;display:none}
   #toast{position:fixed;bottom:110px;width:100%;text-align:center;z-index:9;pointer-events:none;font-size:18px;font-weight:bold;color:#ffd166;text-shadow:2px 2px 0 #000;opacity:0;transition:opacity .3s}
-  #roster{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:10px 0}
+  #roster{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;justify-content:center;margin:14px 0;max-width:480px}
+  .lobby-card{max-width:min(94vw,560px)!important}
+  .lobby-title{font-size:30px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:6px;
+    text-shadow:3px 3px 0 #e8590c,-2px -2px 0 #e8590c,2px -2px 0 #e8590c,-2px 2px 0 #e8590c,0 4px 0 #b5651d;letter-spacing:1px}
+  .lobby-title span{color:#ffd166}
+  .lobby-room{font-size:16px;color:#cdd6f4;margin:6px 0}
+  .lobby-room #room-code{font-size:22px;font-weight:900;color:#ffd166;letter-spacing:3px}
+  .btn.mini{font-size:13px;padding:6px 12px;margin:2px}
+  .btn.big{font-size:22px;padding:14px 40px}
+  .pslot{background:#22305c;border:3px solid #4a5a8a;border-radius:16px;padding:10px 6px;min-height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+  .pslot.filled{border-color:#ffd166;background:#2a3a6e}
+  .pslot .avatar{font-size:32px;line-height:1}
+  .pslot .pname{font-size:12px;font-weight:bold;color:#fff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pslot .pdot{width:12px;height:12px;border-radius:50%;border:2px solid #fff3}
+  .pslot.empty{cursor:pointer;border-style:dashed;opacity:.7}
+  .pslot.empty:hover{opacity:1;border-color:#ffd166}
+  .pslot.empty .invite{font-size:13px;font-weight:900;color:#ffd166}
+  .pslot.empty .plus{font-size:28px;color:#8b93b8}
+  .pslot .crown{font-size:14px}
   #minimap{position:fixed;top:10px;right:10px;z-index:6;display:none;background:rgba(10,14,30,.72);border:2px solid rgba(255,209,102,.5);border-radius:12px}
   #h-quit{pointer-events:auto;cursor:pointer}
   #hurry{position:fixed;top:64px;left:0;right:0;display:none;justify-content:center;z-index:5;pointer-events:none}
@@ -95,11 +113,12 @@
 </div>
 
 <div class="ov" id="lobby" style="display:none">
-  <div class="card">
-    <h2>Room <span id="room-code" style="color:#fff"></span></h2>
+  <div class="card lobby-card">
+    <div class="lobby-title">WAITING TO PLAY<br><span>HAMSTER ROLL!</span></div>
+    <div class="lobby-room">Room <span id="room-code"></span> <button class="btn alt mini" id="btn-copy">📋 Copy Invite</button></div>
     <div id="roster"></div>
     <p class="hintline" id="lobby-hint">Waiting for racers… host starts the match.</p>
-    <button class="btn" id="btn-start" style="display:none">🏁 Start Match</button>
+    <button class="btn big" id="btn-start" style="display:none">🏁 Start Match</button>
     <button class="btn alt" id="btn-leave">Leave</button>
     <div id="chat-box"></div>
     <div id="chat-row"><input id="chat-in" maxlength="120" placeholder="Chat…"><button class="btn alt" id="chat-send" style="padding:8px 14px;font-size:14px">Send</button></div>
@@ -855,11 +874,28 @@ function renderRoster(){
   S.players={};
   for(const arr of Object.values(S.channel.presenceState()))for(const p of arr)S.players[p.id]=p;
   const ps=Object.values(S.players).sort((a,b)=>a.joinedAt-b.joinedAt);
-  $('roster').innerHTML=ps.map(p=>`<div class="pchip"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}${p.id===myId?' (you)':''}${isHost()&&p.id===myId?' 👑':''}</div>`).join('');
+  const MAXP=8;
+  let html='';
+  for(let i=0;i<MAXP;i++){
+    const p=ps[i];
+    if(p){
+      const you=p.id===myId, crown=isHost()&&p.id===myId;
+      html+=`<div class="pslot filled"><div class="avatar">🐹</div><div class="pdot" style="background:${p.color}"></div><div class="pname">${esc(p.name)}${you?' (you)':''}</div>${crown?'<div class="crown">👑 host</div>':''}</div>`;
+    }else{
+      html+=`<div class="pslot empty" data-invite="1"><div class="plus">＋</div><div class="invite">INVITE</div></div>`;
+    }
+  }
+  $('roster').innerHTML=html;
+  $('roster').querySelectorAll('[data-invite]').forEach(el=>el.onclick=copyInvite);
   const host=isHost();
   $('btn-start').style.display=host?'inline-block':'none';
   $('lobby-hint').textContent=host?'You are the host — start when everyone is in!':'Waiting for the host to start…';
 }
+function copyInvite(){
+  const url=location.origin+location.pathname+'?room='+$('room-code').textContent;
+  (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Invite link copied! 📋',1500)).catch(()=>{prompt('Copy your invite link:',url);});
+}
+$('btn-copy').onclick=copyInvite;
 async function leaveRoom(){try{await S.channel.unsubscribe();}catch(e){}S.channel=null;S.room=null;S.solo=true;}
 function lobbyChat(name,text,sys){const d=document.createElement('div');if(sys)d.className='sys';d.textContent=sys?text:(name+': '+text);const b=$('chat-box');b.appendChild(d);b.scrollTop=b.scrollHeight;}
 function raceChat(name,text){const box=$('race-chat-msgs');const d=document.createElement('div');d.textContent=name+': '+text;box.appendChild(d);setTimeout(()=>d.remove(),7000);while(box.children.length>4)box.firstChild.remove();}
@@ -920,6 +956,15 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+// auto-fill room code from ?room= invite link
+try{
+  const rc=new URLSearchParams(location.search).get('room');
+  if(rc&&/^[A-Z0-9]{4}$/i.test(rc)){
+    $('code-input').value=rc.toUpperCase();
+    $('join-row').style.display='block';
+    setTimeout(()=>$('name-input').focus(),300);
+  }
+}catch(e){}
 </script>
 </body>
 </html>
