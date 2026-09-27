@@ -10,11 +10,11 @@ html,body{height:100%}
 body{background:#101828 radial-gradient(1200px 700px at 50% -10%,#1d3a5f 0%,#101828 60%);color:#eef4ff;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100%;padding:10px;overflow-x:hidden}
 a.home{color:#9fc1ff;text-decoration:none;font-size:13px;margin-bottom:6px;opacity:.85}
 a.home:hover{opacity:1;text-decoration:underline}
-.hud{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;max-width:640px}
+.hud{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;max-width:720px}
 .chip{background:rgba(20,34,58,.85);border:1px solid #2c4a75;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 .chip b{color:#ffd76a}
 #wrap{position:relative}
-canvas{display:block;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.55),0 0 0 3px #27436b;max-width:96vw;height:auto;touch-action:none;background:#1a2b1f}
+canvas{display:block;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.55),0 0 0 3px #27436b;max-width:96vw;height:auto;touch-action:none;background:#245c33}
 .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,14,26,.78);border-radius:14px;z-index:5;backdrop-filter:blur(2px)}
 .overlay.hidden{display:none}
 .dialog{background:#16263f;border:1px solid #33507e;border-radius:16px;padding:26px 30px;max-width:420px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5)}
@@ -45,11 +45,11 @@ button.big:active{transform:translateY(3px);box-shadow:0 1px 0 #1a4f86}
 <span class="chip" id="hStats" title="Balloons · Speed · Range">💧<b>1</b> 👟<b>1</b> 🎯<b>2</b></span>
 </div>
 <div id="wrap">
-<canvas id="cv" width="600" height="520"></canvas>
+<canvas id="cv" width="680" height="600"></canvas>
 <div class="overlay" id="menuOv"><div class="dialog">
 <h1>🫧 Bubble Brawl</h1>
 <p>Drop <b>water balloons</b> in the maze and splash your rivals! Caught by a splash? You're trapped in a <b>bubble</b> for 3 seconds — get splashed again while bubbled and you <b>pop</b>. Last blob standing wins.</p>
-<div class="keys"><kbd>←↑↓→</kbd> or <kbd>WASD</kbd> move &nbsp;·&nbsp; <kbd>Space</kbd> drop balloon<br>Blast crates for 💧 balloons, 👟 speed, 🎯 range</div>
+<div class="keys"><kbd>←↑↓→</kbd> or <kbd>WASD</kbd> move &nbsp;·&nbsp; <kbd>Space</kbd> drop balloon<br>Crates drop powerups: 💧 +1 balloon, 👟 speed up, 🎯 +1 blast range</div>
 <button class="big" id="startBtn">Start</button>
 </div></div>
 <div class="overlay hidden" id="winOv"><div class="dialog">
@@ -78,7 +78,7 @@ function tone(f,d,type,vol,slide){const ac=audio();if(!ac)return;const o=ac.crea
 function sfx(n){if(n==='place')tone(300,.12,'sine',.15,200);else if(n==='boom'){tone(120,.35,'sawtooth',.2,-70);tone(700,.25,'sine',.08,-500)}else if(n==='pow')tone(660,.12,'square',.08,330);else if(n==='bubble'){tone(500,.2,'sine',.12,300);setTimeout(()=>tone(700,.15,'sine',.1,200),120)}else if(n==='pop'){tone(900,.08,'square',.14,-600);setTimeout(()=>tone(1400,.1,'square',.1,-900),70)}else if(n==='win')[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.22,'triangle',.12),i*130));else if(n==='lose')[400,300,220,150].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sawtooth',.1),i*150))}
 
 /* ===== constants & state ===== */
-const COLS=15,ROWS=13,CELL=40,W=COLS*CELL,H=ROWS*CELL;
+const COLS=17,ROWS=15,CELL=40,W=COLS*CELL,H=ROWS*CELL;
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const $=id=>document.getElementById(id);
 let grid=[],balloons=[],flames=[],powerups=[],particles=[];
@@ -271,11 +271,13 @@ function updateHits(dt){
   for(let i=powerups.length-1;i>=0;i--){
    const pu=powerups[i];
    if(pu.tx===tx&&pu.ty===ty){
+    const label=pu.type==='bomb'?'+1 Balloon 💧':pu.type==='speed'?'Speed up! 👟':'+1 Blast 🎯';
     if(pu.type==='bomb')p.maxBalloons=Math.min(5,p.maxBalloons+1);
     else if(pu.type==='speed')p.speed=Math.min(230,p.speed+22);
     else p.range=Math.min(6,p.range+1);
     powerups.splice(i,1);sfx('pow');
     burst(p.x,p.y,'#ffe27a',8,80);
+    particles.push({x:p.x,y:p.y-18,vx:0,vy:-42,life:1.15,t:0,color:'#ffffff',text:label,float:true});
     if(!p.isBot)updateHud();
    }
   }
@@ -297,7 +299,7 @@ function updateParticles(dt){
  for(let i=particles.length-1;i>=0;i--){
   const pt=particles[i];pt.t+=dt;
   if(pt.t>=pt.life){particles.splice(i,1);continue}
-  pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.vy+=220*dt;pt.vx*=.98;
+  pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;if(!pt.float){pt.vy+=220*dt;pt.vx*=.98;}
  }
 }
 
@@ -438,15 +440,24 @@ function draw(){
  if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.88;if(shake<.3)shake=0}
  // grass
  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
-  ctx.fillStyle=(x+y)%2?'#22402a':'#1e3a25';
+  ctx.fillStyle=(x+y)%2?'#43b864':'#39ab5b';
   ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
+  const gh=((x*73+y*151)%10)/10;
+  if(gh<0.5){
+   ctx.strokeStyle='rgba(20,90,40,.35)';ctx.lineWidth=1.6;
+   const gx=x*CELL+6+gh*28,gy=y*CELL+10+((x*37+y*91)%10);
+   ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(gx+2,gy-7);ctx.moveTo(gx+6,gy);ctx.lineTo(gx+8,gy-6);ctx.stroke();
+  }
  }
  // powerups
  ctx.textAlign='center';ctx.textBaseline='middle';
  for(const pu of powerups){
   const cx=pu.tx*CELL+CELL/2,cy=pu.ty*CELL+CELL/2+Math.sin(performance.now()/300+pu.ph)*3;
-  ctx.fillStyle='rgba(255,255,255,.14)';
+  const glow=pu.type==='bomb'?'#54c8ff':pu.type==='speed'?'#ffe27a':'#ff9d5c';
+  ctx.fillStyle='rgba(255,255,255,.16)';
   ctx.beginPath();ctx.arc(cx,cy,15,0,7);ctx.fill();
+  ctx.strokeStyle=glow;ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.arc(cx,cy,15,0,7);ctx.stroke();
   ctx.font='20px serif';
   ctx.fillText(pu.type==='bomb'?'💧':pu.type==='speed'?'👟':'🎯',cx,cy);
  }
@@ -529,7 +540,8 @@ function draw(){
  // particles
  for(const pt of particles){
   ctx.globalAlpha=1-pt.t/pt.life;ctx.fillStyle=pt.color;
-  ctx.beginPath();ctx.arc(pt.x,pt.y,pt.r,0,7);ctx.fill();
+  if(pt.text){ctx.font='bold 15px Trebuchet MS';ctx.fillText(pt.text,pt.x,pt.y);}
+  else{ctx.beginPath();ctx.arc(pt.x,pt.y,pt.r,0,7);ctx.fill();}
  }
  ctx.globalAlpha=1;
  ctx.restore();
