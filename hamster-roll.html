@@ -30,6 +30,10 @@
   #bigmsg{position:fixed;top:22%;width:100%;text-align:center;z-index:9;pointer-events:none;font-size:44px;font-weight:900;color:#fff;text-shadow:3px 3px 0 #000;display:none}
   #toast{position:fixed;bottom:110px;width:100%;text-align:center;z-index:9;pointer-events:none;font-size:18px;font-weight:bold;color:#ffd166;text-shadow:2px 2px 0 #000;opacity:0;transition:opacity .3s}
   #roster{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:10px 0}
+  #minimap{position:fixed;top:10px;right:10px;z-index:6;display:none;background:rgba(10,14,30,.72);border:2px solid rgba(255,209,102,.5);border-radius:12px}
+  #h-quit{pointer-events:auto;cursor:pointer}
+  #h-quit:hover{background:#7a2e2e}
+  @media(max-width:700px){#minimap{width:150px;height:30px}}
   .pchip{background:#22305c;border-radius:12px;padding:6px 12px;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px}
   .dot{width:14px;height:14px;border-radius:50%;display:inline-block;border:2px solid #fff3}
   #chat-box{height:110px;overflow-y:auto;background:#141b36;border-radius:10px;padding:8px;text-align:left;font-size:13px;margin-top:8px}
@@ -61,9 +65,10 @@
   <span class="chip" id="h-track">Track 1/4</span>
   <span class="t" id="h-time">0:45.0</span>
   <span class="chip" id="h-boost">⚡×0</span>
-  <span class="chip" id="h-coins">🪙0</span>
+  <span class="chip" id="h-coins">🪙0</span><span class="chip" id="h-quit" title="Quit race">✕</span>
 </div></div>
 
+<canvas id="minimap" width="240" height="48"></canvas>
 <div id="count"><span id="count-n">3</span></div>
 <div id="bigmsg"></div>
 <div id="toast"></div>
@@ -397,6 +402,69 @@ function drawMenuScene(now){
   drawHamster(700+Math.cos(now/1100)*40,440-Math.abs(Math.cos(now/520))*30,-now/620,-1,'#4ecdc4','',false,now);
 }
 
+/* ================= minimap ================= */
+let mmCache=null;
+function buildMinimap(){
+  const t=curTrack(),W=240,H=48,pad=10;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const c=cv.getContext('2d');
+  const maxX=t.finish.x+t.finish.w,n=140,xs=[],ys=[];
+  for(let i=0;i<=n;i++){
+    const x=maxX*i/n;xs.push(x);
+    let top=Infinity;
+    for(const s of t.solids){if(s[2]>70&&x>=s[0]&&x<=s[0]+s[2]&&s[1]<top)top=s[1];}
+    ys.push(top===Infinity?null:top);
+  }
+  let mn=Infinity,mx=-Infinity;
+  for(const y of ys){if(y!=null){if(y<mn)mn=y;if(y>mx)mx=y;}}
+  if(!(mx>mn)){mn=0;mx=600;}
+  if(mx-mn<150){const mid=(mx+mn)/2;mn=mid-75;mx=mid+75;}
+  const X=x=>pad+(x/maxX)*(W-2*pad),Y=y=>6+(1-(y-mn)/(mx-mn))*(H-12);
+  c.strokeStyle='rgba(255,255,255,.8)';c.lineWidth=2;c.lineJoin='round';c.beginPath();
+  let pen=false;
+  for(let i=0;i<=n;i++){
+    if(ys[i]==null){pen=false;continue;}
+    const px=X(xs[i]),py=Y(ys[i]);
+    if(!pen){c.moveTo(px,py);pen=true;}else c.lineTo(px,py);
+  }
+  c.stroke();
+  c.fillStyle='#7CFC98';c.fillRect(X(120)-1.5,4,3,H-8);
+  c.fillStyle='#ffd166';c.fillRect(X(t.finish.x)-1.5,4,3,H-8);
+  mmCache={cv,n,ys,maxX,W,H,X,Y};
+  $('minimap').style.display='block';
+}
+function drawMinimap(){
+  if(!mmCache)return;
+  const mm=$('minimap'),c=mm.getContext('2d'),M=mmCache;
+  c.clearRect(0,0,M.W,M.H);
+  c.drawImage(M.cv,0,0);
+  const dot=(x,color,initial,you)=>{
+    const fx=Math.max(0,Math.min(1,x/M.maxX));
+    const y=M.ys[Math.round(fx*M.n)];
+    const px=M.X(fx*M.maxX),py=(y==null?M.H-6:M.Y(y))-7;
+    c.beginPath();c.arc(px,py,4.5,0,7);c.fillStyle=color;c.fill();
+    c.lineWidth=you?2.5:1.2;c.strokeStyle=you?'#fff':'rgba(0,0,0,.55)';c.stroke();
+    if(initial){c.fillStyle='#fff';c.font='bold 9px sans-serif';c.textAlign='center';c.fillText(initial,px,py-9);}
+  };
+  for(const id in S.remotes){
+    const r=S.remotes[id];
+    if(r.track!==S.track||r.fin)continue;
+    dot(r.x,r.color||'#fff',(r.name||'?').charAt(0).toUpperCase(),false);
+  }
+  if(!me.finished&&!me.dnf)dot(me.x,me.color||'#fff',(myName||'?').charAt(0).toUpperCase(),true);
+}
+function quitRace(){
+  if(!S.race)return;
+  if(!S.solo&&S.channel&&S.race.phase!=='done'){
+    S.channel.send({type:'broadcast',event:'finish',payload:{id:myId,name:myName,track:S.track,ms:0,dnf:true}});
+  }
+  S.race=null;mmCache=null;
+  $('results').style.display='none';$('count').style.display='none';
+  $('hud').style.display='none';$('race-chat').style.display='none';$('minimap').style.display='none';
+  if(S.solo){location.reload();return;}
+  S.screen='lobby';$('lobby').style.display='flex';renderRoster();
+}
+
 /* ================= race flow ================= */
 function startMatch(solo){
   S.screen='race';S.solo=solo;S.track=0;S.myResults=[];S.totalMs=0;S.totalCoins=0;me.boosts=0;me.coins=0;
@@ -412,6 +480,7 @@ function beginTrack(){
   resetForTrack(me,S.race.t);
   S.remotes={};S.finishes[S.track]=[];
   $('h-track').textContent=`Track ${S.track+1}/4 · ${curTrack().name}`;
+  buildMinimap();
   $('count').style.display='flex';
   updateHud();
 }
@@ -458,7 +527,7 @@ function advanceTrack(){
   else showMatchResults();
 }
 function showMatchResults(){
-  S.screen='done';$('hud').style.display='none';
+  S.screen='done';$('hud').style.display='none';$('minimap').style.display='none';
   let html='<h2>🏁 Match Results</h2><table class="res"><tr><th>Track</th><th>Time</th></tr>';
   S.myResults.forEach(r=>{html+=`<tr><td>${r.name}</td><td class="${r.dnf?'dnf':''}">${r.dnf?'DNF':fmt(r.ms)}</td></tr>`;});
   html+=`</table><p>Total: <b>${fmt(S.totalMs)}</b> · 🪙 ${S.totalCoins} · ⚡ ${me.boosts} left</p>`;
@@ -558,6 +627,7 @@ $('btn-create').onclick=()=>joinRoom(Array.from({length:4},()=>'ABCDEFGHJKMNPQRS
 $('btn-join').onclick=()=>{$('join-row').style.display='block';$('code-input').focus();};
 $('btn-go').onclick=()=>joinRoom($('code-input').value,false);
 $('btn-leave').onclick=async()=>{await leaveRoom();location.reload();};
+$('h-quit').onclick=quitRace;
 $('btn-start').onclick=()=>{if(S.channel)S.channel.send({type:'broadcast',event:'start',payload:{}});startMatch(false);};
 $('chat-send').onclick=()=>{const i=$('chat-in');const t=i.value.trim();if(t){sendChat(t);lobbyChat(myName,t);}i.value='';};
 $('chat-in').addEventListener('keydown',e=>{if(e.key==='Enter')$('chat-send').click();e.stopPropagation();});
@@ -592,7 +662,7 @@ function loop(now){
       stepParts(dt);
       r.waitT-=dt;if(r.waitT<=0&&!r.advanced){r.advanced=true;$('results').style.display='none';advanceTrack();}
     }
-    draw(r.t,now);
+    draw(r.t,now);drawMinimap();
   }else{
     drawMenuScene(now);
   }
