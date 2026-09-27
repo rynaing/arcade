@@ -185,9 +185,17 @@ function lobbyChat(name,text,sys){
   const b=$('chat-box');b.appendChild(d);b.scrollTop=b.scrollHeight;
 }
 function sendChat(){
-  const inp=$('chat-in');const t=inp.value.trim();if(!t||!S.channel)return;
-  S.channel.send({type:'broadcast',event:'chat',payload:{id:myId,name:myName,text:t}});
-  lobbyChat(myName,t);inp.value='';
+  const inp=$('chat-in');if(!inp)return;
+  const t=inp.value.trim();if(!t)return;
+  // Always show locally first, then try to broadcast
+  try{
+    lobbyChat(myName||'You',t);
+  }catch(e){console.warn('lobbyChat failed',e);}
+  inp.value='';
+  if(!S.channel)return;
+  try{
+    S.channel.send({type:'broadcast',event:'chat',payload:{id:myId,name:myName,text:t}});
+  }catch(e){console.warn('chat broadcast failed',e);}
 }
 function startMultiplayerMatch(){
   $('lobby').style.display='none';
