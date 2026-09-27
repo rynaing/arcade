@@ -714,7 +714,7 @@ function makeHamster(color){
   for(const sx of [-1,1]){ const e=new THREE.Mesh(eyeG,eyeM); e.position.set(sx*0.09,0.20,0.46); ham.add(e); }
   const nose=new THREE.Mesh(new THREE.SphereGeometry(0.035,8,6),new THREE.MeshBasicMaterial({color:0xff8fa0}));
   nose.position.set(0,0.14,0.50); ham.add(nose);
-  g.add(ham); g.userData.ham=ham; g.userData.ball=ball;
+  ball.add(ham); g.userData.ham=ham; g.userData.ball=ball;
   return g;
 }
 function makeLabel(text,color){
@@ -778,6 +778,7 @@ addEventListener('keydown',e=>{
   }
 });
 let camYaw=Math.PI/2;
+const _td=new THREE.Vector3(1,0,0);
 const joyVec={x:0,y:0};
 function inputVec(){
   let x=0,z=0;
@@ -804,7 +805,7 @@ function collideWorld(){
       const push=ball.r-d;
       ball.pos.x+=nx*push; ball.pos.y+=ny*push; ball.pos.z+=nz*push;
       const vn=ball.vel.x*nx+ball.vel.y*ny+ball.vel.z*nz;
-      if(vn<0){ ball.vel.x-=1.4*vn*nx; ball.vel.y-=1.4*vn*ny; ball.vel.z-=1.4*vn*nz; }
+      if(vn<0){ ball.vel.x-=1.25*vn*nx; ball.vel.y-=1.25*vn*ny; ball.vel.z-=1.25*vn*nz; }
       if(ny>0.7) ball.grounded=true;
     }
   }
@@ -819,9 +820,10 @@ let boostPuffT=0;
 function stepPhysics(dt, racing){
   const ctl = S.dizzy>0 ? 0.35 : 1;
   if(S.dizzy>0) S.dizzy-=dt;
+  let inMag=0;
   if(racing && !S.finished){
-    const iv=inputVec();
-    const acc=(ball.grounded?30:13)*ctl;
+    const iv=inputVec(); inMag=Math.hypot(iv.x,iv.z);
+    const acc=(ball.grounded?40:15)*ctl;
     ball.vel.x+=iv.x*acc*dt; ball.vel.z+=iv.z*acc*dt;
   }
   ball.vel.y-=26*dt;
@@ -832,7 +834,7 @@ function stepPhysics(dt, racing){
       if(boostPuffT>0.05){ boostPuffT=0; puff(ball.pos.x,ball.pos.y,ball.pos.z,0x54e8ff,1.2,0.4,1,2); }
     }
   }
-  const hs0=Math.hypot(ball.vel.x,ball.vel.z), max=ball.grounded?15:22;
+  const hs0=Math.hypot(ball.vel.x,ball.vel.z), max=ball.grounded?14:22;
   if(hs0>max){ const k=max/hs0; ball.vel.x*=k; ball.vel.z*=k; }
   const wasGrounded=ball.grounded, fallV=ball.vel.y;
   ball.pos.x+=ball.vel.x*dt; ball.pos.y+=ball.vel.y*dt; ball.pos.z+=ball.vel.z*dt;
@@ -841,7 +843,8 @@ function stepPhysics(dt, racing){
     for(let i=0;i<6;i++) puff(ball.pos.x+(Math.random()-0.5)*0.8,ball.pos.y-0.2,ball.pos.z+(Math.random()-0.5)*0.8,0xffffff,0.9,0.5,1.2,2.2);
   }
   if(ball.grounded){
-    const f=1-(racing?0.35:1.6)*dt; ball.vel.x*=f; ball.vel.z*=f;
+    const fr=racing?(inMag<0.1?1.8:0.35):1.6;
+    const f=1-fr*dt; ball.vel.x*=f; ball.vel.z*=f;
   }
   if(ball.pos.y<-8 && racing && !S.finished) respawn();
   if(racing && !S.finished){
@@ -990,7 +993,10 @@ const camDir=new THREE.Vector3(1,0,0);
 const camPos=new THREE.Vector3(-8,5,0);
 function updateCamera(dt){
   const hs=Math.hypot(ball.vel.x,ball.vel.z);
-  if(hs>3){ camDir.set(ball.vel.x/hs,0,ball.vel.z/hs); }
+  if(hs>3){
+    _td.set(ball.vel.x/hs,0,ball.vel.z/hs);
+    camDir.lerp(_td,1-Math.pow(0.02,dt)).normalize();
+  }
   const want=new THREE.Vector3().copy(ball.pos).addScaledVector(camDir,-8).add(new THREE.Vector3(0,4.6,0));
   camPos.lerp(want,1-Math.pow(0.001,dt));
   let wob=0;
@@ -1009,14 +1015,17 @@ function updateMesh(dt){
   }
   const ham=playerMesh.userData.ham;
   if(S.dizzy>0){ ham.rotation.y+=dt*14; }
-  else{
-    ham.rotation.y*=0.9;
-    ham.rotation.z=clamp(-ball.vel.x*0.02,-0.3,0.3);
-    ham.rotation.x=clamp(ball.vel.z*0.02,-0.3,0.3);
-  }
+  else { ham.rotation.set(0,0,0); }
   for(const id of Object.keys(remoteBalls)){
     const rb=remoteBalls[id];
+    const px=rb.group.position.x, pz=rb.group.position.z;
     rb.group.position.lerp(rb.target,1-Math.pow(0.0001,dt));
+    const mdx=rb.group.position.x-px, mdz=rb.group.position.z-pz;
+    const mdist=Math.hypot(mdx,mdz);
+    if(mdist>0.0005){
+      const maxis=new THREE.Vector3(mdz,0,-mdx).normalize();
+      rb.group.userData.ball.rotateOnWorldAxis(maxis,mdist/0.62);
+    }
   }
 }
 function updateHUD(){
