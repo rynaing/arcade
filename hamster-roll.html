@@ -239,7 +239,7 @@ async function joinRoom(code){
     for(const p of leftPresences){ delete S.players[p.id]; addChat('chat-box',null,`${p.name} left`,null,true); }
     renderRoster();
   });
-  ch.on('broadcast',{event:'chat'},({payload})=>{ addChat(S.mode==='lobby'?'chat-box':'chat-box2', payload.name, payload.text, payload.color); });
+  ch.on('broadcast',{event:'chat'},({payload})=>{ if(payload.id===myId) return; addChat(S.mode==='lobby'?'chat-box':'chat-box2', payload.name, payload.text, payload.color); });
   ch.on('broadcast',{event:'pos'},({payload})=>{ onRemotePos(payload); });
   ch.on('broadcast',{event:'start'},({payload})=>{ beginRace(payload.at); });
   ch.on('broadcast',{event:'finish'},({payload})=>{ onRemoteFinish(payload); });
