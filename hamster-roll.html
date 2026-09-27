@@ -73,6 +73,8 @@
   .res-row .dnf { margin-left:auto; color:#8fa0cc; font-size:13px; }
   #joy { position:fixed; bottom:70px; right:20px; width:130px; height:130px; border-radius:50%; background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.25); z-index:6; display:none; touch-action:none; }
   #joy-knob { position:absolute; width:56px; height:56px; border-radius:50%; background:rgba(255,213,106,.85); left:37px; top:37px; }
+  #jumpBtn { position:fixed; bottom:215px; right:32px; width:68px; height:68px; border-radius:50%; font-size:28px; z-index:6; display:none; background:linear-gradient(180deg,#8fe38f,#4da34d); box-shadow:0 4px 0 #2f6e2f; color:#fff; }
+  #jumpBtn:active { transform:translateY(3px); box-shadow:0 1px 0 #2f6e2f; }
   .kbd-hint { text-align:center; color:#8fa0cc; font-size:13px; margin-top:14px; }
   @media (max-width:600px){ h1.title{font-size:34px;} .panel{padding:20px;} #standings{display:none;} #race-chat{width:210px;} }
 </style>
@@ -98,7 +100,7 @@
       <button class="secondary" id="btn-join" style="flex:1">Join room</button>
     </div>
     <div class="err" id="menu-err"></div>
-    <div class="kbd-hint">⌨️ WASD / arrows to roll &nbsp;&middot;&nbsp; Enter for chat mid-race &nbsp;&middot;&nbsp; 3 laps</div>
+    <div class="kbd-hint">⌨️ WASD / arrows to roll &nbsp;&middot;&nbsp; Space to jump &nbsp;&middot;&nbsp; Enter for chat mid-race &nbsp;&middot;&nbsp; 3 laps</div>
   </div>
 </div>
 
@@ -158,6 +160,7 @@
 
 <div id="toast"></div>
 <div id="joy"><div id="joy-knob"></div></div>
+<button id="jumpBtn">⏫</button>
 <script type="module">
 import * as THREE from 'three';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
@@ -777,6 +780,8 @@ addEventListener('keydown',e=>{
     e.preventDefault(); toggleRaceChat();
   }
 });
+let jumpQueued=false;
+addEventListener('keydown',e=>{ if(e.key===' '&&!e.repeat) jumpQueued=true; });
 let camYaw=Math.PI/2;
 const _td=new THREE.Vector3(1,0,0);
 const joyVec={x:0,y:0};
@@ -841,6 +846,14 @@ function stepPhysics(dt, racing){
   collideWorld();
   if(ball.grounded && !wasGrounded && fallV<-9){
     for(let i=0;i<6;i++) puff(ball.pos.x+(Math.random()-0.5)*0.8,ball.pos.y-0.2,ball.pos.z+(Math.random()-0.5)*0.8,0xffffff,0.9,0.5,1.2,2.2);
+  }
+  if(jumpQueued){
+    jumpQueued=false;
+    if(ball.grounded && racing && !S.finished && S.dizzy<=0){
+      ball.vel.y=8.5; ball.grounded=false;
+      puff(ball.pos.x,ball.pos.y-0.4,ball.pos.z,0xffffff,1.0,0.35,0.5,2);
+      beep(520,0.09,'square',0.07);
+    }
   }
   if(ball.grounded){
     const fr=racing?(inMag<0.1?1.8:0.35):1.6;
@@ -1095,6 +1108,8 @@ loop();
 if('ontouchstart' in window){
   const joy=$('joy'), knob=$('joy-knob');
   joy.style.display='block';
+  const jb=$('jumpBtn'); jb.style.display='block';
+  jb.addEventListener('pointerdown',e=>{ e.preventDefault(); jumpQueued=true; });
   let jid=null;
   const setKnob=(dx,dy)=>{ knob.style.left=(37+dx)+'px'; knob.style.top=(37+dy)+'px'; };
   joy.addEventListener('pointerdown',e=>{ jid=e.pointerId; joy.setPointerCapture(jid); });
