@@ -6,7 +6,7 @@
 <title>Hamster Roll — 2D Ball Racer</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{width:100%;height:100%;overflow:hidden;background:#0b1020;font-family:'Trebuchet MS','Comic Sans MS',system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+  html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#0b1020;font-family:'Trebuchet MS','Comic Sans MS',system-ui,sans-serif;user-select:none;-webkit-user-select:none}
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
   #cv{display:block;background:#0b1020;touch-action:none}
   .ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:10;pointer-events:none}
@@ -66,9 +66,13 @@
   #race-chat-msgs{font-size:12px;color:#fff;text-shadow:1px 1px 0 #000}
   #race-chat-msgs div{background:rgba(10,14,30,.65);border-radius:8px;padding:3px 8px;margin:3px 0;display:inline-block;clear:both;float:left;max-width:100%}
   #race-chat-in{display:none;width:100%;font-size:13px;padding:6px 8px;border-radius:8px;border:2px solid #4a5a8a;background:#1a2340ee;color:#fff;margin-top:4px;font-family:inherit}
-  #touch{position:fixed;inset:0;z-index:8;pointer-events:none;display:none}
-  .tbtn{position:absolute;pointer-events:auto;width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,.16);border:3px solid rgba(255,255,255,.45);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;font-weight:900}
+  #touch{position:fixed;inset:0;z-index:8;pointer-events:none;display:none;touch-action:none}
+  .tbtn{position:absolute;pointer-events:auto;touch-action:none;-webkit-touch-callout:none;width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,.16);border:3px solid rgba(255,255,255,.45);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;font-weight:900}
   .tbtn.on{background:rgba(255,209,102,.4)}
+  #rotate-hint{position:fixed;top:0;left:0;right:0;z-index:9;display:none;justify-content:center;pointer-events:none;padding-top:64px}
+  #rotate-hint span{background:rgba(10,14,30,.88);border:2px solid #ffd166;border-radius:14px;color:#fff;font-size:14px;font-weight:bold;padding:8px 16px}
+  @media (max-height:500px){#hud-inner{padding:5px 12px;font-size:13px;gap:6px}#hud-inner .t{font-size:16px;min-width:72px}#minimap{width:150px;height:30px}}
+  @media (pointer:coarse){#race-chat{bottom:112px}}
   #tL{left:14px;bottom:26px}#tR{left:102px;bottom:26px}
   #tJ{right:102px;bottom:26px}#tB{right:14px;bottom:26px;background:rgba(255,150,80,.25)}
   table.res{margin:8px auto;border-collapse:collapse;font-size:15px}
@@ -133,6 +137,7 @@
   <div class="tbtn" id="tL">◀</div><div class="tbtn" id="tR">▶</div>
   <div class="tbtn" id="tJ">▲</div><div class="tbtn" id="tB">⚡</div>
 </div>
+<div id="rotate-hint"><span>🔄 Rotate your phone for the full track</span></div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
@@ -208,7 +213,10 @@ function chatOpen(){const r=$('race-chat-in');return document.activeElement===r|
 const touch={l:0,r:0};
 function bindBtn(id,down,up){const e=$(id);const on=ev=>{ev.preventDefault();e.classList.add('on');down();};const off=ev=>{ev.preventDefault();e.classList.remove('on');up&&up();};
   e.addEventListener('pointerdown',on);e.addEventListener('pointerup',off);e.addEventListener('pointercancel',off);e.addEventListener('pointerleave',off);}
-if('ontouchstart'in window)$('touch').style.display='block';
+const isTouch='ontouchstart'in window;let touchVis='';
+function updateRotateHint(){const rh=$('rotate-hint');if(rh)rh.style.display=(isTouch&&S.screen==='race'&&innerHeight>innerWidth)?'flex':'none';}
+function updateTouchVis(){if(isTouch){const v=S.screen==='race'?'block':'none';if(v!==touchVis){touchVis=v;$('touch').style.display=v;}}updateRotateHint();}
+updateTouchVis();addEventListener('resize',updateRotateHint);
 bindBtn('tL',()=>{touch.l=1;me.movedSinceJump=true;},()=>touch.l=0);bindBtn('tR',()=>{touch.r=1;me.movedSinceJump=true;},()=>touch.r=0);
 bindBtn('tJ',()=>{if(!chatOpen())jumpQueued=true;});
 bindBtn('tB',()=>{if(!chatOpen())fireBoost(me);});
@@ -799,12 +807,12 @@ function quitRace(){
   $('results').style.display='none';$('count').style.display='none';
   $('hud').style.display='none';$('race-chat').style.display='none';$('minimap').style.display='none';
   if(S.solo){location.reload();return;}
-  S.screen='lobby';$('lobby').style.display='flex';renderRoster();
+  S.screen='lobby';$('lobby').style.display='flex';renderRoster();updateTouchVis();
 }
 
 /* ================= race flow ================= */
 function startMatch(solo){
-  S.screen='race';S.solo=solo;S.track=0;S.myResults=[];S.totalMs=0;S.totalCoins=0;me.boosts=0;me.coins=0;
+  S.screen='race';S.solo=solo;updateTouchVis();S.track=0;S.myResults=[];S.totalMs=0;S.totalCoins=0;me.boosts=0;me.coins=0;
   me.color=S.solo?PALETTE[0]:(S.color||PALETTE[0]);
   $('menu').style.display='none';$('lobby').style.display='none';$('results').style.display='none';
   $('hud').style.display='flex';$('race-chat').style.display=S.solo?'none':'block';
@@ -884,7 +892,7 @@ function advanceTrack(){
   else showMatchResults();
 }
 function showMatchResults(){
-  S.screen='done';$('hud').style.display='none';$('minimap').style.display='none';
+  S.screen='done';$('hud').style.display='none';updateTouchVis();$('minimap').style.display='none';
   let html='<h2>🏁 Match Results</h2><table class="res"><tr><th>Track</th><th>Time</th></tr>';
   S.myResults.forEach(r=>{html+=`<tr><td>${r.name}</td><td class="${r.dnf?'dnf':''}">${r.dnf?'DNF':fmt(r.ms)}</td></tr>`;});
   html+=`</table><p>Total: <b>${fmt(S.totalMs)}</b> · 🪙 ${S.totalCoins} · ⚡ ${me.boosts} left</p>`;
@@ -900,7 +908,7 @@ function showMatchResults(){
     $('btn-again').onclick=()=>startMatch(true);
     $('btn-tomenu').onclick=()=>location.reload();
   }else{
-    $('btn-tolobby').onclick=()=>{S.screen='lobby';$('results').style.display='none';$('lobby').style.display='flex';renderRoster();};
+    $('btn-tolobby').onclick=()=>{S.screen='lobby';$('results').style.display='none';updateTouchVis();$('lobby').style.display='flex';renderRoster();};
   }
 }
 
@@ -946,7 +954,7 @@ async function joinRoom(code,isHost){
   S.color=PALETTE[existing.length%PALETTE.length];
   await ch.track({id:myId,name:myName,color:S.color,joinedAt:Date.now()});
   await new Promise(r=>setTimeout(r,600));
-  $('menu').style.display='none';$('lobby').style.display='flex';S.screen='lobby';
+  $('menu').style.display='none';$('lobby').style.display='flex';S.screen='lobby';updateTouchVis();
   $('room-code').textContent=code;$('chat-box').innerHTML='';
   lobbyChat(null,'Welcome to room '+code+'! Host starts the match.',true);
   renderRoster();
