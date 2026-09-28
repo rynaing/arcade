@@ -270,7 +270,7 @@ function buildGrid(){
 function makePlayers(){
  players=[];
  const spots=[[1,1],[COLS-2,1],[1,ROWS-2],[COLS-2,ROWS-2]].sort(()=>Math.random()-0.5);
- const defs=[{name:'You',color:'#ff7b8a',dark:'#d44a5c',isBot:false},
+ const defs=[{name:(myName||'You'),color:'#ff7b8a',dark:'#d44a5c',isBot:false},
   {name:BOTS[0].name,color:BOTS[0].color,dark:BOTS[0].dark,isBot:true},
   {name:BOTS[1].name,color:BOTS[1].color,dark:BOTS[1].dark,isBot:true},
   {name:BOTS[2].name,color:BOTS[2].color,dark:BOTS[2].dark,isBot:true}];
@@ -696,7 +696,7 @@ function draw(){
    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x-6+ex,by-4,5.5,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+6+ex,by-4,5.5,0,7);ctx.fill();
    ctx.fillStyle='#1a2436';ctx.beginPath();ctx.arc(p.x-6+ex*1.6,by-4,2.6,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+6+ex*1.6,by-4,2.6,0,7);ctx.fill();
   }
-  if(p.isBot){ctx.fillStyle='rgba(255,255,255,.75)';ctx.font='12px sans-serif';ctx.fillText(p.name,p.x,by-25)}
+  ctx.fillStyle=p.isBot?'rgba(255,255,255,.75)':'#fff';ctx.font='bold 12px sans-serif';ctx.fillText(p.name,p.x,by-25)
   ctx.globalAlpha=1;
  }
  // particles
@@ -763,7 +763,7 @@ function loop(t){
  }
  draw();
 }
-$('startBtn').addEventListener('click',()=>{audio();resetMatch()});
+$('startBtn').addEventListener('click',()=>{audio();myName=($('name-input').value||'').trim().slice(0,14);try{localStorage.setItem('bb-name',myName);}catch(e){}resetMatch()});
 $('againBtn').addEventListener('click',()=>{audio();resetMatch()});
 buildGrid();makePlayers();updateHud();
 requestAnimationFrame(loop);
