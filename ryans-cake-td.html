@@ -23,10 +23,16 @@
 
 @media (orientation:landscape) and (max-height:540px){
 .game-shell{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:10px;align-items:start}
-.stage{grid-column:1;grid-row:1/6;align-self:start;position:sticky;top:10px;display:flex;flex-direction:column}
+.stage{grid-column:1;grid-row:1/6;align-self:start;position:sticky;top:10px;display:flex;flex-direction:column;margin-left:90px}
 .side{display:contents}
 .side-stack{display:contents}
-.tower-card{grid-column:2;grid-row:1}
+.tower-card{grid-column:2;grid-row:1;padding:10px}
+.tower-card .tower-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tower-card .tower-btn{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:8px 4px;min-width:0;border-radius:10px}
+.tower-card .tower-glyph{width:30px;height:30px}
+.tower-card .tower-copy small{display:none}
+.tower-card .tower-copy strong{font-size:11px}
+.tower-card .cost{font-size:10px}
 .selected-card{grid-column:2;grid-row:2}
 .controls-card{grid-column:2;grid-row:3}
 .mode-card[aria-labelledby="boardTitle"]{grid-column:2;grid-row:4;padding:10px 12px}
