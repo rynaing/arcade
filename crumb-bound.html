@@ -264,7 +264,7 @@ const MOB_KEYS = Object.keys(MOBILES);
 function genTerrain(seed) {
   const rnd = mulberry32(seed);
   const p1 = rnd() * 6.28, p2 = rnd() * 6.28, p3 = rnd() * 6.28;
-  const a1 = 40 + rnd() * 50, a2 = 18 + rnd() * 30, a3 = 6 + rnd() * 12;
+  const a1 = 40 + rnd() * 50, a2 = 18 + rnd() * 30, a3 = 4 + rnd() * 8;
   const t = new Float32Array(COLS);
   for (let i = 0; i < COLS; i++) {
     const x = i / COLS * 6.28;
@@ -272,8 +272,17 @@ function genTerrain(seed) {
       + a1 * Math.sin(x * 2 + p1)
       + a2 * Math.sin(x * 5 + p2)
       + a3 * Math.sin(x * 11 + p3);
-    h += (rnd() - 0.5) * 14;
+    h += (rnd() - 0.5) * 8;
     t[i] = Math.max(180, Math.min(470, h));
+  }
+  // kill the stock-chart jitter: two gentle blur passes on the raw columns
+  for (let pass = 0; pass < 2; pass++) {
+    let prev = t[0];
+    for (let i = 0; i < COLS; i++) {
+      const cur = t[i], nxt = t[Math.min(COLS - 1, i + 1)];
+      t[i] = prev * 0.25 + cur * 0.5 + nxt * 0.25;
+      prev = cur;
+    }
   }
   // flatten spawn plateaus: left quarter (team A) and right quarter (team B)
   for (const cx of [Math.floor(COLS * 0.14), Math.floor(COLS * 0.86)]) {
@@ -571,6 +580,8 @@ let timeLeft = TURN_TIME, timerId = null;
 let aim = { ang: 45, power: 0, charging: false, weapon: 0 };
 let moveLeft = 0, turnStartX = 0;
 let particles = [];
+let dmgNums = [];   // floating damage numbers {x,y,txt,t,ttl,col}
+let flashes = [];   // explosion flash rings {x,y,r,t,ttl}
 let beams = [];           // Thor strike beam visuals {x,y,t,ttl}
 let shake = 0;
 let anim = null;          // active shot animation
@@ -600,7 +611,7 @@ function newMatch(seed, defs) {
   myDefIdx = st.mobiles.findIndex(m => m.pid === myId);
   myTeam = myDefIdx >= 0 ? st.mobiles[myDefIdx].team : 'A';
   completedTurns = 0;
-  particles = []; beams = []; shake = 0; anim = null; turnQueue = [];
+  particles = []; beams = []; dmgNums = []; flashes = []; shake = 0; anim = null; turnQueue = [];
 }
 
 function isMyTurn() { return turnState === 'aim' && activeIdx === myDefIdx && myDefIdx >= 0; }
@@ -739,6 +750,15 @@ function fireShot(shot) {
   checkWin();
   const snap = snapState(st);
   Net.sendSnap({ shot: { x: shot.x, y: shot.y, ang: shot.ang, power: shot.power, weapon: shot.weapon, mobile: shot.mobile, team: shot.team, srcIdx: shot.srcIdx, wind: shot.wind, sudden: shot.sudden }, final: snap, thor: res.thorStrikes });
+  // rewind visual state to pre-shot: the replay animation lands each boom's
+  // damage the moment of impact (hp bars, craters, damage numbers) instead of
+  // everything jumping at fire time. SS/delays/thor stay charged; the final
+  // snap reapplies canonical state when the animation finishes.
+  st.terrain.set(pre.terrain);
+  pre.mobiles.forEach((pm, i) => {
+    const m = st.mobiles[i];
+    m.hp = pm.hp; m.alive = pm.alive; m.x = pm.x; m.y = pm.y;
+  });
   animateShot(pre, snap, shot, res.thorStrikes);
 }
 
@@ -786,11 +806,16 @@ function stepAnim(dt) {
       for (const e of evs) {
         if (e.type === 'boom') {
           burst(e.x, e.y, e.r, e.kind);
+          flashes.push({ x: e.x, y: e.y, r: e.r, t: 0, ttl: 0.35 });
           shake = Math.min(14, shake + e.r * 0.12);
-          applyBoom(anim.simT, anim.simM, e.x, e.y, e.r, e.dmg, e.srcIdx);
+          const res = applyBoom(anim.simT, anim.simM, e.x, e.y, e.r, e.dmg, e.srcIdx);
+          st.terrain.set(anim.simT); // craters form in real time
+          syncLiveDamage(res.victims);
         } else if (e.type === 'hit') {
           burst(e.x, e.y, e.r, e.kind);
-          applyHit(anim.simM, e.target, e.dmg, e.srcIdx);
+          flashes.push({ x: e.x, y: e.y, r: e.r, t: 0, ttl: 0.3 });
+          const dd = applyHit(anim.simM, e.target, e.dmg, e.srcIdx);
+          if (dd > 0) { const v = {}; v[e.target] = dd; syncLiveDamage(v); }
         } else if (e.type === 'spawn') next.push(e.proj);
       }
       if (!p.boom) next.push(p);
@@ -803,8 +828,11 @@ function stepAnim(dt) {
     for (const ts of anim.thor) {
       beams.push({ x: ts.x, y: ts.y, t: 0, ttl: 0.6 });
       burst(ts.x, ts.y, 30, 'beam');
+      flashes.push({ x: ts.x, y: ts.y, r: 55, t: 0, ttl: 0.4 });
       shake = Math.min(14, shake + 4);
-      applyBoom(anim.simT, anim.simM, ts.x, ts.y, 55, ts.dmg, -1, 16);
+      const tres = applyBoom(anim.simT, anim.simM, ts.x, ts.y, 55, ts.dmg, -1, 16);
+      st.terrain.set(anim.simT);
+      syncLiveDamage(tres.victims);
     }
     settle(anim.simT, anim.simM);
     applySnapState(st, anim.final);
@@ -918,6 +946,19 @@ function burst(x, y, r, kind) {
     particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 80, life: 0.5 + Math.random() * 0.5, t: 0, c: cols[(Math.random() * cols.length) | 0], s: 2 + Math.random() * 3 });
   }
 }
+// show damage the moment it lands: mirror the replay sim's hp onto the live
+// mobiles (hp bars drop mid-animation) + floating damage numbers.
+// The final snap at the end of the anim still applies canonical state.
+function syncLiveDamage(victims) {
+  for (const idx in victims) {
+    const s = anim.simM[idx], live = st.mobiles[idx];
+    if (!s || !live) continue;
+    live.hp = s.hp; live.alive = s.alive; live.x = s.x;
+    dmgNums.push({ x: live.x, y: live.y - 62, txt: '-' + victims[idx], t: 0, ttl: 1.2,
+      col: live.alive ? '#ffd166' : '#ff8787' });
+  }
+}
+
 function stepParticles(dt) {
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
@@ -927,6 +968,14 @@ function stepParticles(dt) {
   for (let i = beams.length - 1; i >= 0; i--) {
     beams[i].t += dt;
     if (beams[i].t > beams[i].ttl) beams.splice(i, 1);
+  }
+  for (let i = dmgNums.length - 1; i >= 0; i--) {
+    const d = dmgNums[i]; d.t += dt; d.y -= 34 * dt;
+    if (d.t > d.ttl) dmgNums.splice(i, 1);
+  }
+  for (let i = flashes.length - 1; i >= 0; i--) {
+    flashes[i].t += dt;
+    if (flashes[i].t > flashes[i].ttl) flashes.splice(i, 1);
   }
   if (shake > 0) shake = Math.max(0, shake - dt * 30);
 }
@@ -999,20 +1048,36 @@ function drawSky() {
     ctx.lineTo(W, H); ctx.fill();
   }
 }
+// smoothed surface path: midpoint quadratics, kills the stock-chart zigzag
+function terrTopPath(offset) {
+  ctx.beginPath();
+  ctx.moveTo(-6, st.terrain[0] + offset);
+  for (let i = 0; i < COLS - 1; i++) {
+    const x0 = (i + 0.5) * COLW, y0 = st.terrain[i] + offset;
+    const x1 = (i + 1.5) * COLW, y1 = st.terrain[i + 1] + offset;
+    ctx.quadraticCurveTo(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
+  }
+  ctx.lineTo(W + 6, st.terrain[COLS - 1] + offset);
+}
 function drawTerrain() {
-  ctx.beginPath(); ctx.moveTo(0, H);
-  for (let i = 0; i < COLS; i++) ctx.lineTo((i + 0.5) * COLW, st.terrain[i]);
-  ctx.lineTo(W, H); ctx.closePath();
+  // dirt body
+  terrTopPath(0);
+  ctx.lineTo(W + 6, H + 6); ctx.lineTo(-6, H + 6); ctx.closePath();
   const g = ctx.createLinearGradient(0, 200, 0, H);
   g.addColorStop(0, '#8a5a33'); g.addColorStop(1, '#4a2c14');
   ctx.fillStyle = g; ctx.fill();
-  // frosting top strip
-  ctx.strokeStyle = '#ffe3ee'; ctx.lineWidth = 7; ctx.lineJoin = 'round'; ctx.beginPath();
-  for (let i = 0; i < COLS; i++) { const x = (i + 0.5) * COLW, y = st.terrain[i]; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-  ctx.stroke();
-  ctx.strokeStyle = '#ff9ec6'; ctx.lineWidth = 2; ctx.beginPath();
-  for (let i = 0; i < COLS; i++) { const x = (i + 0.5) * COLW, y = st.terrain[i] + 7; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-  ctx.stroke();
+  // dirt speckles: seeded per column so they don't shimmer, they ride the surface
+  for (let i = 0; i < COLS; i += 2) {
+    const hr = mulberry32(i * 7919 + 101);
+    const x = (i + 0.5) * COLW, y = st.terrain[i];
+    ctx.fillStyle = hr() < 0.5 ? '#6e4526' : '#9c6a3d';
+    ctx.beginPath(); ctx.ellipse(x + (hr() - 0.5) * COLW, y + 14 + hr() * 46, 3.2, 2.2, 0, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + (hr() - 0.5) * COLW, y + 22 + hr() * 60, 2.2, 1.6, 0, 0, 6.29); ctx.fill();
+  }
+  // frosting rim on the smoothed edge
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#ff9ec6'; ctx.lineWidth = 9; terrTopPath(3); ctx.stroke();
+  ctx.strokeStyle = '#ffe3ee'; ctx.lineWidth = 5; terrTopPath(0); ctx.stroke();
 }
 function drawMobile(m, i) {
   const x = m.x, yb = m.y; // yb = feet
@@ -1107,11 +1172,40 @@ function drawAim() {
 function drawProjsAnim() {
   if (!anim) return;
   for (const p of anim.projs) {
-    ctx.fillStyle = p.kind === 'beam' ? '#fff7ae' : '#ffd166';
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.kind === 'beam' ? 9 : 6, 0, 6.29); ctx.fill();
+    const big = p.kind === 'beam';
+    // soft glow
+    ctx.fillStyle = big ? '#fff7ae' : '#ffd166'; ctx.globalAlpha = 0.28;
+    ctx.beginPath(); ctx.arc(p.x, p.y, big ? 18 : 13, 0, 6.29); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = big ? '#fffbe8' : '#ffe8a8';
+    ctx.beginPath(); ctx.arc(p.x, p.y, big ? 9 : 6, 0, 6.29); ctx.fill();
     ctx.strokeStyle = '#ffffff88'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.05, p.y - p.vy * 0.05); ctx.stroke();
   }
+}
+function drawFlashes() {
+  for (const f of flashes) {
+    const k = f.t / f.ttl; // 0 -> 1
+    const r = f.r * (0.4 + 1.3 * k);
+    ctx.globalAlpha = 0.55 * (1 - k);
+    ctx.fillStyle = '#fff3bf';
+    ctx.beginPath(); ctx.arc(f.x, f.y, r * 0.55, 0, 6.29); ctx.fill();
+    ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 5 * (1 - k) + 1;
+    ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, 6.29); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+function drawDmgNums() {
+  ctx.textAlign = 'center'; ctx.font = 'bold 17px sans-serif';
+  for (const d of dmgNums) {
+    const k = d.t / d.ttl;
+    ctx.globalAlpha = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3;
+    ctx.fillStyle = '#000000aa';
+    ctx.fillText(d.txt, d.x + 1.5, d.y + 1.5);
+    ctx.fillStyle = d.col;
+    ctx.fillText(d.txt, d.x, d.y);
+  }
+  ctx.globalAlpha = 1;
 }
 function drawParticles() {
   for (const p of particles) {
@@ -1139,10 +1233,12 @@ function render(dt) {
     drawProjsAnim();
   }
   drawParticles();
+  drawFlashes();
   drawBeams();
   drawThorSat();
   drawForceBeam();
   drawTurnArrow();
+  drawDmgNums();
   // sudden death banner
   if (st && st.sudden && !st.over) {
     ctx.fillStyle = '#ff8787'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'right';
