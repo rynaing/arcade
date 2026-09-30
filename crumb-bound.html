@@ -354,8 +354,8 @@ function stepProj(p, t, mobiles, env) {
   if (env.forceX >= 0 && !p.boosted && (px - env.forceX) * (p.x - env.forceX) <= 0) p.boosted = true;
   const dmgMul = (env.sudden ? 1.5 : 1) * (env.wmod || 1) * (p.boosted ? 1.33 : 1);
 
-  const explode = (x, y) => {
-    evs.push({ type: 'boom', x, y, r: p.r, dmg: p.dmg * dmgMul, team: p.team, srcIdx: p.srcIdx, kind: p.kind });
+  const explode = (x, y, direct) => {
+    evs.push({ type: 'boom', x, y, r: p.r, dmg: p.dmg * dmgMul, team: p.team, srcIdx: p.srcIdx, kind: p.kind, direct });
     p.boom = true;
   };
 
@@ -385,7 +385,7 @@ function stepProj(p, t, mobiles, env) {
         evs.push({ type: 'hit', x: p.x, y: p.y, r: p.r, dmg: p.dmg * dmgMul, team: p.team, srcIdx: p.srcIdx, target: i, pierce: true });
         continue;
       }
-      explode(p.x, p.y);
+      explode(p.x, p.y, i);
       return evs;
     }
   }
@@ -394,7 +394,7 @@ function stepProj(p, t, mobiles, env) {
 
 /* apply an explosion: terrain carve + damage to mobiles.
    returns {src: total damage credited to srcIdx, victims: {idx: dmg}} */
-function applyBoom(t, mobiles, x, y, r, dmg, srcIdx, carveR) {
+function applyBoom(t, mobiles, x, y, r, dmg, srcIdx, carveR, direct) {
   carve(t, x, y, carveR || r * 0.95);
   let srcTotal = 0;
   const victims = {};
@@ -406,7 +406,11 @@ function applyBoom(t, mobiles, x, y, r, dmg, srcIdx, carveR) {
     const d = Math.sqrt(dx * dx + dy * dy);
     if (d < r + 16) {
       const fall = Math.max(0, 1 - d / (r + 16));
-      const dd = Math.round(dmg * (0.35 + 0.65 * fall));
+      // damage scales with accuracy: quadratic falloff rewards center hits,
+      // edge splashes chip
+      let dd = Math.round(dmg * (0.3 + 0.7 * fall * fall));
+      // direct body contact: flat 125% — no falloff ambiguity
+      if (direct === i) dd = Math.round(dmg * 1.25);
       m.hp -= dd;
       srcTotal += dd;
       victims[i] = (victims[i] || 0) + dd;
@@ -460,7 +464,7 @@ function simulateShot(st, shot, env) {
       for (const e of evs) {
         if (e.type === 'boom') {
           landed.push({ x: e.x, y: e.y });
-          const ar = applyBoom(t, mobiles, e.x, e.y, e.r, e.dmg, e.srcIdx);
+          const ar = applyBoom(t, mobiles, e.x, e.y, e.r, e.dmg, e.srcIdx, undefined, e.direct);
           dmgDealt[e.srcIdx] = (dmgDealt[e.srcIdx] || 0) + ar.src;
         } else if (e.type === 'hit') {
           const dd = applyHit(mobiles, e.target, e.dmg, e.srcIdx);
@@ -808,9 +812,9 @@ function stepAnim(dt) {
           burst(e.x, e.y, e.r, e.kind);
           flashes.push({ x: e.x, y: e.y, r: e.r, t: 0, ttl: 0.35 });
           shake = Math.min(14, shake + e.r * 0.12);
-          const res = applyBoom(anim.simT, anim.simM, e.x, e.y, e.r, e.dmg, e.srcIdx);
+          const res = applyBoom(anim.simT, anim.simM, e.x, e.y, e.r, e.dmg, e.srcIdx, undefined, e.direct);
           st.terrain.set(anim.simT); // craters form in real time
-          syncLiveDamage(res.victims);
+          syncLiveDamage(res.victims, e.direct);
         } else if (e.type === 'hit') {
           burst(e.x, e.y, e.r, e.kind);
           flashes.push({ x: e.x, y: e.y, r: e.r, t: 0, ttl: 0.3 });
@@ -949,13 +953,14 @@ function burst(x, y, r, kind) {
 // show damage the moment it lands: mirror the replay sim's hp onto the live
 // mobiles (hp bars drop mid-animation) + floating damage numbers.
 // The final snap at the end of the anim still applies canonical state.
-function syncLiveDamage(victims) {
+function syncLiveDamage(victims, direct) {
   for (const idx in victims) {
     const s = anim.simM[idx], live = st.mobiles[idx];
     if (!s || !live) continue;
     live.hp = s.hp; live.alive = s.alive; live.x = s.x;
-    dmgNums.push({ x: live.x, y: live.y - 62, txt: '-' + victims[idx], t: 0, ttl: 1.2,
-      col: live.alive ? '#ffd166' : '#ff8787' });
+    const isDirect = direct != null && Number(idx) === direct;
+    dmgNums.push({ x: live.x, y: live.y - 62, txt: (isDirect ? '💥' : '') + '-' + victims[idx], t: 0, ttl: 1.2,
+      col: isDirect ? '#ffd166' : (live.alive ? '#ffa94d' : '#ff8787'), direct: isDirect });
   }
 }
 
@@ -1196,10 +1201,11 @@ function drawFlashes() {
   ctx.globalAlpha = 1;
 }
 function drawDmgNums() {
-  ctx.textAlign = 'center'; ctx.font = 'bold 17px sans-serif';
+  ctx.textAlign = 'center';
   for (const d of dmgNums) {
     const k = d.t / d.ttl;
     ctx.globalAlpha = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3;
+    ctx.font = d.direct ? 'bold 21px sans-serif' : 'bold 17px sans-serif';
     ctx.fillStyle = '#000000aa';
     ctx.fillText(d.txt, d.x + 1.5, d.y + 1.5);
     ctx.fillStyle = d.col;
