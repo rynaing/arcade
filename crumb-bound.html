@@ -137,7 +137,7 @@
       <button class="big" id="btn-joinb">Join</button>
     </div>
     <div id="menu-err"></div>
-    <p class="hintline"><kbd>←</kbd><kbd>→</kbd> move · <kbd>↑</kbd><kbd>↓</kbd> aim · hold <kbd>Space</kbd> charge, release to fire · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons · move, then shoot, before the 30s timer runs out</p>
+    <p class="hintline"><kbd>←</kbd><kbd>→</kbd> move · <kbd>↑</kbd><kbd>↓</kbd> aim · hold <kbd>Space</kbd> charge, release to fire · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons · move, then shoot, before the 20s timer runs out · fast shots act sooner (delay order) · weather changes the battlefield</p>
   </div>
 
   <div id="lobby" class="ov hidden">
@@ -179,8 +179,54 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const W = 960, H = 540, COLS = 240, COLW = W / COLS;
 const GRAV = 520;                 // px/s^2
 const DT = 1 / 120;               // fixed timestep
-const TURN_TIME = 30;
+const TURN_TIME = 20;
 const SS_NEED = 100;
+
+/* Delay-based turn order + weather (OG-inspired, clean-room restatement) */
+const DELAY_COST = { pass: 700, 0: 760, 1: 900, 2: 1300 }; // pass / S1 / S2 / SS
+const DELAY_PER_SEC = 10;         // aiming/moving time adds delay
+const WEATHERS = ['calm', 'thor', 'force', 'dark', 'eclipse', 'moon'];
+const WEATHER_LABEL = { calm: 'Calm', thor: 'Thor', force: 'Force', dark: 'Dark Force', eclipse: 'Eclipse', moon: 'Moon' };
+const THOR_BANDS = [0, 20, 70, 180, 390, 680];   // cumulative Thor damage -> level
+const THOR_DMG = [10, 20, 30, 40, 50, 60];      // strike damage per level
+function thorLevelFor(d) { let l = 0; for (let i = 0; i < THOR_BANDS.length; i++) if (d >= THOR_BANDS[i]) l = i; return l; }
+function rollWeather(rnd, cur) {
+  let w = cur;
+  while (w === cur) w = WEATHERS[(rnd() * WEATHERS.length) | 0]; // always changes
+  return w;
+}
+/* opening order: randomized, constrained so teams alternate */
+function buildOpener(mobiles, rnd) {
+  const A = [], B = [];
+  mobiles.forEach((m, i) => (m.team === 'A' ? A : B).push(i));
+  for (const arr of [A, B]) for (let i = arr.length - 1; i > 0; i--) { const j = (rnd() * (i + 1)) | 0; const t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
+  const out = [], seq = rnd() < 0.5 ? [A, B] : [B, A], n = Math.max(A.length, B.length);
+  for (let k = 0; k < n; k++) for (const arr of seq) if (k < arr.length) out.push(arr[k]);
+  return out;
+}
+/* lowest accumulated delay acts next (ties -> lower index) */
+function pickNext(st) {
+  if (st.turnIdx < st.opener.length) { const i = st.opener[st.turnIdx]; if (st.mobiles[i] && st.mobiles[i].alive) return i; }
+  let best = -1;
+  for (let i = 0; i < st.mobiles.length; i++) {
+    if (!st.mobiles[i].alive) continue;
+    if (best < 0 || st.delays[i] < st.delays[best] || (st.delays[i] === st.delays[best] && i < best)) best = i;
+  }
+  return best;
+}
+/* preview of upcoming turns (assumes passes) for the HUD */
+function queuePreview(st, n) {
+  const ds = st.delays.slice(), out = [];
+  let tc = st.turnIdx + 1;
+  for (let k = 0; k < n; k++) {
+    let idx = -1;
+    if (tc < st.opener.length && st.mobiles[st.opener[tc]] && st.mobiles[st.opener[tc]].alive) idx = st.opener[tc];
+    else for (let i = 0; i < st.mobiles.length; i++) { if (!st.mobiles[i].alive) continue; if (idx < 0 || ds[i] < ds[idx]) idx = i; }
+    if (idx < 0) break;
+    out.push(idx); ds[idx] += DELAY_COST.pass; tc++;
+  }
+  return out;
+}
 
 /* seeded RNG (mulberry32) */
 function mulberry32(seed) {
@@ -260,7 +306,7 @@ function makeProjectiles(kind, x, y, angDeg, power, dmg, r, team, srcIdx, wind) 
   const sp = muzzleVel(power), a = angDeg * Math.PI / 180;
   const vx = Math.cos(a) * sp, vy = -Math.sin(a) * sp;
   const P = (dx, dy, k, d, rr, extra) => Object.assign(
-    { x: x + dx, y: y + dy, vx, vy, kind: k, dmg: d, r: rr, team, srcIdx, wind, age: 0, hitSet: [], boom: false }, extra || {});
+    { x: x + dx, y: y + dy, vx, vy, kind: k, dmg: d, r: rr, team, srcIdx, wind, age: 0, hitSet: [], boom: false, boosted: false }, extra || {});
   switch (kind) {
     case 'twin': return [P(-4, 0, 'shell', dmg, r), P(4, 0, 'shell', dmg, r)];
     case 'twinpierce': return [P(-4, 0, 'pierce', dmg, r), P(4, 0, 'pierce', dmg, r)];
@@ -268,7 +314,7 @@ function makeProjectiles(kind, x, y, angDeg, power, dmg, r, team, srcIdx, wind) 
       const out = [];
       for (let i = -2; i <= 2; i++) {
         const aa = (angDeg + i * 7) * Math.PI / 180, s2 = sp * (0.92 + 0.04 * Math.abs(i));
-        out.push({ x, y, vx: Math.cos(aa) * s2, vy: -Math.sin(aa) * s2, kind: 'shell', dmg, r, team, srcIdx, wind, age: 0, hitSet: [], boom: false });
+        out.push({ x, y, vx: Math.cos(aa) * s2, vy: -Math.sin(aa) * s2, kind: 'shell', dmg, r, team, srcIdx, wind, age: 0, hitSet: [], boom: false, boosted: false });
       }
       return out;
     }
@@ -278,10 +324,10 @@ function makeProjectiles(kind, x, y, angDeg, power, dmg, r, team, srcIdx, wind) 
   }
 }
 
-/* step one projectile; returns events [{type:'boom',x,y,r,dmg,team,srcIdx}, ...] */
-function stepProj(p, t, mobiles, sudden) {
+/* step one projectile; env={sudden,wmod,forceX}; returns events */
+function stepProj(p, t, mobiles, env) {
+  env = env || {};
   const evs = [];
-  const dmgMul = sudden ? 1.5 : 1;
   p.age += DT;
   // wind accel (px/s^2), scaled
   p.vx += p.wind * 2.2 * DT;
@@ -291,9 +337,13 @@ function stepProj(p, t, mobiles, sudden) {
     const s = p.ret ? -1 : 1;
     p.vx += s * 260 * DT * (p.vx >= 0 ? 1 : -1) * -1;
   }
+  const px = p.x;
   p.vy += GRAV * DT;
   p.x += p.vx * DT;
   p.y += p.vy * DT;
+  // Force weather: crossing the beam boosts the shot +33%
+  if (env.forceX >= 0 && !p.boosted && (px - env.forceX) * (p.x - env.forceX) <= 0) p.boosted = true;
+  const dmgMul = (env.sudden ? 1.5 : 1) * (env.wmod || 1) * (p.boosted ? 1.33 : 1);
 
   const explode = (x, y) => {
     evs.push({ type: 'boom', x, y, r: p.r, dmg: p.dmg * dmgMul, team: p.team, srcIdx: p.srcIdx, kind: p.kind });
@@ -306,7 +356,7 @@ function stepProj(p, t, mobiles, sudden) {
     for (let i = 0; i < p.bomblets; i++) {
       const aa = (i / p.bomblets) * Math.PI * 2;
       evs.push({ type: 'spawn', proj: { x: p.x, y: p.y, vx: Math.cos(aa) * 170, vy: Math.sin(aa) * 170 - 60,
-        kind: 'shell', dmg: p.dmg * dmgMul, r: p.r, team: p.team, srcIdx: p.srcIdx, wind: p.wind, age: 0, hitSet: [], boom: false } });
+        kind: 'shell', dmg: p.dmg * dmgMul, r: p.r, team: p.team, srcIdx: p.srcIdx, wind: p.wind, age: 0, hitSet: [], boom: false, boosted: p.boosted } });
     }
     p.boom = true;
     return evs;
@@ -333,10 +383,12 @@ function stepProj(p, t, mobiles, sudden) {
   return evs;
 }
 
-/* apply an explosion: terrain carve + damage to mobiles; returns {dmgBy:{srcIdx:total}} */
-function applyBoom(t, mobiles, x, y, r, dmg, srcIdx) {
-  carve(t, x, y, r * 0.95);
-  const dmgBy = {};
+/* apply an explosion: terrain carve + damage to mobiles.
+   returns {src: total damage credited to srcIdx, victims: {idx: dmg}} */
+function applyBoom(t, mobiles, x, y, r, dmg, srcIdx, carveR) {
+  carve(t, x, y, carveR || r * 0.95);
+  let srcTotal = 0;
+  const victims = {};
   for (let i = 0; i < mobiles.length; i++) {
     const m = mobiles[i];
     if (!m.alive) continue;
@@ -347,13 +399,14 @@ function applyBoom(t, mobiles, x, y, r, dmg, srcIdx) {
       const fall = Math.max(0, 1 - d / (r + 16));
       const dd = Math.round(dmg * (0.35 + 0.65 * fall));
       m.hp -= dd;
-      dmgBy[srcIdx] = (dmgBy[srcIdx] || 0) + dd;
+      srcTotal += dd;
+      victims[i] = (victims[i] || 0) + dd;
       // knockback shove
       if (d > 1) { m.x += (dx / d) * fall * 14; m.x = Math.max(8, Math.min(W - 8, m.x)); }
       if (m.hp <= 0) { m.hp = 0; m.alive = false; }
     }
   }
-  return dmgBy;
+  return { src: srcTotal, victims };
 }
 /* direct (piercing) hit: no terrain carve */
 function applyHit(mobiles, target, dmg, srcIdx) {
@@ -364,46 +417,42 @@ function applyHit(mobiles, target, dmg, srcIdx) {
   if (m.hp <= 0) { m.hp = 0; m.alive = false; }
   return dd;
 }
-/* settle mobiles onto terrain after carving; returns fall-damage map {idx:dmg} */
+/* settle mobiles onto terrain after carving; returns fall map {idx:'fell'} for pit deaths.
+   OG-faithful: no fall damage — only the bottomless pit kills. */
 function settle(t, mobiles) {
   const falls = {};
   for (let i = 0; i < mobiles.length; i++) {
     const m = mobiles[i];
     if (!m.alive) continue;
     const sy = surfY(t, m.x);
-    if (m.y < sy - 2) {
-      const drop = sy - m.y;
-      m.y = sy;
-      if (drop > 60) {
-        const dd = Math.round((drop - 60) * 0.25);
-        m.hp -= dd; falls[i] = dd;
-        if (m.hp <= 0) { m.hp = 0; m.alive = false; }
-      }
-    } else if (m.y > sy + 4) {
-      m.y = sy; // popped out of ground
-    }
+    if (m.y < sy - 2) m.y = sy;
+    else if (m.y > sy + 4) m.y = sy; // popped out of ground
     if (m.y > H + 40 || m.x < -30 || m.x > W + 30) { m.alive = false; m.hp = 0; falls[i] = 'fell'; }
   }
   return falls;
 }
 
 /* full shot simulation (host side). shot={x,y,ang,power,weapon,mobile,team,srcIdx,wind,sudden}
-   returns {projs paths not needed; events applied directly to state} */
-function simulateShot(st, shot) {
+   env={sudden,wmod,forceX,thorX,thorLevel}; applies directly to state.
+   returns {dmgDealt, thorDmgByVictim, thorDmgTotal, thorStrikes, falls} */
+function simulateShot(st, shot, env) {
+  env = env || {};
   const t = st.terrain, mobiles = st.mobiles;
   const wdef = MOBILES[shot.mobile].w[shot.weapon];
   let projs = makeProjectiles(wdef.kind, shot.x, shot.y - 32, shot.ang, shot.power, wdef.dmg, wdef.r, shot.team, shot.srcIdx, shot.wind);
   const dmgDealt = {};
+  const landed = [];
   let guard = 0;
   while (projs.length && guard++ < 4000) {
     const next = [];
     for (const p of projs) {
       if (p.boom) continue;
-      const evs = stepProj(p, t, mobiles, shot.sudden);
+      const evs = stepProj(p, t, mobiles, env);
       for (const e of evs) {
         if (e.type === 'boom') {
-          const db = applyBoom(t, mobiles, e.x, e.y, e.r, e.dmg, e.srcIdx);
-          for (const k in db) dmgDealt[k] = (dmgDealt[k] || 0) + db[k];
+          landed.push({ x: e.x, y: e.y });
+          const ar = applyBoom(t, mobiles, e.x, e.y, e.r, e.dmg, e.srcIdx);
+          dmgDealt[e.srcIdx] = (dmgDealt[e.srcIdx] || 0) + ar.src;
         } else if (e.type === 'hit') {
           const dd = applyHit(mobiles, e.target, e.dmg, e.srcIdx);
           dmgDealt[e.srcIdx] = (dmgDealt[e.srcIdx] || 0) + dd;
@@ -415,8 +464,23 @@ function simulateShot(st, shot) {
     }
     projs = next;
   }
+  // Thor weather: satellite fires one laser per projectile landing near it.
+  // Thor damage never charges SS (environmental, not a shot).
+  const thorStrikes = [], thorDmgByVictim = {};
+  let thorDmgTotal = 0;
+  if (env.thorX >= 0) {
+    const tdmg = THOR_DMG[env.thorLevel || 0] * (env.sudden ? 1.5 : 1);
+    for (const L of landed) {
+      if (Math.abs(L.x - env.thorX) < 90) {
+        const ar = applyBoom(t, mobiles, L.x, L.y, 55, tdmg, -1, 16);
+        thorStrikes.push({ x: Math.round(L.x * 10) / 10, y: Math.round(L.y * 10) / 10, dmg: Math.round(tdmg) });
+        thorDmgTotal += ar.src;
+        for (const vi in ar.victims) thorDmgByVictim[vi] = (thorDmgByVictim[vi] || 0) + ar.victims[vi];
+      }
+    }
+  }
   const falls = settle(t, mobiles);
-  return { dmgDealt, falls };
+  return { dmgDealt, thorDmgByVictim, thorDmgTotal, thorStrikes, falls };
 }
 
 /* spawn layout: team A left plateau, team B right plateau */
@@ -473,12 +537,20 @@ function snapState(st) {
     terrain: Array.from(st.terrain, v => Math.round(v * 10) / 10),
     mobiles: st.mobiles.map(m => ({ x: Math.round(m.x * 10) / 10, y: Math.round(m.y * 10) / 10, hp: m.hp, ss: Math.round(m.ss), alive: m.alive, ang: m.ang })),
     turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, over: st.over, winner: st.winner,
+    delays: st.delays ? st.delays.slice() : [], opener: st.opener ? st.opener.slice() : [],
+    wcur: st.wcur || 'calm', wnext: st.wnext || 'calm', win: st.win || 0,
+    thorX: st.thorX != null ? st.thorX : -1, thorLevel: st.thorLevel || 0, thorDmg: st.thorDmg || 0,
+    forceX: st.forceX != null ? st.forceX : -1,
   };
 }
 function applySnapState(st, s) {
   st.terrain = Float32Array.from(s.terrain);
   s.mobiles.forEach((sm, i) => Object.assign(st.mobiles[i], sm));
   st.turnIdx = s.turnIdx; st.wind = s.wind; st.sudden = s.sudden; st.over = s.over; st.winner = s.winner;
+  if (s.delays) st.delays = s.delays.slice();
+  if (s.opener) st.opener = s.opener.slice();
+  st.wcur = s.wcur; st.wnext = s.wnext; st.win = s.win;
+  st.thorX = s.thorX; st.thorLevel = s.thorLevel; st.thorDmg = s.thorDmg; st.forceX = s.forceX;
 }
 
 /* ================= Crumb Bound game layer (DOM + rendering + turn flow) ================= */
@@ -493,13 +565,13 @@ try { myName = localStorage.getItem('cb-name') || 'Player'; $('name-input').valu
 const Net = { channel: null, room: null, role: 'solo' }; // role: solo|host|guest; net.js fills in
 let st = null;            // authoritative-ish local state
 let screen = 'menu';      // menu|lobby|play
-let turnOrder = [];       // mobile indices in turn order
 let turnState = 'idle';   // idle|aim|anim
 let activeIdx = -1;
 let timeLeft = TURN_TIME, timerId = null;
 let aim = { ang: 45, power: 0, charging: false, weapon: 0 };
 let moveLeft = 0, turnStartX = 0;
 let particles = [];
+let beams = [];           // Thor strike beam visuals {x,y,t,ttl}
 let shake = 0;
 let anim = null;          // active shot animation
 let pendingTurn = null;   // turn broadcast received mid-animation (guests)
@@ -507,53 +579,67 @@ let chatScope = 'team';
 let myTeam = 'A', myMobile = 'shortcake';
 let myDefIdx = -1;
 let turnRng = null;
+let turnQueue = [];       // preview of upcoming turns (indices)
+let turnStartT = 0;       // performance.now() at turn start (for delay cost)
 let completedTurns = 0;
 
 /* ---------- match setup ---------- */
 function newMatch(seed, defs) {
   const terrain = genTerrain(seed);
   const xs = spawnPositions(defs);
-  st = { seed, terrain, mobiles: [], turnIdx: -1, wind: 0, sudden: false, over: false, winner: null };
+  st = { seed, terrain, mobiles: [], turnIdx: -1, wind: 0, sudden: false, over: false, winner: null,
+    delays: defs.map(() => 0), opener: [], wcur: 'calm', wnext: 'calm', win: defs.length,
+    thorX: -1, thorLevel: 0, thorDmg: 0, forceX: -1 };
   defs.forEach((d, i) => {
     st.mobiles.push({ x: xs[i], y: surfY(terrain, xs[i]), hp: MOBILES[d.mobile].hp, ss: 0, alive: true,
       ang: d.team === 'A' ? 45 : 135, mobile: d.mobile, team: d.team, pid: d.pid, name: d.name, isBot: !!d.isBot });
   });
-  const A = [], B = [];
-  st.mobiles.forEach((m, i) => (m.team === 'A' ? A : B).push(i));
-  turnOrder = [];
-  for (let k = 0; k < Math.max(A.length, B.length); k++) {
-    if (k < A.length) turnOrder.push(A[k]);
-    if (k < B.length) turnOrder.push(B[k]);
-  }
+  turnRng = mulberry32(seed ^ 0x9e3779b9);
+  st.opener = buildOpener(st.mobiles, mulberry32((seed ^ 0x51ed) >>> 0));
+  st.wnext = rollWeather(turnRng, 'calm');
   myDefIdx = st.mobiles.findIndex(m => m.pid === myId);
   myTeam = myDefIdx >= 0 ? st.mobiles[myDefIdx].team : 'A';
-  turnRng = mulberry32(seed ^ 0x9e3779b9);
   completedTurns = 0;
-  particles = []; shake = 0; anim = null;
+  particles = []; beams = []; shake = 0; anim = null; turnQueue = [];
 }
 
 function isMyTurn() { return turnState === 'aim' && activeIdx === myDefIdx && myDefIdx >= 0; }
 function activeMobile() { return activeIdx >= 0 ? st.mobiles[activeIdx] : null; }
 
 /* ---------- turn flow ---------- */
+function turnSecs() { return Math.max(0, (performance.now() - turnStartT) / 1000); }
+
 function startTurn() {
-  // host/solo only: advance to next living mobile
-  let guard = 0;
-  do {
-    st.turnIdx++;
-    activeIdx = turnOrder[st.turnIdx % turnOrder.length];
-    guard++;
-  } while (!st.mobiles[activeIdx].alive && guard < 20);
+  // host/solo only: delay queue picks the next mobile
+  st.turnIdx++;
+  activeIdx = pickNext(st);
+  if (activeIdx < 0 || !st.mobiles[activeIdx]) return; // no one left; checkWin covers
   const m = st.mobiles[activeIdx];
   m.ang = m.team === 'A' ? 45 : 135;
-  // wind from seeded rng: -20..20
-  st.wind = Math.round((turnRng() * 2 - 1) * 20);
+  // wind from seeded rng: -26..26
+  st.wind = Math.round((turnRng() * 2 - 1) * 26);
+  // weather cycle: every N turns where N = 2 x players per team
+  st.win--;
+  if (st.win <= 0) {
+    st.wcur = st.wnext;
+    st.wnext = rollWeather(turnRng, st.wcur);
+    st.win = st.mobiles.length;
+    if (st.wcur === 'thor') st.thorX = W * (0.2 + turnRng() * 0.6);
+    if (st.wcur === 'force') st.forceX = W * (0.25 + turnRng() * 0.5);
+    toast(WEATHER_LABEL[st.wcur] + ' weather!', 1800);
+  }
+  if (st.wcur === 'moon') m.hp = Math.min(MOBILES[m.mobile].hp, m.hp + 4);
   if (completedTurns >= 16 && !st.sudden) { st.sudden = true; toast('SUDDEN DEATH — all damage +50%!'); }
   turnState = 'aim';
   timeLeft = TURN_TIME;
+  turnStartT = performance.now();
   aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = 0;
   moveLeft = MOBILES[m.mobile].move; turnStartX = m.x;
-  Net.sendTurn({ turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, activeIdx });
+  turnQueue = queuePreview(st, 3);
+  Net.sendTurn({ turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, activeIdx,
+    wcur: st.wcur, wnext: st.wnext, win: st.win,
+    thorX: st.thorX, thorLevel: st.thorLevel, thorDmg: st.thorDmg, forceX: st.forceX,
+    queue: turnQueue });
   onTurnUI();
   startTimer();
   if (m.isBot) setTimeout(botFire, 1400);
@@ -561,7 +647,8 @@ function startTurn() {
 
 function onTurnUI() {
   const m = activeMobile();
-  $('turn-banner').textContent = m ? (activeIdx === myDefIdx ? 'YOUR TURN — ' + MOBILES[m.mobile].name : m.name + ' — ' + MOBILES[m.mobile].name) : '—';
+  const q = turnQueue.map(i => st.mobiles[i] ? st.mobiles[i].name : '?').join(' ▸ ');
+  $('turn-banner').textContent = (m ? (activeIdx === myDefIdx ? 'YOUR TURN — ' + MOBILES[m.mobile].name : m.name + ' — ' + MOBILES[m.mobile].name) : '—') + (q ? ' · next: ' + q : '');
   $('turn-banner').style.color = m ? (m.team === 'A' ? '#4dabf7' : '#ff8787') : '#ffd166';
   updateWind(); updateWeapons();
   $('hud').classList.remove('hidden');
@@ -571,7 +658,7 @@ function onTurnUI() {
 }
 function updateWind() {
   const w = st.wind, dir = w === 0 ? '·' : (w > 0 ? '→' : '←');
-  $('wind-box').textContent = 'wind ' + dir + ' ' + Math.abs(w);
+  $('wind-box').textContent = 'wind ' + dir + ' ' + Math.abs(w) + ' · ' + WEATHER_LABEL[st.wcur || 'calm'] + ' (next: ' + WEATHER_LABEL[st.wnext || 'calm'] + ')';
 }
 function updateWeapons() {
   const m = activeMobile(); if (!m) return;
@@ -600,39 +687,59 @@ function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } 
 function onTimeout() {
   if (turnState !== 'aim') return;
   if (Net.role === 'guest') { stopTimer(); return; } // host's clock is authoritative
-  const m = activeMobile(); if (!m) return;
-  if (Net.role === 'host' || Net.role === 'solo') {
-    // host fires last-known aim for whoever is active
-    const a = (Net.role === 'solo' || activeIdx === myDefIdx) ? aim : (m.lastAim || { ang: m.ang, power: 50, weapon: 0 });
-    fireShot({ x: m.x, y: m.y, ang: a.ang, power: a.power || 50, weapon: a.weapon || 0, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden });
-  }
-  // guests: host's timer is authoritative; nothing to do
+  passTurn(); // OG-style: the shot is forfeited, turn passes
+}
+
+/* forfeit the turn (timeout): no shot, just delay cost */
+function passTurn() {
+  if (turnState !== 'aim') return;
+  turnState = 'anim'; stopTimer();
+  const m = activeMobile();
+  st.delays[activeIdx] += DELAY_COST.pass + DELAY_PER_SEC * Math.min(TURN_TIME, turnSecs());
+  completedTurns++;
+  checkWin();
+  const snap = snapState(st);
+  Net.sendSnap({ shot: null, final: snap, thor: [] });
+  applySnapState(st, snap);
+  if (m) toast(m.name + ' ran out of time — turn passes', 1500);
+  setTimeout(() => onShotDone(), 700);
 }
 
 /* host/solo: resolve a shot, animate, broadcast */
 function fireShot(shot) {
   if (turnState !== 'aim') return;
   turnState = 'anim'; stopTimer();
+  const secs = shot.secs != null ? shot.secs : turnSecs();
   const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)) };
-  const res = simulateShot(st, shot);
-  // SS charge: dealing damage charges attacker, taking damage charges victims
+  const env = { sudden: shot.sudden, wmod: st.wcur === 'dark' ? 0.5 : 1,
+    forceX: st.wcur === 'force' ? st.forceX : -1,
+    thorX: st.wcur === 'thor' ? st.thorX : -1, thorLevel: st.thorLevel };
+  const res = simulateShot(st, shot, env);
+  // SS charge ~1 per 4 turns: dealing charges attacker, taking charges victim (Thor excluded)
+  const ssMul = st.wcur === 'eclipse' ? 2 : 1;
   const src = st.mobiles[shot.srcIdx];
   for (const k in res.dmgDealt) {
     const atk = st.mobiles[k];
-    if (atk) atk.ss = Math.min(SS_NEED, atk.ss + res.dmgDealt[k] * 0.5);
+    if (atk) atk.ss = Math.min(SS_NEED, atk.ss + res.dmgDealt[k] * 0.75 * ssMul);
   }
-  // victims gain charge from damage taken (approx: recompute via hp delta)
   st.mobiles.forEach((m, i) => {
-    const before = pre.mobiles[i];
-    const taken = Math.max(0, before.hp - m.hp);
-    if (taken > 0) m.ss = Math.min(SS_NEED, m.ss + taken * 0.3);
+    const taken = Math.max(0, pre.mobiles[i].hp - m.hp) - (res.thorDmgByVictim[i] || 0);
+    if (taken > 0) m.ss = Math.min(SS_NEED, m.ss + taken * 0.5 * ssMul);
   });
   if (shot.weapon === 2 && src) src.ss = 0;
+  // delay cost: weapon + time spent aiming
+  st.delays[shot.srcIdx] += (DELAY_COST[shot.weapon] || DELAY_COST.pass) + DELAY_PER_SEC * Math.min(TURN_TIME, secs);
+  // Thor levels up with cumulative Thor damage
+  if (res.thorDmgTotal > 0) {
+    st.thorDmg += res.thorDmgTotal;
+    const nl = thorLevelFor(st.thorDmg);
+    if (nl > st.thorLevel) { st.thorLevel = nl; toast('Thor grows stronger! Lv ' + (nl + 1), 1800); }
+  }
   completedTurns++;
   checkWin();
   const snap = snapState(st);
-  Net.sendSnap({ shot: { x: shot.x, y: shot.y, ang: shot.ang, power: shot.power, weapon: shot.weapon, mobile: shot.mobile, team: shot.team, srcIdx: shot.srcIdx, wind: shot.wind, sudden: shot.sudden }, final: snap });
-  animateShot(pre, snap, shot);
+  Net.sendSnap({ shot: { x: shot.x, y: shot.y, ang: shot.ang, power: shot.power, weapon: shot.weapon, mobile: shot.mobile, team: shot.team, srcIdx: shot.srcIdx, wind: shot.wind, sudden: shot.sudden }, final: snap, thor: res.thorStrikes });
+  animateShot(pre, snap, shot, res.thorStrikes);
 }
 
 function checkWin() {
@@ -645,13 +752,22 @@ function checkWin() {
 }
 
 /* animate a shot from pre-shot state; then apply canonical final */
-function animateShot(pre, finalSnap, shot) {
-  const wdef = MOBILES[shot.mobile].w[shot.weapon];
-  const projs = makeProjectiles(wdef.kind, shot.x, shot.y - 32, shot.ang, shot.power, wdef.dmg, wdef.r, shot.team, shot.srcIdx, shot.wind);
+function animateShot(pre, finalSnap, shot, thorStrikes) {
+  let projs = [];
+  if (shot) {
+    const wdef = MOBILES[shot.mobile].w[shot.weapon];
+    projs = makeProjectiles(wdef.kind, shot.x, shot.y - 32, shot.ang, shot.power, wdef.dmg, wdef.r, shot.team, shot.srcIdx, shot.wind);
+  }
   const simT = pre.terrain.slice();
   const simM = pre.mobiles.map(m => Object.assign({}, m));
-  anim = { projs, simT, simM, final: finalSnap, shot, t: 0 };
+  anim = { projs, simT, simM, final: finalSnap, shot, thor: thorStrikes || [], t: 0 };
   $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden');
+}
+
+function animEnv() {
+  return { sudden: anim.shot ? anim.shot.sudden : false,
+    wmod: st.wcur === 'dark' ? 0.5 : 1,
+    forceX: st.wcur === 'force' ? st.forceX : -1 };
 }
 
 function stepAnim(dt) {
@@ -659,13 +775,14 @@ function stepAnim(dt) {
   let acc = dt;
   const step = DT;
   let guard = 0;
+  const env = animEnv();
   // advance sim in fixed steps, but cap work per frame
   while (acc >= step && guard++ < 12) {
     acc -= step; anim.t += step;
     const next = [];
     for (const p of anim.projs) {
       if (p.boom) continue;
-      const evs = stepProj(p, anim.simT, anim.simM, anim.shot.sudden);
+      const evs = stepProj(p, anim.simT, anim.simM, env);
       for (const e of evs) {
         if (e.type === 'boom') {
           burst(e.x, e.y, e.r, e.kind);
@@ -682,6 +799,13 @@ function stepAnim(dt) {
     if (!anim.projs.length) break;
   }
   if (!anim.projs.length) {
+    // Thor strikes: visual replay (canonical damage already in the final snap)
+    for (const ts of anim.thor) {
+      beams.push({ x: ts.x, y: ts.y, t: 0, ttl: 0.6 });
+      burst(ts.x, ts.y, 30, 'beam');
+      shake = Math.min(14, shake + 4);
+      applyBoom(anim.simT, anim.simM, ts.x, ts.y, 55, ts.dmg, -1, 16);
+    }
     settle(anim.simT, anim.simM);
     applySnapState(st, anim.final);
     anim = null; shake = 0;
@@ -738,7 +862,7 @@ window.addEventListener('keyup', e => {
 
 function doFire() {
   const m = activeMobile(); if (!m) return;
-  const shot = { x: m.x, y: m.y, ang: aim.ang, power: Math.max(5, Math.round(aim.power)), weapon: aim.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden };
+  const shot = { x: m.x, y: m.y, ang: aim.ang, power: Math.max(5, Math.round(aim.power)), weapon: aim.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: turnSecs() };
   if (Net.role === 'guest') { Net.sendShot(shot); turnState = 'anim'; stopTimer(); $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden'); }
   else fireShot(shot);
 }
@@ -800,7 +924,45 @@ function stepParticles(dt) {
     p.t += dt; p.vy += 500 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
     if (p.t > p.life) particles.splice(i, 1);
   }
+  for (let i = beams.length - 1; i >= 0; i--) {
+    beams[i].t += dt;
+    if (beams[i].t > beams[i].ttl) beams.splice(i, 1);
+  }
   if (shake > 0) shake = Math.max(0, shake - dt * 30);
+}
+function drawBeams() {
+  for (const b of beams) {
+    const a = Math.max(0, 1 - b.t / b.ttl);
+    const g = ctx.createLinearGradient(0, 30, 0, b.y);
+    g.addColorStop(0, 'rgba(255,240,160,0)');
+    g.addColorStop(1, 'rgba(255,240,160,' + (0.85 * a) + ')');
+    ctx.fillStyle = g;
+    ctx.fillRect(b.x - 8, 30, 16, b.y - 30);
+    ctx.fillStyle = 'rgba(255,255,255,' + (0.9 * a) + ')';
+    ctx.fillRect(b.x - 3, 30, 6, b.y - 30);
+  }
+}
+function drawThorSat() {
+  if (!st || st.wcur !== 'thor' || st.thorX < 0) return;
+  const x = st.thorX, y = 46 + Math.sin(performance.now() / 500) * 4;
+  ctx.save();
+  ctx.fillStyle = '#ffe9a8';
+  ctx.beginPath(); ctx.arc(x, y, 12, 0, 6.29); ctx.fill();
+  ctx.strokeStyle = '#e8590c'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(x, y, 12, 0, 6.29); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('⚡' + (st.thorLevel + 1), x, y + 3.5);
+  ctx.restore();
+}
+function drawForceBeam() {
+  if (!st || st.wcur !== 'force' || st.forceX < 0) return;
+  const g = ctx.createLinearGradient(st.forceX - 35, 0, st.forceX + 35, 0);
+  g.addColorStop(0, 'rgba(255,255,255,0)');
+  g.addColorStop(0.5, 'rgba(255,255,255,0.28)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(st.forceX - 35, 0, 70, H);
 }
 
 /* ---------- rendering ---------- */
@@ -977,6 +1139,9 @@ function render(dt) {
     drawProjsAnim();
   }
   drawParticles();
+  drawBeams();
+  drawThorSat();
+  drawForceBeam();
   drawTurnArrow();
   // sudden death banner
   if (st && st.sudden && !st.over) {
@@ -1168,7 +1333,7 @@ async function joinRoom(code, asHost) {
   ch.on('broadcast', { event: 'aim' }, ({ payload }) => {
     if (payload.id === myId || !st || screen !== 'play') return;
     const m = st.mobiles[payload.idx];
-    if (m) { m.ang = payload.ang; if (Net.role === 'host' && payload.idx === activeIdx) m.lastAim = { ang: payload.ang }; }
+    if (m) m.ang = payload.ang;
   });
   ch.on('broadcast', { event: 'shot' }, ({ payload }) => {
     if (Net.role !== 'host' || !st || screen !== 'play' || turnState !== 'aim') return;
@@ -1178,7 +1343,7 @@ async function joinRoom(code, asHost) {
     if (Math.abs(payload.x - turnStartX) > MOBILES[m.mobile].move + 2) payload.x = turnStartX;
     if (payload.weapon === 2 && m.ss < SS_NEED) payload.weapon = 0;
     m.x = payload.x; m.y = surfY(st.terrain, m.x); m.ang = payload.ang;
-    fireShot({ x: m.x, y: m.y, ang: payload.ang, power: Math.max(5, Math.min(100, payload.power)), weapon: payload.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden });
+    fireShot({ x: m.x, y: m.y, ang: payload.ang, power: Math.max(5, Math.min(100, payload.power)), weapon: payload.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: payload.secs });
   });
   ch.on('broadcast', { event: 'snap' }, ({ payload }) => {
     if (Net.role !== 'guest' || screen !== 'play') return;
@@ -1187,7 +1352,7 @@ async function joinRoom(code, asHost) {
     if (!payload.shot) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
     const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)) };
     turnState = 'anim'; stopTimer();
-    animateShot(pre, payload.final, payload.shot);
+    animateShot(pre, payload.final, payload.shot, payload.thor);
   });
   ch.on('broadcast', { event: 'reqsnap' }, () => {
     if (Net.role === 'host' && lastSnap) {
@@ -1307,8 +1472,14 @@ function beginPlay(seed, defs) {
 function onRemoteTurn(p) {
   if (anim) { pendingTurn = p; return; } // slow device: queue until animation finishes
   st.turnIdx = p.turnIdx; st.wind = p.wind; st.sudden = p.sudden; activeIdx = p.activeIdx;
+  st.wcur = p.wcur || 'calm'; st.wnext = p.wnext || 'calm'; st.win = p.win || 0;
+  st.thorX = p.thorX != null ? p.thorX : -1; st.thorLevel = p.thorLevel || 0; st.thorDmg = p.thorDmg || 0;
+  st.forceX = p.forceX != null ? p.forceX : -1;
+  turnQueue = p.queue || [];
   const m = st.mobiles[activeIdx];
+  if (st.wcur === 'moon' && m) m.hp = Math.min(MOBILES[m.mobile].hp, m.hp + 4);
   turnState = 'aim'; timeLeft = TURN_TIME;
+  turnStartT = performance.now();
   aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = 0;
   moveLeft = MOBILES[m.mobile].move; turnStartX = m.x;
   onTurnUI(); startTimer();
