@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Crumb Bound — Mossbell Arcade</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;height:100%;background:#1b1430;overflow:hidden;
+    font-family:"Trebuchet MS","Comic Sans MS",system-ui,sans-serif;color:#fff;
+    user-select:none;-webkit-user-select:none;touch-action:none}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  #game{position:relative;box-shadow:0 18px 60px rgba(0,0,0,.55);border-radius:14px;overflow:hidden}
+  canvas{display:block;background:#241b45}
+  .ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(20,12,40,.82);backdrop-filter:blur(3px);z-index:20}
+  .hidden{display:none!important}
+  h1.title{font-size:52px;margin:0 0 4px;letter-spacing:2px;color:#ffd166;
+    text-shadow:0 4px 0 #a33d00,0 8px 24px rgba(0,0,0,.5)}
+  .sub{color:#cdbcf2;margin:0 0 18px;font-size:15px}
+  .nameRow{display:flex;gap:8px;margin-bottom:14px}
+  #name-input{font-size:17px;padding:10px 14px;border-radius:12px;border:2px solid #6c5aa8;background:#2c2350;color:#fff;width:210px;outline:none}
+  .btnRow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  button.big{font-family:inherit;font-size:18px;font-weight:900;color:#fff;border:none;border-radius:14px;
+    padding:13px 26px;cursor:pointer;letter-spacing:.5px}
+  button.mini{font-family:inherit;font-size:12px;font-weight:700;color:#fff;border:none;border-radius:9px;
+    padding:6px 10px;cursor:pointer;background:#6c5aa8}
+  button:disabled{opacity:.45;cursor:default}
+  #btn-create{background:linear-gradient(180deg,#ffb84d,#e8590c);box-shadow:0 4px 0 #a33d00,0 6px 16px rgba(0,0,0,.4)}
+  #btn-joinb{background:linear-gradient(180deg,#7bed9f,#2f9e5f);box-shadow:0 4px 0 #1d6b3f,0 6px 16px rgba(0,0,0,.4)}
+  #btn-solo{background:linear-gradient(180deg,#b197fc,#7048e8);box-shadow:0 4px 0 #4527a0,0 6px 16px rgba(0,0,0,.4)}
+  .joinRow{display:flex;gap:8px;margin-top:12px}
+  #room-input{font-size:18px;padding:10px 12px;border-radius:12px;border:2px solid #6c5aa8;background:#2c2350;color:#ffd166;
+    width:130px;text-align:center;letter-spacing:3px;text-transform:uppercase;outline:none;font-weight:900}
+  #menu-err{color:#ff8787;min-height:20px;margin-top:8px;font-size:14px}
+  .hintline{color:#9d8fd0;font-size:12.5px;margin-top:10px;max-width:520px;text-align:center;line-height:1.5}
+  /* ---- lobby ---- */
+  #lobby{background:rgba(20,12,40,.9)}
+  .lobby-card{width:640px;max-width:94%;max-height:96%;overflow-y:auto;background:#2c2350;border:2px solid #6c5aa8;border-radius:18px;
+    padding:16px 22px;display:flex;flex-direction:column;align-items:center}
+  .lobby-title{font-size:26px;font-weight:900;color:#ffd166;margin:0 0 2px}
+  .lobby-room{font-size:15px;color:#c6d8f2;margin:4px 0}
+  #room-code{font-size:22px;font-weight:900;color:#ffd166;letter-spacing:3px}
+  #roster{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap;justify-content:center}
+  .pslot{width:132px;min-height:118px;background:#241b45;border:2px solid #4a3f7a;border-radius:12px;padding:8px 6px;
+    display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px}
+  .pslot .avatar{font-size:30px}
+  .pslot .pname{font-weight:800;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pslot .ptag{font-size:11px;color:#9d8fd0}
+  .pslot.teamA{border-color:#4dabf7}.pslot.teamB{border-color:#ff8787}
+  .pslot.me{outline:2px solid #ffd166}
+  .crown{font-size:11px;color:#ffd166}
+  .pickRow{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap;justify-content:center}
+  .pickRow .lbl{font-size:13px;color:#c6d8f2;font-weight:800}
+  .mobbtn,.teambtn,.rdybtn{font-family:inherit;border:2px solid #4a3f7a;background:#241b45;color:#fff;border-radius:10px;
+    padding:7px 10px;font-size:13px;font-weight:800;cursor:pointer}
+  .mobbtn.sel{border-color:#ffd166;background:#3d2f6b}
+  .teambtn.selA{border-color:#4dabf7;background:#1c3a5e}
+  .teambtn.selB{border-color:#ff8787;background:#5e1c1c}
+  .rdybtn.sel{border-color:#7bed9f;background:#1d5b3f}
+  #btn-start{margin-top:8px;background:linear-gradient(180deg,#ffb84d,#e8590c);box-shadow:0 4px 0 #a33d00}
+  #chat-box{width:100%;height:110px;overflow-y:auto;background:#1b1430;border:1px solid #4a3f7a;border-radius:10px;
+    padding:8px 10px;font-size:13px;margin:8px 0 4px;text-align:left}
+  #chat-box .sys{color:#9d8fd0;font-style:italic}
+  #chat-box .tm{color:#8ce99a}#chat-box .al{color:#ffd166}
+  .chatRow{display:flex;gap:8px;width:100%}
+  #chat-in{flex:1;font-size:14px;padding:8px 10px;border-radius:10px;border:2px solid #4a3f7a;background:#241b45;color:#fff;outline:none}
+  /* ---- HUD ---- */
+  #hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;
+    padding:8px 12px;pointer-events:none;z-index:10;font-size:14px}
+  .hudBox{background:rgba(20,12,40,.72);border:1px solid #6c5aa8;border-radius:10px;padding:6px 12px;font-weight:800}
+  #turn-banner{color:#ffd166}#wind-box{color:#a5d8ff}#timer-box{color:#fff}
+  #timer-box.low{color:#ff8787;animation:blink .5s infinite alternate}
+  @keyframes blink{to{opacity:.4}}
+  #weapBar{position:absolute;left:12px;bottom:12px;display:flex;gap:8px;z-index:10}
+  .wbtn{font-family:inherit;background:rgba(20,12,40,.78);border:2px solid #4a3f7a;color:#fff;border-radius:10px;
+    padding:8px 12px;font-size:13px;font-weight:800;cursor:pointer;pointer-events:auto}
+  .wbtn.sel{border-color:#ffd166}
+  .wbtn.ssready{border-color:#e599f7;box-shadow:0 0 10px #e599f799}
+  .wbtn:disabled{opacity:.4}
+  #powWrap{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;width:280px;z-index:10;pointer-events:none}
+  #powBar{height:14px;background:#241b45;border:2px solid #6c5aa8;border-radius:8px;overflow:hidden}
+  #powFill{height:100%;width:0%;background:linear-gradient(90deg,#7bed9f,#ffd166,#ff8787)}
+  #powLbl{text-align:center;font-size:12px;font-weight:800;color:#c6d8f2;margin-top:2px}
+  /* ---- in-game chat ---- */
+  #gchat{position:absolute;right:12px;bottom:12px;width:250px;z-index:11;background:rgba(20,12,40,.85);
+    border:1px solid #6c5aa8;border-radius:10px;overflow:hidden;font-size:12px}
+  #gchat-tabs{display:flex}
+  #gchat-tabs button{flex:1;font-family:inherit;font-size:12px;font-weight:800;background:none;border:none;color:#9d8fd0;
+    padding:6px;cursor:pointer}
+  #gchat-tabs button.sel{color:#ffd166;background:#ffffff14}
+  #gchat-log{height:96px;overflow-y:auto;padding:6px 8px}
+  #gchat-log .sys{color:#9d8fd0;font-style:italic}
+  #gchat-log .mine{color:#8ce99a}
+  #gchat-row{display:flex}
+  #gchat-in{flex:1;font-size:12px;padding:6px 8px;border:none;background:#241b45;color:#fff;outline:none;font-family:inherit}
+  #endOv h1{font-size:44px;margin:0 0 8px}
+  #end-sub{color:#cdbcf2;margin-bottom:16px}
+  kbd{background:#4a3f7a;border-radius:5px;padding:1px 7px;font-family:inherit;font-size:12px}
+</style>
+</head>
+<body>
+<div id="wrap">
+<div id="game">
+  <canvas id="cv" width="960" height="540"></canvas>
+
+  <div id="hud" class="hidden">
+    <div class="hudBox" id="turn-banner">—</div>
+    <div class="hudBox" id="wind-box">wind —</div>
+    <div class="hudBox" id="timer-box">30</div>
+  </div>
+  <div id="weapBar" class="hidden">
+    <button class="wbtn sel" id="w0">1 · Shell</button>
+    <button class="wbtn" id="w1">2 · Twin</button>
+    <button class="wbtn" id="w2">3 · SS</button>
+  </div>
+  <div id="powWrap" class="hidden">
+    <div id="powBar"><div id="powFill"></div></div>
+    <div id="powLbl">hold <kbd>Space</kbd> to charge, release to fire</div>
+  </div>
+  <div id="gchat" class="hidden">
+    <div id="gchat-tabs"><button id="tab-team" class="sel">Team</button><button id="tab-all">All</button></div>
+    <div id="gchat-log"></div>
+    <div id="gchat-row"><input id="gchat-in" maxlength="120" placeholder="chat…" autocomplete="off"></div>
+  </div>
+
+  <div id="menuOv" class="ov">
+    <h1 class="title">CRUMB BOUND</h1>
+    <p class="sub">turn-based artillery · 1v1 &amp; 2v2 · destructible terrain · a ryan cake studios joint</p>
+    <div class="nameRow"><input id="name-input" maxlength="14" placeholder="your name"></div>
+    <div class="btnRow">
+      <button class="big" id="btn-create">Create Room</button>
+      <button class="big" id="btn-solo">Vs Bot</button>
+    </div>
+    <div class="joinRow">
+      <input id="room-input" maxlength="4" placeholder="CODE">
+      <button class="big" id="btn-joinb">Join</button>
+    </div>
+    <div id="menu-err"></div>
+    <p class="hintline"><kbd>←</kbd><kbd>→</kbd> move · <kbd>↑</kbd><kbd>↓</kbd> aim · hold <kbd>Space</kbd> charge, release to fire · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons · move, then shoot, before the 30s timer runs out</p>
+  </div>
+
+  <div id="lobby" class="ov hidden">
+    <div class="lobby-card">
+      <div class="lobby-title">Lobby</div>
+      <div class="lobby-room">Room <span id="room-code"></span> <button class="mini" id="btn-copy">copy invite</button></div>
+      <div id="roster"></div>
+      <div class="pickRow"><span class="lbl">Mobile:</span>
+        <button class="mobbtn" data-m="shortcake">🍰 Shortcake</button>
+        <button class="mobbtn" data-m="eclair">🥖 Éclair</button>
+        <button class="mobbtn" data-m="meringue">🍦 Meringue</button>
+        <button class="mobbtn" data-m="fudge">🍫 Fudge</button>
+      </div>
+      <div class="pickRow"><span class="lbl">Team:</span>
+        <button class="teambtn" data-t="A">Team A</button>
+        <button class="teambtn" data-t="B">Team B</button>
+        <button class="rdybtn" id="btn-ready">✓ Ready</button>
+      </div>
+      <div id="chat-box"></div>
+      <div class="chatRow"><input id="chat-in" maxlength="120" placeholder="lobby chat…" autocomplete="off"><button class="mini" id="btn-send">send</button></div>
+      <button class="big hidden" id="btn-start">Start Match</button>
+      <div class="hintline" id="lobby-hint"></div>
+      <div style="margin-top:6px"><button class="mini" id="btn-leave">leave room</button></div>
+    </div>
+  </div>
+
+  <div id="endOv" class="ov hidden">
+    <h1 id="end-title">—</h1>
+    <div id="end-sub"></div>
+    <div class="btnRow"><button class="big" id="btn-again" style="background:linear-gradient(180deg,#7bed9f,#2f9e5f);box-shadow:0 4px 0 #1d6b3f">Rematch</button>
+    <button class="big" id="btn-menu2" style="background:linear-gradient(180deg,#b197fc,#7048e8);box-shadow:0 4px 0 #4527a0">Menu</button></div>
+  </div>
+</div>
+</div>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+/* ================= Crumb Bound core sim (pure logic, no DOM) ================= */
+'use strict';
+const W = 960, H = 540, COLS = 240, COLW = W / COLS;
+const GRAV = 520;                 // px/s^2
+const DT = 1 / 120;               // fixed timestep
+const TURN_TIME = 30;
+const SS_NEED = 100;
+
+/* seeded RNG (mulberry32) */
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* Mobile definitions: original designs, original names */
+const MOBILES = {
+  shortcake: { name: 'Shortcake', icon: '🍰', hp: 100, move: 95,  desc: 'Balanced all-rounder',
+    w: [ { n: 'Shell', dmg: 35, r: 26, kind: 'shell' },
+         { n: 'Twin', dmg: 22, r: 20, kind: 'twin' },
+         { n: 'Berry Barrage', dmg: 20, r: 18, kind: 'spread5' } ] },
+  eclair:    { name: 'Éclair', icon: '🥖', hp: 90, move: 72,  desc: 'Long-range piercer',
+    w: [ { n: 'Bolt', dmg: 40, r: 14, kind: 'pierce' },
+         { n: 'Twin Bolt', dmg: 26, r: 12, kind: 'twinpierce' },
+         { n: 'Long Lance', dmg: 70, r: 30, kind: 'beam' } ] },
+  meringue:  { name: 'Meringue', icon: '🍦', hp: 80, move: 125,  desc: 'Light skirmisher',
+    w: [ { n: 'Puff', dmg: 28, r: 22, kind: 'shell' },
+         { n: 'Boomerang', dmg: 30, r: 20, kind: 'boomerang' },
+         { n: 'Meringue Storm', dmg: 15, r: 14, kind: 'cluster6' } ] },
+  fudge:     { name: 'Fudge', icon: '🍫', hp: 130, move: 52,  desc: 'Heavy bruiser',
+    w: [ { n: 'Heavy Bomb', dmg: 50, r: 34, kind: 'shell' },
+         { n: 'Mega Bomb', dmg: 65, r: 42, kind: 'shell' },
+         { n: 'Fudgequake', dmg: 90, r: 60, kind: 'shell' } ] },
+};
+const MOB_KEYS = Object.keys(MOBILES);
+
+/* ---------- terrain ---------- */
+function genTerrain(seed) {
+  const rnd = mulberry32(seed);
+  const p1 = rnd() * 6.28, p2 = rnd() * 6.28, p3 = rnd() * 6.28;
+  const a1 = 40 + rnd() * 50, a2 = 18 + rnd() * 30, a3 = 6 + rnd() * 12;
+  const t = new Float32Array(COLS);
+  for (let i = 0; i < COLS; i++) {
+    const x = i / COLS * 6.28;
+    let h = 300
+      + a1 * Math.sin(x * 2 + p1)
+      + a2 * Math.sin(x * 5 + p2)
+      + a3 * Math.sin(x * 11 + p3);
+    h += (rnd() - 0.5) * 14;
+    t[i] = Math.max(180, Math.min(470, h));
+  }
+  // flatten spawn plateaus: left quarter (team A) and right quarter (team B)
+  for (const cx of [Math.floor(COLS * 0.14), Math.floor(COLS * 0.86)]) {
+    const base = t[cx];
+    for (let i = cx - 6; i <= cx + 6; i++) if (i >= 0 && i < COLS) t[i] = base;
+  }
+  return t;
+}
+function surfY(t, x) {
+  const c = Math.max(0, Math.min(COLS - 1, Math.floor(x / COLW)));
+  return t[c];
+}
+/* carve a circular crater: blast pushes the surface down to the circle's bottom edge */
+function carve(t, cx, cy, r) {
+  for (let i = 0; i < COLS; i++) {
+    const x = (i + 0.5) * COLW;
+    const dx = x - cx;
+    if (Math.abs(dx) > r) continue;
+    const bot = cy + Math.sqrt(r * r - dx * dx);
+    if (bot > t[i]) t[i] = Math.min(H + 60, bot);
+  }
+}
+
+/* ---------- projectiles ---------- */
+/* A shot: {x,y,vx,vy,kind,dmg,r,team,srcIdx,wind,age,curve}
+   kinds: shell, twin(2 shells), pierce, twinpierce, beam, boomerang, spread5, cluster6 */
+function muzzleVel(power) { return 150 + (power / 100) * 520; }
+
+function makeProjectiles(kind, x, y, angDeg, power, dmg, r, team, srcIdx, wind) {
+  const sp = muzzleVel(power), a = angDeg * Math.PI / 180;
+  const vx = Math.cos(a) * sp, vy = -Math.sin(a) * sp;
+  const P = (dx, dy, k, d, rr, extra) => Object.assign(
+    { x: x + dx, y: y + dy, vx, vy, kind: k, dmg: d, r: rr, team, srcIdx, wind, age: 0, hitSet: [], boom: false }, extra || {});
+  switch (kind) {
+    case 'twin': return [P(-4, 0, 'shell', dmg, r), P(4, 0, 'shell', dmg, r)];
+    case 'twinpierce': return [P(-4, 0, 'pierce', dmg, r), P(4, 0, 'pierce', dmg, r)];
+    case 'spread5': {
+      const out = [];
+      for (let i = -2; i <= 2; i++) {
+        const aa = (angDeg + i * 7) * Math.PI / 180, s2 = sp * (0.92 + 0.04 * Math.abs(i));
+        out.push({ x, y, vx: Math.cos(aa) * s2, vy: -Math.sin(aa) * s2, kind: 'shell', dmg, r, team, srcIdx, wind, age: 0, hitSet: [], boom: false });
+      }
+      return out;
+    }
+    case 'cluster6': return [P(0, 0, 'cluster', dmg, r, { bomblets: 6 })];
+    case 'boomerang': return [P(0, 0, 'boomerang', dmg, r, { ret: false })];
+    default: return [P(0, 0, kind, dmg, r)];
+  }
+}
+
+/* step one projectile; returns events [{type:'boom',x,y,r,dmg,team,srcIdx}, ...] */
+function stepProj(p, t, mobiles, sudden) {
+  const evs = [];
+  const dmgMul = sudden ? 1.5 : 1;
+  p.age += DT;
+  // wind accel (px/s^2), scaled
+  p.vx += p.wind * 2.2 * DT;
+  // boomerang curve: lateral force flipping after apex
+  if (p.kind === 'boomerang') {
+    if (!p.ret && p.vy > 40) p.ret = true;
+    const s = p.ret ? -1 : 1;
+    p.vx += s * 260 * DT * (p.vx >= 0 ? 1 : -1) * -1;
+  }
+  p.vy += GRAV * DT;
+  p.x += p.vx * DT;
+  p.y += p.vy * DT;
+
+  const explode = (x, y) => {
+    evs.push({ type: 'boom', x, y, r: p.r, dmg: p.dmg * dmgMul, team: p.team, srcIdx: p.srcIdx, kind: p.kind });
+    p.boom = true;
+  };
+
+  // cluster splits at apex into bomblets
+  if (p.kind === 'cluster' && !p.ret && p.vy > 30) {
+    p.ret = true;
+    for (let i = 0; i < p.bomblets; i++) {
+      const aa = (i / p.bomblets) * Math.PI * 2;
+      evs.push({ type: 'spawn', proj: { x: p.x, y: p.y, vx: Math.cos(aa) * 170, vy: Math.sin(aa) * 170 - 60,
+        kind: 'shell', dmg: p.dmg * dmgMul, r: p.r, team: p.team, srcIdx: p.srcIdx, wind: p.wind, age: 0, hitSet: [], boom: false } });
+    }
+    p.boom = true;
+    return evs;
+  }
+  // out of bounds
+  if (p.x < -40 || p.x > W + 40 || p.y > H + 80 || p.age > 9) { p.boom = true; return evs; }
+  // terrain hit
+  if (p.y >= surfY(t, p.x) - 2) { explode(p.x, Math.min(p.y, surfY(t, p.x))); return evs; }
+  // mobile hit (center ~14px above feet)
+  for (let i = 0; i < mobiles.length; i++) {
+    const m = mobiles[i];
+    if (!m.alive || p.hitSet.includes(i)) continue;
+    const dx = p.x - m.x, dy = p.y - (m.y - 14);
+    if (dx * dx + dy * dy < 17 * 17) {
+      if (p.kind === 'pierce' || p.kind === 'beam' || p.kind === 'twinpierce') {
+        p.hitSet.push(i);
+        evs.push({ type: 'hit', x: p.x, y: p.y, r: p.r, dmg: p.dmg * dmgMul, team: p.team, srcIdx: p.srcIdx, target: i, pierce: true });
+        continue;
+      }
+      explode(p.x, p.y);
+      return evs;
+    }
+  }
+  return evs;
+}
+
+/* apply an explosion: terrain carve + damage to mobiles; returns {dmgBy:{srcIdx:total}} */
+function applyBoom(t, mobiles, x, y, r, dmg, srcIdx) {
+  carve(t, x, y, r * 0.95);
+  const dmgBy = {};
+  for (let i = 0; i < mobiles.length; i++) {
+    const m = mobiles[i];
+    if (!m.alive) continue;
+    const my = m.y - 14; // center
+    const dx = m.x - x, dy = my - y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d < r + 16) {
+      const fall = Math.max(0, 1 - d / (r + 16));
+      const dd = Math.round(dmg * (0.35 + 0.65 * fall));
+      m.hp -= dd;
+      dmgBy[srcIdx] = (dmgBy[srcIdx] || 0) + dd;
+      // knockback shove
+      if (d > 1) { m.x += (dx / d) * fall * 14; m.x = Math.max(8, Math.min(W - 8, m.x)); }
+      if (m.hp <= 0) { m.hp = 0; m.alive = false; }
+    }
+  }
+  return dmgBy;
+}
+/* direct (piercing) hit: no terrain carve */
+function applyHit(mobiles, target, dmg, srcIdx) {
+  const m = mobiles[target];
+  if (!m || !m.alive) return 0;
+  const dd = Math.round(dmg);
+  m.hp -= dd;
+  if (m.hp <= 0) { m.hp = 0; m.alive = false; }
+  return dd;
+}
+/* settle mobiles onto terrain after carving; returns fall-damage map {idx:dmg} */
+function settle(t, mobiles) {
+  const falls = {};
+  for (let i = 0; i < mobiles.length; i++) {
+    const m = mobiles[i];
+    if (!m.alive) continue;
+    const sy = surfY(t, m.x);
+    if (m.y < sy - 2) {
+      const drop = sy - m.y;
+      m.y = sy;
+      if (drop > 60) {
+        const dd = Math.round((drop - 60) * 0.25);
+        m.hp -= dd; falls[i] = dd;
+        if (m.hp <= 0) { m.hp = 0; m.alive = false; }
+      }
+    } else if (m.y > sy + 4) {
+      m.y = sy; // popped out of ground
+    }
+    if (m.y > H + 40 || m.x < -30 || m.x > W + 30) { m.alive = false; m.hp = 0; falls[i] = 'fell'; }
+  }
+  return falls;
+}
+
+/* full shot simulation (host side). shot={x,y,ang,power,weapon,mobile,team,srcIdx,wind,sudden}
+   returns {projs paths not needed; events applied directly to state} */
+function simulateShot(st, shot) {
+  const t = st.terrain, mobiles = st.mobiles;
+  const wdef = MOBILES[shot.mobile].w[shot.weapon];
+  let projs = makeProjectiles(wdef.kind, shot.x, shot.y - 32, shot.ang, shot.power, wdef.dmg, wdef.r, shot.team, shot.srcIdx, shot.wind);
+  const dmgDealt = {};
+  let guard = 0;
+  while (projs.length && guard++ < 4000) {
+    const next = [];
+    for (const p of projs) {
+      if (p.boom) continue;
+      const evs = stepProj(p, t, mobiles, shot.sudden);
+      for (const e of evs) {
+        if (e.type === 'boom') {
+          const db = applyBoom(t, mobiles, e.x, e.y, e.r, e.dmg, e.srcIdx);
+          for (const k in db) dmgDealt[k] = (dmgDealt[k] || 0) + db[k];
+        } else if (e.type === 'hit') {
+          const dd = applyHit(mobiles, e.target, e.dmg, e.srcIdx);
+          dmgDealt[e.srcIdx] = (dmgDealt[e.srcIdx] || 0) + dd;
+        } else if (e.type === 'spawn') {
+          next.push(e.proj);
+        }
+      }
+      if (!p.boom) next.push(p);
+    }
+    projs = next;
+  }
+  const falls = settle(t, mobiles);
+  return { dmgDealt, falls };
+}
+
+/* spawn layout: team A left plateau, team B right plateau */
+function spawnPositions(defs) {
+  const ax = COLS * 0.14 * COLW, bx = COLS * 0.86 * COLW;
+  const a = [], b = [];
+  defs.forEach((d, i) => (d.team === 'A' ? a : b).push(i));
+  const pos = new Array(defs.length);
+  a.forEach((di, k) => pos[di] = ax + (k - (a.length - 1) / 2) * 46);
+  b.forEach((di, k) => pos[di] = bx + (k - (b.length - 1) / 2) * 46);
+  return pos;
+}
+
+/* bot aim: coarse search minimizing distance to nearest enemy; returns {ang,power,weapon} */
+function botAim(st, meIdx) {
+  const me = st.mobiles[meIdx];
+  let tgt = null, best = 1e9;
+  for (let i = 0; i < st.mobiles.length; i++) {
+    const m = st.mobiles[i];
+    if (!m.alive || m.team === me.team) continue;
+    const d = Math.abs(m.x - me.x);
+    if (d < best) { best = d; tgt = m; }
+  }
+  if (!tgt) return { ang: 45, power: 50, weapon: 0 };
+  const wdef = MOBILES[me.mobile].w;
+  const wChoice = me.ss >= SS_NEED ? 2 : (best < 420 ? 1 : 0);
+  let ba = 45, bp = 50, bs = 1e12;
+  const dir = tgt.x >= me.x ? 1 : -1;
+  for (let ang = 15; ang <= 165; ang += 6) {
+    for (let power = 25; power <= 100; power += 6) {
+      const a = (dir > 0 ? ang : 180 - ang) * Math.PI / 180;
+      const sp = muzzleVel(power);
+      let x = me.x, y = me.y - 32, vx = Math.cos(a) * sp, vy = -Math.sin(a) * sp;
+      let score = 1e12;
+      for (let s = 0; s < 240; s++) {
+        vx += st.wind * 2.2 * DT; vy += GRAV * DT; x += vx * DT; y += vy * DT;
+        if (y >= surfY(st.terrain, x) - 2 || x < -40 || x > W + 40 || y > H + 80) break;
+        const dx = x - tgt.x, dy = y - (tgt.y - 14);
+        const d = dx * dx + dy * dy;
+        if (d < 24 * 24) { score = 0; break; }
+        if (d < score) score = d;
+      }
+      if (score < bs) { bs = score; ba = ang; bp = power; }
+      if (bs === 0) break;
+    }
+    if (bs === 0) break;
+  }
+  return { ang: dir > 0 ? ba : 180 - ba, power: bp, weapon: wChoice };
+}
+
+/* serialize state for broadcast (compact) */
+function snapState(st) {
+  return {
+    terrain: Array.from(st.terrain, v => Math.round(v * 10) / 10),
+    mobiles: st.mobiles.map(m => ({ x: Math.round(m.x * 10) / 10, y: Math.round(m.y * 10) / 10, hp: m.hp, ss: Math.round(m.ss), alive: m.alive, ang: m.ang })),
+    turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, over: st.over, winner: st.winner,
+  };
+}
+function applySnapState(st, s) {
+  st.terrain = Float32Array.from(s.terrain);
+  s.mobiles.forEach((sm, i) => Object.assign(st.mobiles[i], sm));
+  st.turnIdx = s.turnIdx; st.wind = s.wind; st.sudden = s.sudden; st.over = s.over; st.winner = s.winner;
+}
+
+/* ================= Crumb Bound game layer (DOM + rendering + turn flow) ================= */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+
+let myId = 'p' + Math.random().toString(36).slice(2, 9);
+let myName = 'Player';
+try { myName = localStorage.getItem('cb-name') || 'Player'; $('name-input').value = myName; } catch (e) {}
+
+const Net = { channel: null, room: null, role: 'solo' }; // role: solo|host|guest; net.js fills in
+let st = null;            // authoritative-ish local state
+let screen = 'menu';      // menu|lobby|play
+let turnOrder = [];       // mobile indices in turn order
+let turnState = 'idle';   // idle|aim|anim
+let activeIdx = -1;
+let timeLeft = TURN_TIME, timerId = null;
+let aim = { ang: 45, power: 0, charging: false, weapon: 0 };
+let moveLeft = 0, turnStartX = 0;
+let particles = [];
+let shake = 0;
+let anim = null;          // active shot animation
+let pendingTurn = null;   // turn broadcast received mid-animation (guests)
+let chatScope = 'team';
+let myTeam = 'A', myMobile = 'shortcake';
+let myDefIdx = -1;
+let turnRng = null;
+let completedTurns = 0;
+
+/* ---------- match setup ---------- */
+function newMatch(seed, defs) {
+  const terrain = genTerrain(seed);
+  const xs = spawnPositions(defs);
+  st = { seed, terrain, mobiles: [], turnIdx: -1, wind: 0, sudden: false, over: false, winner: null };
+  defs.forEach((d, i) => {
+    st.mobiles.push({ x: xs[i], y: surfY(terrain, xs[i]), hp: MOBILES[d.mobile].hp, ss: 0, alive: true,
+      ang: d.team === 'A' ? 45 : 135, mobile: d.mobile, team: d.team, pid: d.pid, name: d.name, isBot: !!d.isBot });
+  });
+  const A = [], B = [];
+  st.mobiles.forEach((m, i) => (m.team === 'A' ? A : B).push(i));
+  turnOrder = [];
+  for (let k = 0; k < Math.max(A.length, B.length); k++) {
+    if (k < A.length) turnOrder.push(A[k]);
+    if (k < B.length) turnOrder.push(B[k]);
+  }
+  myDefIdx = st.mobiles.findIndex(m => m.pid === myId);
+  myTeam = myDefIdx >= 0 ? st.mobiles[myDefIdx].team : 'A';
+  turnRng = mulberry32(seed ^ 0x9e3779b9);
+  completedTurns = 0;
+  particles = []; shake = 0; anim = null;
+}
+
+function isMyTurn() { return turnState === 'aim' && activeIdx === myDefIdx && myDefIdx >= 0; }
+function activeMobile() { return activeIdx >= 0 ? st.mobiles[activeIdx] : null; }
+
+/* ---------- turn flow ---------- */
+function startTurn() {
+  // host/solo only: advance to next living mobile
+  let guard = 0;
+  do {
+    st.turnIdx++;
+    activeIdx = turnOrder[st.turnIdx % turnOrder.length];
+    guard++;
+  } while (!st.mobiles[activeIdx].alive && guard < 20);
+  const m = st.mobiles[activeIdx];
+  m.ang = m.team === 'A' ? 45 : 135;
+  // wind from seeded rng: -20..20
+  st.wind = Math.round((turnRng() * 2 - 1) * 20);
+  if (completedTurns >= 16 && !st.sudden) { st.sudden = true; toast('SUDDEN DEATH — all damage +50%!'); }
+  turnState = 'aim';
+  timeLeft = TURN_TIME;
+  aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = 0;
+  moveLeft = MOBILES[m.mobile].move; turnStartX = m.x;
+  Net.sendTurn({ turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, activeIdx });
+  onTurnUI();
+  startTimer();
+  if (m.isBot) setTimeout(botFire, 1400);
+}
+
+function onTurnUI() {
+  const m = activeMobile();
+  $('turn-banner').textContent = m ? (activeIdx === myDefIdx ? 'YOUR TURN — ' + MOBILES[m.mobile].name : m.name + ' — ' + MOBILES[m.mobile].name) : '—';
+  $('turn-banner').style.color = m ? (m.team === 'A' ? '#4dabf7' : '#ff8787') : '#ffd166';
+  updateWind(); updateWeapons();
+  $('hud').classList.remove('hidden');
+  const mine = isMyTurn();
+  $('weapBar').classList.toggle('hidden', !mine);
+  $('powWrap').classList.toggle('hidden', !mine);
+}
+function updateWind() {
+  const w = st.wind, dir = w === 0 ? '·' : (w > 0 ? '→' : '←');
+  $('wind-box').textContent = 'wind ' + dir + ' ' + Math.abs(w);
+}
+function updateWeapons() {
+  const m = activeMobile(); if (!m) return;
+  const def = MOBILES[m.mobile];
+  for (let i = 0; i < 3; i++) {
+    const b = $('w' + i);
+    b.textContent = (i + 1) + ' · ' + def.w[i].n;
+    b.classList.toggle('sel', aim.weapon === i);
+    b.classList.toggle('ssready', i === 2 && m.ss >= SS_NEED);
+    b.disabled = (i === 2 && m.ss < SS_NEED) || !isMyTurn();
+  }
+}
+
+function startTimer() {
+  stopTimer();
+  timerId = setInterval(() => {
+    timeLeft -= 0.25;
+    const tb = $('timer-box');
+    tb.textContent = Math.ceil(timeLeft);
+    tb.classList.toggle('low', timeLeft <= 10);
+    if (timeLeft <= 0) { stopTimer(); onTimeout(); }
+  }, 250);
+}
+function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+
+function onTimeout() {
+  if (turnState !== 'aim') return;
+  if (Net.role === 'guest') { stopTimer(); return; } // host's clock is authoritative
+  const m = activeMobile(); if (!m) return;
+  if (Net.role === 'host' || Net.role === 'solo') {
+    // host fires last-known aim for whoever is active
+    const a = (Net.role === 'solo' || activeIdx === myDefIdx) ? aim : (m.lastAim || { ang: m.ang, power: 50, weapon: 0 });
+    fireShot({ x: m.x, y: m.y, ang: a.ang, power: a.power || 50, weapon: a.weapon || 0, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden });
+  }
+  // guests: host's timer is authoritative; nothing to do
+}
+
+/* host/solo: resolve a shot, animate, broadcast */
+function fireShot(shot) {
+  if (turnState !== 'aim') return;
+  turnState = 'anim'; stopTimer();
+  const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)) };
+  const res = simulateShot(st, shot);
+  // SS charge: dealing damage charges attacker, taking damage charges victims
+  const src = st.mobiles[shot.srcIdx];
+  for (const k in res.dmgDealt) {
+    const atk = st.mobiles[k];
+    if (atk) atk.ss = Math.min(SS_NEED, atk.ss + res.dmgDealt[k] * 0.5);
+  }
+  // victims gain charge from damage taken (approx: recompute via hp delta)
+  st.mobiles.forEach((m, i) => {
+    const before = pre.mobiles[i];
+    const taken = Math.max(0, before.hp - m.hp);
+    if (taken > 0) m.ss = Math.min(SS_NEED, m.ss + taken * 0.3);
+  });
+  if (shot.weapon === 2 && src) src.ss = 0;
+  completedTurns++;
+  checkWin();
+  const snap = snapState(st);
+  Net.sendSnap({ shot: { x: shot.x, y: shot.y, ang: shot.ang, power: shot.power, weapon: shot.weapon, mobile: shot.mobile, team: shot.team, srcIdx: shot.srcIdx, wind: shot.wind, sudden: shot.sudden }, final: snap });
+  animateShot(pre, snap, shot);
+}
+
+function checkWin() {
+  const aliveA = st.mobiles.some(m => m.alive && m.team === 'A');
+  const aliveB = st.mobiles.some(m => m.alive && m.team === 'B');
+  if (!aliveA || !aliveB) {
+    st.over = true;
+    st.winner = aliveA && !aliveB ? 'A' : (!aliveB && !aliveA ? 'draw' : 'B');
+  }
+}
+
+/* animate a shot from pre-shot state; then apply canonical final */
+function animateShot(pre, finalSnap, shot) {
+  const wdef = MOBILES[shot.mobile].w[shot.weapon];
+  const projs = makeProjectiles(wdef.kind, shot.x, shot.y - 32, shot.ang, shot.power, wdef.dmg, wdef.r, shot.team, shot.srcIdx, shot.wind);
+  const simT = pre.terrain.slice();
+  const simM = pre.mobiles.map(m => Object.assign({}, m));
+  anim = { projs, simT, simM, final: finalSnap, shot, t: 0 };
+  $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden');
+}
+
+function stepAnim(dt) {
+  if (!anim) return;
+  let acc = dt;
+  const step = DT;
+  let guard = 0;
+  // advance sim in fixed steps, but cap work per frame
+  while (acc >= step && guard++ < 12) {
+    acc -= step; anim.t += step;
+    const next = [];
+    for (const p of anim.projs) {
+      if (p.boom) continue;
+      const evs = stepProj(p, anim.simT, anim.simM, anim.shot.sudden);
+      for (const e of evs) {
+        if (e.type === 'boom') {
+          burst(e.x, e.y, e.r, e.kind);
+          shake = Math.min(14, shake + e.r * 0.12);
+          applyBoom(anim.simT, anim.simM, e.x, e.y, e.r, e.dmg, e.srcIdx);
+        } else if (e.type === 'hit') {
+          burst(e.x, e.y, e.r, e.kind);
+          applyHit(anim.simM, e.target, e.dmg, e.srcIdx);
+        } else if (e.type === 'spawn') next.push(e.proj);
+      }
+      if (!p.boom) next.push(p);
+    }
+    anim.projs = next;
+    if (!anim.projs.length) break;
+  }
+  if (!anim.projs.length) {
+    settle(anim.simT, anim.simM);
+    applySnapState(st, anim.final);
+    anim = null; shake = 0;
+    onShotDone();
+  }
+}
+
+function onShotDone() {
+  if (st.over) return endMatch();
+  if (pendingTurn) { const p = pendingTurn; pendingTurn = null; onRemoteTurn(p); return; }
+  if (Net.role === 'host' || Net.role === 'solo') {
+    setTimeout(() => { if (!st.over) startTurn(); }, 900);
+  }
+  // guests wait for host's 'turn' broadcast
+}
+
+/* ---------- bot ---------- */
+function botFire() {
+  if (turnState !== 'aim') return;
+  const m = activeMobile();
+  if (!m || !m.isBot) return;
+  const s = botAim(st, activeIdx);
+  // animate bot "aiming"
+  m.ang = s.ang;
+  setTimeout(() => {
+    if (turnState !== 'aim') return;
+    fireShot({ x: m.x, y: m.y, ang: s.ang, power: s.power, weapon: s.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden });
+  }, 700);
+}
+
+/* ---------- input ---------- */
+const keys = {};
+window.addEventListener('keydown', e => {
+  const tag = (document.activeElement && document.activeElement.tagName) || '';
+  if (tag === 'INPUT') return;
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) e.preventDefault();
+  keys[e.key] = true;
+  if (!isMyTurn() || turnState !== 'aim' || anim) return;
+  if (e.key === '1' || e.key === '2' || e.key === '3') {
+    const w = +e.key - 1;
+    const m = activeMobile();
+    if (w === 2 && m.ss < SS_NEED) { toast('SS not charged yet!'); return; }
+    aim.weapon = w; updateWeapons();
+  }
+  if (e.key === ' ' && !aim.charging) { aim.charging = true; aim.power = 0; }
+});
+window.addEventListener('keyup', e => {
+  keys[e.key] = false;
+  if (e.key === ' ' && aim.charging) {
+    aim.charging = false;
+    if (isMyTurn() && turnState === 'aim' && !anim) doFire();
+  }
+});
+
+function doFire() {
+  const m = activeMobile(); if (!m) return;
+  const shot = { x: m.x, y: m.y, ang: aim.ang, power: Math.max(5, Math.round(aim.power)), weapon: aim.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden };
+  if (Net.role === 'guest') { Net.sendShot(shot); turnState = 'anim'; stopTimer(); $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden'); }
+  else fireShot(shot);
+}
+
+let moveAcc = 0;
+function pollMove(dt) {
+  if (!isMyTurn() || turnState !== 'aim' || anim || aim.charging) return;
+  const m = activeMobile(); if (!m || !m.alive) return;
+  let dx = 0;
+  if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx -= 1;
+  if (keys['ArrowRight'] || keys['d'] || keys['D']) dx += 1;
+  if (!dx || moveLeft <= 0) return;
+  const step = dx * 130 * dt;
+  const nx = Math.max(10, Math.min(W - 10, m.x + step));
+  // slope check: can't climb cliffs
+  if (Math.abs(surfY(st.terrain, nx) - surfY(st.terrain, m.x)) > 30) return;
+  const used = Math.min(moveLeft, Math.abs(step));
+  m.x = nx; m.y = surfY(st.terrain, nx); moveLeft -= used;
+  moveAcc += dt;
+  if (moveAcc > 0.12) { moveAcc = 0; Net.sendMove({ x: m.x, idx: activeIdx }); }
+}
+function pollAim(dt) {
+  if (!isMyTurn() || turnState !== 'aim' || anim) return;
+  const m = activeMobile(); if (!m) return;
+  let d = 0;
+  if (keys['ArrowUp'] || keys['w'] || keys['W']) d += 1;
+  if (keys['ArrowDown'] || keys['s'] || keys['S']) d -= 1;
+  if (d) {
+    // angle relative to facing: keep 0..180 with 90 up; flip sense by team side
+    const facing = m.team === 'A' ? 1 : -1;
+    aim.ang = clampAim(aim.ang + d * 55 * dt * facing, m.team);
+    m.ang = aim.ang;
+    aimAcc += dt;
+    if (aimAcc > 0.15) { aimAcc = 0; Net.sendAim({ ang: aim.ang, idx: activeIdx }); }
+  }
+  if (aim.charging) {
+    aim.power = Math.min(100, aim.power + dt * 85);
+    $('powFill').style.width = aim.power + '%';
+  } else if ($('powFill').style.width !== '0%') $('powFill').style.width = '0%';
+}
+let aimAcc = 0;
+function clampAim(a, team) {
+  // keep barrel pointing generally toward enemy side; allow full 5..175 range
+  return Math.max(5, Math.min(175, a));
+}
+
+/* ---------- particles ---------- */
+function burst(x, y, r, kind) {
+  const n = Math.min(46, 12 + Math.floor(r));
+  const cols = kind === 'beam' ? ['#fff7ae', '#ffd166', '#ffffff'] : ['#ffb84d', '#ff8787', '#ffd166', '#fff'];
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 6.28, sp = 60 + Math.random() * (120 + r * 3);
+    particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 80, life: 0.5 + Math.random() * 0.5, t: 0, c: cols[(Math.random() * cols.length) | 0], s: 2 + Math.random() * 3 });
+  }
+}
+function stepParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.t += dt; p.vy += 500 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.t > p.life) particles.splice(i, 1);
+  }
+  if (shake > 0) shake = Math.max(0, shake - dt * 30);
+}
+
+/* ---------- rendering ---------- */
+let clouds = [];
+function initDeco(seed) {
+  const rnd = mulberry32(seed ^ 0x51ab);
+  clouds = [];
+  for (let i = 0; i < 7; i++) clouds.push({ x: rnd() * W, y: 30 + rnd() * 130, s: 0.6 + rnd() * 1.1, v: 6 + rnd() * 10 });
+}
+function drawSky() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#2b1f5c'); g.addColorStop(0.55, '#5b3a8c'); g.addColorStop(1, '#c86b9a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // stars
+  ctx.fillStyle = '#ffffffaa';
+  const rnd = mulberry32(99);
+  for (let i = 0; i < 60; i++) { ctx.fillRect(rnd() * W, rnd() * H * 0.45, 2, 2); }
+  // moon
+  ctx.fillStyle = '#ffe9a8'; ctx.beginPath(); ctx.arc(830, 80, 34, 0, 6.29); ctx.fill();
+  ctx.fillStyle = '#2b1f5c'; ctx.beginPath(); ctx.arc(818, 72, 30, 0, 6.29); ctx.fill();
+  // clouds
+  ctx.fillStyle = '#ffffff22';
+  for (const c of clouds) {
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y, 46 * c.s, 16 * c.s, 0, 0, 6.29);
+    ctx.ellipse(c.x - 30 * c.s, c.y + 6 * c.s, 26 * c.s, 12 * c.s, 0, 0, 6.29);
+    ctx.ellipse(c.x + 30 * c.s, c.y + 6 * c.s, 26 * c.s, 12 * c.s, 0, 0, 6.29);
+    ctx.fill();
+  }
+  // parallax hills
+  for (const [amp, base, col] of [[36, 470, '#3a2a6e'], [22, 500, '#2f2360']]) {
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 8) ctx.lineTo(x, base - Math.abs(Math.sin(x * 0.008 + amp)) * amp);
+    ctx.lineTo(W, H); ctx.fill();
+  }
+}
+function drawTerrain() {
+  ctx.beginPath(); ctx.moveTo(0, H);
+  for (let i = 0; i < COLS; i++) ctx.lineTo((i + 0.5) * COLW, st.terrain[i]);
+  ctx.lineTo(W, H); ctx.closePath();
+  const g = ctx.createLinearGradient(0, 200, 0, H);
+  g.addColorStop(0, '#8a5a33'); g.addColorStop(1, '#4a2c14');
+  ctx.fillStyle = g; ctx.fill();
+  // frosting top strip
+  ctx.strokeStyle = '#ffe3ee'; ctx.lineWidth = 7; ctx.lineJoin = 'round'; ctx.beginPath();
+  for (let i = 0; i < COLS; i++) { const x = (i + 0.5) * COLW, y = st.terrain[i]; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.stroke();
+  ctx.strokeStyle = '#ff9ec6'; ctx.lineWidth = 2; ctx.beginPath();
+  for (let i = 0; i < COLS; i++) { const x = (i + 0.5) * COLW, y = st.terrain[i] + 7; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.stroke();
+}
+function drawMobile(m, i) {
+  const x = m.x, yb = m.y; // yb = feet
+  ctx.save();
+  ctx.translate(x, yb);
+  if (!m.alive) { ctx.globalAlpha = 0.35; }
+  const teamCol = m.team === 'A' ? '#4dabf7' : '#ff8787';
+  // shadow ellipse
+  ctx.fillStyle = '#00000033';
+  ctx.beginPath(); ctx.ellipse(0, 2, 20, 5, 0, 0, 6.29); ctx.fill();
+  // team ring
+  ctx.strokeStyle = teamCol; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.ellipse(0, 0, 22, 7, 0, 0, 6.29); ctx.stroke();
+  const k = m.mobile;
+  if (k === 'shortcake') {
+    ctx.fillStyle = '#ffb3c7'; ctx.beginPath(); ctx.arc(0, -18, 16, 0, 6.29); ctx.fill();       // cake body
+    ctx.fillStyle = '#fff';                                                                            // frosting top
+    ctx.beginPath(); ctx.arc(0, -30, 12, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#e03131'; ctx.beginPath(); ctx.arc(0, -36, 6, 0, 6.29); ctx.fill();        // strawberry
+    ctx.fillStyle = '#2f9e44'; ctx.fillRect(-2, -46, 4, 5);
+  } else if (k === 'eclair') {
+    ctx.fillStyle = '#d9a066';
+    roundRect(-22, -30, 44, 18, 9); ctx.fill();                                                        // pastry
+    ctx.fillStyle = '#5c2e0e'; roundRect(-22, -30, 44, 8, 5); ctx.fill();                             // chocolate top
+  } else if (k === 'meringue') {
+    ctx.fillStyle = '#fff5f5';
+    ctx.beginPath(); ctx.ellipse(0, -16, 15, 10, 0, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -26, 10, 8, 0, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -34, 5, 6, 0, 0, 6.29); ctx.fill();
+  } else if (k === 'fudge') {
+    ctx.fillStyle = '#6b3d1f'; roundRect(-16, -34, 32, 26, 4); ctx.fill();
+    ctx.fillStyle = '#8f5a2e'; roundRect(-16, -34, 32, 8, 4); ctx.fill();
+    ctx.fillStyle = '#ffd166'; ctx.fillRect(-10, -22, 6, 6); ctx.fillRect(4, -22, 6, 6);        // chips
+  }
+  // face
+  if (m.alive) {
+    ctx.fillStyle = '#3a2a1a';
+    ctx.beginPath(); ctx.arc(-5, -20, 2.2, 0, 6.29); ctx.arc(5, -20, 2.2, 0, 6.29); ctx.fill();
+  } else {
+    ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-8, -22); ctx.lineTo(-2, -16); ctx.moveTo(-2, -22); ctx.lineTo(-8, -16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(2, -22); ctx.lineTo(8, -16); ctx.moveTo(8, -22); ctx.lineTo(2, -16); ctx.stroke();
+  }
+  // barrel (aim direction)
+  if (m.alive) {
+    const a = (m.ang || 45) * Math.PI / 180;
+    ctx.save(); ctx.translate(0, -24); ctx.rotate(-a);
+    ctx.fillStyle = '#3a2a3a'; roundRect(0, -4, 30, 8, 4); ctx.fill();
+    ctx.fillStyle = teamCol; ctx.fillRect(24, -4, 6, 8);
+    ctx.restore();
+  }
+  ctx.restore();
+  // name + hp + ss
+  ctx.save();
+  ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = m.alive ? '#fff' : '#ff8787';
+  ctx.fillText((i === myDefIdx ? '▶ ' : '') + m.name, x, yb - 58);
+  ctx.fillStyle = '#00000088'; ctx.fillRect(x - 22, yb - 54, 44, 6);
+  const hpf = Math.max(0, m.hp / MOBILES[m.mobile].hp);
+  ctx.fillStyle = hpf > 0.5 ? '#7bed9f' : (hpf > 0.25 ? '#ffd166' : '#ff8787');
+  ctx.fillRect(x - 22, yb - 54, 44 * hpf, 6);
+  // ss pips
+  ctx.fillStyle = '#00000088'; ctx.fillRect(x - 22, yb - 46, 44, 4);
+  ctx.fillStyle = '#e599f7'; ctx.fillRect(x - 22, yb - 46, 44 * Math.min(1, m.ss / SS_NEED), 4);
+  ctx.restore();
+}
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function drawAim() {
+  if (!isMyTurn() || turnState !== 'aim' || anim) return;
+  const m = activeMobile(); if (!m || !m.alive) return;
+  // dotted trajectory preview (~0.8s)
+  const sp = muzzleVel(Math.max(5, aim.power || 40));
+  const a = aim.ang * Math.PI / 180;
+  let x = m.x, y = m.y - 32, vx = Math.cos(a) * sp, vy = -Math.sin(a) * sp;
+  ctx.fillStyle = '#ffffffcc';
+  for (let s = 0; s < 48; s++) {
+    vx += st.wind * 2.2 * DT; vy += GRAV * DT; x += vx * DT; y += vy * DT;
+    if (s % 4 === 0) { ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 6.29); ctx.fill(); }
+    if (y >= surfY(st.terrain, x)) break;
+  }
+  // move budget arc
+  if (moveLeft > 0) {
+    ctx.strokeStyle = '#7bed9f88'; ctx.lineWidth = 3; ctx.setLineDash([6, 6]);
+    ctx.beginPath(); ctx.moveTo(m.x - moveLeft, m.y); ctx.lineTo(m.x + moveLeft, m.y); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+function drawProjsAnim() {
+  if (!anim) return;
+  for (const p of anim.projs) {
+    ctx.fillStyle = p.kind === 'beam' ? '#fff7ae' : '#ffd166';
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.kind === 'beam' ? 9 : 6, 0, 6.29); ctx.fill();
+    ctx.strokeStyle = '#ffffff88'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.05, p.y - p.vy * 0.05); ctx.stroke();
+  }
+}
+function drawParticles() {
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, 1 - p.t / p.life);
+    ctx.fillStyle = p.c;
+    ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s);
+  }
+  ctx.globalAlpha = 1;
+}
+function drawTurnArrow() {
+  const m = activeMobile();
+  if (!m || !m.alive || turnState !== 'aim') return;
+  const bob = Math.sin(performance.now() / 300) * 4;
+  ctx.fillStyle = '#ffd166';
+  ctx.beginPath(); ctx.moveTo(m.x, m.y - 78 + bob); ctx.lineTo(m.x - 8, m.y - 90 + bob); ctx.lineTo(m.x + 8, m.y - 90 + bob); ctx.fill();
+}
+function render(dt) {
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+  drawSky();
+  if (st) {
+    drawTerrain();
+    for (let i = 0; i < st.mobiles.length; i++) drawMobile(st.mobiles[i], i);
+    drawAim();
+    drawProjsAnim();
+  }
+  drawParticles();
+  drawTurnArrow();
+  // sudden death banner
+  if (st && st.sudden && !st.over) {
+    ctx.fillStyle = '#ff8787'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('SUDDEN DEATH', W - 14, 64);
+  }
+  ctx.restore();
+}
+
+/* ---------- main loop ---------- */
+let lastT = 0;
+function loop(t) {
+  const dt = Math.min(0.05, (t - lastT) / 1000 || 0.016);
+  lastT = t;
+  for (const c of clouds) { c.x += c.v * dt; if (c.x > W + 80) c.x = -80; }
+  if (screen === 'play' && st) {
+    pollMove(dt); pollAim(dt);
+    stepAnim(dt); stepParticles(dt);
+  } else stepParticles(dt);
+  render(dt);
+  requestAnimationFrame(loop);
+}
+
+/* ---------- misc UI ---------- */
+function toast(t, ms) {
+  const d = document.createElement('div');
+  d.textContent = t;
+  d.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 18px;border-radius:999px;z-index:9999;font:14px sans-serif';
+  document.body.appendChild(d); setTimeout(() => d.remove(), ms || 1500);
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function showScreen(s) {
+  screen = s;
+  $('menuOv').classList.toggle('hidden', s !== 'menu');
+  $('lobby').classList.toggle('hidden', s !== 'lobby');
+  const inPlay = s === 'play';
+  $('hud').classList.toggle('hidden', !inPlay);
+  $('gchat').classList.toggle('hidden', !inPlay);
+  if (!inPlay) { $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden'); }
+}
+function endMatch() {
+  stopTimer(); turnState = 'idle';
+  $('hud').classList.add('hidden'); $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden');
+  const w = st.winner;
+  let title, sub;
+  if (w === 'draw') { title = 'DRAW'; sub = 'Mutual destruction. Delicious.'; }
+  else {
+    title = (myDefIdx >= 0 && st.mobiles[myDefIdx].team === w) ? 'VICTORY!' : 'DEFEAT';
+    sub = 'Team ' + w + ' takes the bakery.';
+  }
+  $('end-title').textContent = title;
+  $('end-title').style.color = title === 'VICTORY!' ? '#7bed9f' : (title === 'DRAW' ? '#ffd166' : '#ff8787');
+  $('end-sub').textContent = sub;
+  $('endOv').classList.remove('hidden');
+  Net.sendEnd({ winner: w });
+}
+function fit() {
+  const aw = window.innerWidth, ah = window.innerHeight;
+  const s = Math.min(aw / 960, ah / 540);
+  const g = $('game');
+  g.style.width = 960 * s + 'px'; g.style.height = 540 * s + 'px';
+  cv.style.width = 960 * s + 'px'; cv.style.height = 540 * s + 'px';
+}
+window.addEventListener('resize', fit);
+
+/* ================= Crumb Bound netcode (Supabase Realtime, host-authoritative) ================= */
+const SUPABASE_URL = 'https://ukrxoqsvyvlyeblubjeo.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let lobbyState = {};   // id -> presence {id,name,mobile,team,ready,joinedAt}
+let lastSnap = null;
+let shotAckTimer = null;
+
+function isNetHost() {
+  const ps = Object.values(lobbyState);
+  if (!ps.length) return false;
+  return ps.slice().sort((a, b) => a.joinedAt - b.joinedAt)[0].id === myId;
+}
+function hostPid() {
+  const ps = Object.values(lobbyState);
+  if (!ps.length) return null;
+  return ps.slice().sort((a, b) => a.joinedAt - b.joinedAt)[0].id;
+}
+
+/* Net.send* API used by game layer */
+Net.sendTurn = function (p) {
+  if (Net.role !== 'host' || !Net.channel) return;
+  Net.channel.send({ type: 'broadcast', event: 'turn', payload: p });
+};
+Net.sendSnap = function (p) {
+  lastSnap = p;
+  if (Net.role !== 'host' || !Net.channel) return;
+  Net.channel.send({ type: 'broadcast', event: 'snap', payload: p });
+};
+Net.sendEnd = function (p) {
+  if (!Net.channel || Net.role === 'solo') return;
+  try { Net.channel.send({ type: 'broadcast', event: 'mend', payload: p }); } catch (e) {}
+};
+Net.sendShot = function (shot) {
+  if (!Net.channel) return;
+  try { Net.channel.send({ type: 'broadcast', event: 'shot', payload: Object.assign({ id: myId }, shot) }); } catch (e) {}
+  clearTimeout(shotAckTimer);
+  shotAckTimer = setTimeout(() => {
+    if (turnState === 'anim' && !anim) {
+      toast('Connection hiccup — requesting state…');
+      try { Net.channel.send({ type: 'broadcast', event: 'reqsnap', payload: { id: myId } }); } catch (e2) {}
+    }
+  }, 8000);
+};
+Net.sendMove = function (p) {
+  if (!Net.channel || Net.role === 'solo') return;
+  try { Net.channel.send({ type: 'broadcast', event: 'move', payload: Object.assign({ id: myId }, p) }); } catch (e) {}
+};
+Net.sendAim = function (p) {
+  if (!Net.channel || Net.role === 'solo') return;
+  try { Net.channel.send({ type: 'broadcast', event: 'aim', payload: Object.assign({ id: myId }, p) }); } catch (e) {}
+};
+function sendChatMsg(text, scope) {
+  gchatLog(myName, text, true, scope);
+  if (!Net.channel || Net.role === 'solo') return;
+  try { Net.channel.send({ type: 'broadcast', event: 'chat', payload: { id: myId, name: myName, text, scope, team: myTeam } }); } catch (e) {}
+}
+
+/* ---------- lobby ---------- */
+function setMenuErr(t) { const e = $('menu-err'); if (e) e.textContent = t; }
+
+async function joinRoom(code, asHost) {
+  code = (code || '').toUpperCase().trim();
+  myName = ($('name-input').value || '').trim().slice(0, 14) || 'Player';
+  try { localStorage.setItem('cb-name', myName); } catch (e) {}
+  if (!/^[A-Z2-9]{4}$/.test(code)) { setMenuErr('Enter the 4-letter room code.'); return; }
+  setMenuErr('');
+  const ch = sb.channel('cb:' + code, { config: { presence: { key: myId }, broadcast: { ack: false } } });
+  Net.channel = ch; Net.room = code; Net.role = asHost ? 'host' : 'guest';
+  lobbyState = {};
+
+  ch.on('presence', { event: 'sync' }, renderRoster);
+  ch.on('presence', { event: 'join' }, ({ newPresences }) => {
+    for (const p of newPresences) if (p.id !== myId) lobbyChat(null, p.name + ' joined the room', true);
+    renderRoster();
+  });
+  ch.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+    for (const p of leftPresences) {
+      const wasHost = hostPid() === p.id;
+      delete lobbyState[p.id];
+      if (screen === 'play' && st && !st.over) {
+        if (Net.role === 'host') {
+          const mi = st.mobiles.findIndex(m => m.pid === p.id);
+          if (mi >= 0 && st.mobiles[mi].alive) {
+            st.mobiles[mi].alive = false; st.mobiles[mi].hp = 0;
+            lobbyChatSys(p.name + ' disconnected — their ' + MOBILES[st.mobiles[mi].mobile].name + ' crumbles.');
+            checkWin();
+            const snap = snapState(st);
+            Net.sendSnap({ shot: null, final: snap });
+            if (st.over) { applySnapState(st, snap); endMatch(); }
+            else if (activeIdx === mi) { /* turn passes naturally on next */ }
+          }
+        } else if (wasHost) {
+          migrateHost();
+        } else {
+          lobbyChatSys(p.name + ' left the match.');
+        }
+      } else {
+        lobbyChat(null, p.name + ' left', true);
+      }
+    }
+    renderRoster();
+  });
+
+  ch.on('broadcast', { event: 'chat' }, ({ payload }) => {
+    if (payload.id === myId) return;
+    if (payload.scope === 'team' && payload.team !== myTeam) return; // not for us
+    if (screen === 'play') gchatLog(payload.name, payload.text, false, payload.scope);
+    else lobbyChat(payload.name, payload.text);
+  });
+  ch.on('broadcast', { event: 'mstart' }, ({ payload }) => {
+    if (Net.role === 'guest') guestStart(payload);
+  });
+  ch.on('broadcast', { event: 'turn' }, ({ payload }) => {
+    if (Net.role !== 'guest') return;
+    onRemoteTurn(payload);
+  });
+  ch.on('broadcast', { event: 'move' }, ({ payload }) => {
+    if (payload.id === myId || !st || screen !== 'play') return;
+    const m = st.mobiles[payload.idx];
+    if (m && m.alive) { m.x = payload.x; m.y = surfY(st.terrain, m.x); }
+  });
+  ch.on('broadcast', { event: 'aim' }, ({ payload }) => {
+    if (payload.id === myId || !st || screen !== 'play') return;
+    const m = st.mobiles[payload.idx];
+    if (m) { m.ang = payload.ang; if (Net.role === 'host' && payload.idx === activeIdx) m.lastAim = { ang: payload.ang }; }
+  });
+  ch.on('broadcast', { event: 'shot' }, ({ payload }) => {
+    if (Net.role !== 'host' || !st || screen !== 'play' || turnState !== 'aim') return;
+    if (payload.id !== st.mobiles[activeIdx].pid) return; // not their turn
+    const m = st.mobiles[activeIdx];
+    // validate: move budget + SS charge
+    if (Math.abs(payload.x - turnStartX) > MOBILES[m.mobile].move + 2) payload.x = turnStartX;
+    if (payload.weapon === 2 && m.ss < SS_NEED) payload.weapon = 0;
+    m.x = payload.x; m.y = surfY(st.terrain, m.x); m.ang = payload.ang;
+    fireShot({ x: m.x, y: m.y, ang: payload.ang, power: Math.max(5, Math.min(100, payload.power)), weapon: payload.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden });
+  });
+  ch.on('broadcast', { event: 'snap' }, ({ payload }) => {
+    if (Net.role !== 'guest' || screen !== 'play') return;
+    clearTimeout(shotAckTimer);
+    lastSnap = payload;
+    if (!payload.shot) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
+    const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)) };
+    turnState = 'anim'; stopTimer();
+    animateShot(pre, payload.final, payload.shot);
+  });
+  ch.on('broadcast', { event: 'reqsnap' }, () => {
+    if (Net.role === 'host' && lastSnap) {
+      try { Net.channel.send({ type: 'broadcast', event: 'snap', payload: lastSnap }); } catch (e) {}
+    }
+  });
+  ch.on('broadcast', { event: 'mend' }, ({ payload }) => {
+    if (Net.role !== 'guest') return;
+    if (st && !st.over) { st.over = true; st.winner = payload.winner; endMatch(); }
+  });
+  ch.on('broadcast', { event: 'toblobby' }, () => {
+    if (Net.role !== 'guest') return;
+    $('endOv').classList.add('hidden');
+    showScreen('lobby'); renderRoster();
+  });
+
+  const ok = await new Promise(res => {
+    let done = false;
+    const to = setTimeout(() => { if (!done) { done = true; res(false); } }, 10000);
+    ch.subscribe(st2 => { if (done) return; if (st2 === 'SUBSCRIBED') { done = true; clearTimeout(to); res(true); } else if (st2 === 'CHANNEL_ERROR' || st2 === 'TIMED_OUT') { done = true; clearTimeout(to); res(false); } });
+  });
+  if (!ok) { setMenuErr('Could not connect. Check your connection and retry.'); Net.channel = null; return; }
+  await ch.track({ id: myId, name: myName, mobile: myMobile, team: myTeam, ready: false, joinedAt: Date.now() });
+  await new Promise(r => setTimeout(r, 600));
+  refreshLobbyState();
+  showScreen('lobby');
+  $('room-code').textContent = code;
+  $('chat-box').innerHTML = '';
+  lobbyChat(null, 'Welcome to room ' + code + '! Pick a mobile, a team, and ready up.', true);
+  renderRoster();
+}
+
+function migrateHost() {
+  toast('Host left — you are the host now', 2200);
+  Net.role = 'host';
+  if (lastSnap) applySnapState(st, lastSnap.final);
+  if (st.over) return endMatch();
+  // resume: start a fresh turn
+  turnState = 'idle'; anim = null;
+  setTimeout(() => { if (!st.over && screen === 'play') startTurn(); }, 1500);
+  renderRoster();
+}
+
+function refreshLobbyState() {
+  if (!Net.channel) return;
+  lobbyState = {};
+  for (const arr of Object.values(Net.channel.presenceState())) for (const p of arr) lobbyState[p.id] = p;
+}
+
+function renderRoster() {
+  refreshLobbyState();
+  const ps = Object.values(lobbyState).sort((a, b) => a.joinedAt - b.joinedAt);
+  let html = '';
+  ps.forEach(p => {
+    const you = p.id === myId;
+    const tcls = p.team === 'A' ? 'teamA' : 'teamB';
+    html += '<div class="pslot ' + tcls + (you ? ' me' : '') + '"><div class="avatar">' + (MOBILES[p.mobile] ? MOBILES[p.mobile].icon : '🍰') + '</div>' +
+      '<div class="pname">' + esc(p.name) + (you ? ' (you)' : '') + '</div>' +
+      '<div class="ptag">Team ' + p.team + ' · ' + (p.ready ? '✓ ready' : '…') + '</div>' +
+      (isNetHost() && you ? '<div class="crown">👑 host</div>' : '') + '</div>';
+  });
+  for (let i = ps.length; i < 4; i++) html += '<div class="pslot"><div class="avatar">➕</div><div class="ptag">open slot</div></div>';
+  $('roster').innerHTML = html;
+  // sync my pick buttons
+  document.querySelectorAll('.mobbtn').forEach(b => b.classList.toggle('sel', b.dataset.m === myMobile));
+  document.querySelectorAll('.teambtn').forEach(b => {
+    b.classList.toggle('selA', b.dataset.t === 'A' && myTeam === 'A');
+    b.classList.toggle('selB', b.dataset.t === 'B' && myTeam === 'B');
+  });
+  const me = lobbyState[myId];
+  $('btn-ready').classList.toggle('sel', !!(me && me.ready));
+  const host = isNetHost();
+  $('btn-start').classList.toggle('hidden', !host);
+  const counts = { A: 0, B: 0 };
+  let allReady = ps.length > 0;
+  ps.forEach(p => { counts[p.team] = (counts[p.team] || 0) + 1; if (!p.ready) allReady = false; });
+  const valid = (counts.A === 1 && counts.B === 1) || (counts.A === 2 && counts.B === 2);
+  $('btn-start').disabled = !(allReady && valid);
+  $('lobby-hint').textContent = host
+    ? (valid ? (allReady ? 'Everyone is ready — start the match!' : 'Waiting for everyone to ready up…') : 'Need 1v1 or 2v2 with even teams (A: ' + counts.A + ', B: ' + counts.B + ')')
+    : 'Waiting for the host to start…';
+}
+
+async function updatePresence() {
+  if (!Net.channel) return;
+  try { await Net.channel.track({ id: myId, name: myName, mobile: myMobile, team: myTeam, ready: !!(lobbyState[myId] && lobbyState[myId].ready), joinedAt: lobbyState[myId] ? lobbyState[myId].joinedAt : Date.now() }); } catch (e) {}
+  renderRoster();
+}
+
+function hostStartMatch() {
+  if (!Net.channel || !isNetHost()) return;
+  const ps = Object.values(lobbyState).sort((a, b) => a.joinedAt - b.joinedAt);
+  const seed = (Math.random() * 0x7fffffff) | 0;
+  const defs = ps.map(p => ({ pid: p.id, name: p.name, mobile: p.mobile, team: p.team, isBot: false }));
+  Net.role = 'host';
+  try { Net.channel.send({ type: 'broadcast', event: 'mstart', payload: { seed, defs } }); } catch (e) {}
+  beginPlay(seed, defs);
+  startTurn();
+}
+
+function guestStart(payload) {
+  Net.role = 'guest';
+  beginPlay(payload.seed, payload.defs);
+}
+
+function beginPlay(seed, defs) {
+  newMatch(seed, defs);
+  initDeco(seed);
+  $('endOv').classList.add('hidden');
+  $('gchat-log').innerHTML = '';
+  showScreen('play');
+  turnState = 'idle';
+  gchatSys('Match started! ' + defs.map(d => d.name).join(', '));
+  toast('Match started!', 1500);
+}
+
+function onRemoteTurn(p) {
+  if (anim) { pendingTurn = p; return; } // slow device: queue until animation finishes
+  st.turnIdx = p.turnIdx; st.wind = p.wind; st.sudden = p.sudden; activeIdx = p.activeIdx;
+  const m = st.mobiles[activeIdx];
+  turnState = 'aim'; timeLeft = TURN_TIME;
+  aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = 0;
+  moveLeft = MOBILES[m.mobile].move; turnStartX = m.x;
+  onTurnUI(); startTimer();
+}
+
+/* ---------- chat UI ---------- */
+function lobbyChat(name, text, sys) {
+  const d = document.createElement('div');
+  if (sys) d.className = 'sys';
+  d.textContent = sys ? text : (name + ': ' + text);
+  const b = $('chat-box'); b.appendChild(d); b.scrollTop = b.scrollHeight;
+}
+function lobbyChatSys(t) { lobbyChat(null, t, true); }
+function gchatLog(name, text, mine, scope) {
+  const d = document.createElement('div');
+  if (mine) d.className = 'mine';
+  d.textContent = (scope === 'team' ? '[Team] ' : '[All] ') + name + ': ' + text;
+  const b = $('gchat-log'); b.appendChild(d); b.scrollTop = b.scrollHeight;
+}
+function gchatSys(t) {
+  const d = document.createElement('div'); d.className = 'sys'; d.textContent = t;
+  const b = $('gchat-log'); b.appendChild(d); b.scrollTop = b.scrollHeight;
+}
+function sendLobbyChat() {
+  const inp = $('chat-in'); const t = inp.value.trim(); if (!t) return;
+  lobbyChat(myName, t); inp.value = '';
+  if (Net.channel && Net.role !== 'solo') {
+    try { Net.channel.send({ type: 'broadcast', event: 'chat', payload: { id: myId, name: myName, text: t, scope: 'all', team: myTeam } }); } catch (e) {}
+  }
+}
+function sendGameChat() {
+  const inp = $('gchat-in'); const t = inp.value.trim(); if (!t) return;
+  inp.value = '';
+  sendChatMsg(t, chatScope);
+}
+
+async function leaveRoom() {
+  try { if (Net.channel) await Net.channel.unsubscribe(); } catch (e) {}
+  Net.channel = null; Net.room = null; Net.role = 'solo';
+  stopTimer(); st = null; turnState = 'idle'; anim = null;
+  showScreen('menu');
+}
+
+/* ---------- solo vs bot ---------- */
+function startSolo() {
+  myName = ($('name-input').value || '').trim().slice(0, 14) || 'Player';
+  try { localStorage.setItem('cb-name', myName); } catch (e) {}
+  Net.role = 'solo'; Net.channel = null;
+  const botMob = MOB_KEYS[(MOB_KEYS.indexOf(myMobile) + 2) % MOB_KEYS.length];
+  const seed = (Math.random() * 0x7fffffff) | 0;
+  const defs = [
+    { pid: myId, name: myName, mobile: myMobile, team: 'A', isBot: false },
+    { pid: 'bot', name: 'Bot Baker', mobile: botMob, team: 'B', isBot: true },
+  ];
+  beginPlay(seed, defs);
+  startTurn();
+}
+
+/* ---------- wiring ---------- */
+function wireUI() {
+  $('btn-create').onclick = () => {
+    const code = Array.from({ length: 4 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[(Math.random() * 32) | 0]).join('');
+    joinRoom(code, true);
+  };
+  $('btn-joinb').onclick = () => joinRoom($('room-input').value, false);
+  $('room-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom($('room-input').value, false); });
+  $('btn-solo').onclick = startSolo;
+  $('btn-copy').onclick = () => {
+    const url = location.origin + location.pathname + '?room=' + $('room-code').textContent;
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => toast('Invite link copied!', 1500)).catch(() => prompt('Copy your invite link:', url));
+  };
+  $('btn-leave').onclick = leaveRoom;
+  document.querySelectorAll('.mobbtn').forEach(b => b.onclick = () => { myMobile = b.dataset.m; updatePresence(); });
+  document.querySelectorAll('.teambtn').forEach(b => b.onclick = () => { myTeam = b.dataset.t; updatePresence(); });
+  $('btn-ready').onclick = async () => {
+    if (!Net.channel) return;
+    const me = lobbyState[myId]; if (!me) return;
+    try { await Net.channel.track(Object.assign({}, me, { ready: !me.ready })); } catch (e) {}
+    renderRoster();
+  };
+  $('btn-send').onclick = sendLobbyChat;
+  $('chat-in').addEventListener('keydown', e => { if (e.key === 'Enter') sendLobbyChat(); });
+  $('btn-start').onclick = hostStartMatch;
+  for (let i = 0; i < 3; i++) $('w' + i).onclick = () => {
+    if (!isMyTurn()) return;
+    const m = activeMobile();
+    if (i === 2 && m.ss < SS_NEED) { toast('SS not charged yet!'); return; }
+    aim.weapon = i; updateWeapons();
+  };
+  $('tab-team').onclick = () => { chatScope = 'team'; $('tab-team').classList.add('sel'); $('tab-all').classList.remove('sel'); };
+  $('tab-all').onclick = () => { chatScope = 'all'; $('tab-all').classList.add('sel'); $('tab-team').classList.remove('sel'); };
+  $('gchat-in').addEventListener('keydown', e => { if (e.key === 'Enter') sendGameChat(); });
+  $('btn-again').onclick = () => {
+    $('endOv').classList.add('hidden');
+    if (Net.role === 'host' && Net.channel) {
+      try { Net.channel.send({ type: 'broadcast', event: 'toblobby', payload: {} }); } catch (e) {}
+      showScreen('lobby'); renderRoster();
+    } else if (Net.role === 'solo') {
+      startSolo();
+    } else {
+      showScreen('lobby'); renderRoster(); // guest waits for host
+    }
+  };
+  $('btn-menu2').onclick = leaveRoom;
+  // ?room=CODE invite support
+  const q = new URLSearchParams(location.search).get('room');
+  if (q) $('room-input').value = q.toUpperCase();
+}
+
+/* ---------- boot ---------- */
+wireUI();
+fit();
+initDeco((Math.random() * 0x7fffffff) | 0);
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
