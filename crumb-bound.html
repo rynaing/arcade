@@ -69,6 +69,7 @@
   #hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;
     padding:8px 12px;pointer-events:none;z-index:10;font-size:14px}
   .hudBox{background:rgba(20,12,40,.72);border:1px solid #6c5aa8;border-radius:10px;padding:6px 12px;font-weight:800}
+  #music-btn{color:#fff;font-size:15px;line-height:1;font-family:inherit;pointer-events:auto}
   #turn-banner{color:#ffd166}#wind-box{color:#a5d8ff}#timer-box{color:#fff}
   #timer-box.low{color:#ff8787;animation:blink .5s infinite alternate}
   @keyframes blink{to{opacity:.4}}
@@ -108,6 +109,7 @@
     <div class="hudBox" id="turn-banner">—</div>
     <div class="hudBox" id="wind-box">wind —</div>
     <div class="hudBox" id="timer-box">30</div>
+    <button class="hudBox" id="music-btn" title="music on/off" style="cursor:pointer">🔊</button>
   </div>
   <div id="weapBar" class="hidden">
     <button class="wbtn sel" id="w0">1 · Shell</button>
@@ -186,7 +188,7 @@ const SS_NEED = 100;
 const DELAY_COST = { pass: 700, 0: 760, 1: 900, 2: 1300 }; // pass / S1 / S2 / SS
 const DELAY_PER_SEC = 10;         // aiming/moving time adds delay
 const WEATHERS = ['calm', 'thor', 'force', 'dark', 'eclipse', 'moon'];
-const WEATHER_LABEL = { calm: 'Calm', thor: 'Thor', force: 'Force', dark: 'Dark Force', eclipse: 'Eclipse', moon: 'Moon' };
+const WEATHER_LABEL = { calm: 'Calm', thor: 'Thor', force: 'Force', dark: 'Dark', eclipse: 'Eclipse', moon: 'Moon' };
 const THOR_BANDS = [0, 20, 70, 180, 390, 680];   // cumulative Thor damage -> level
 const THOR_DMG = [10, 20, 30, 40, 50, 60];      // strike damage per level
 function thorLevelFor(d) { let l = 0; for (let i = 0; i < THOR_BANDS.length; i++) if (d >= THOR_BANDS[i]) l = i; return l; }
@@ -537,10 +539,15 @@ function botAim(st, meIdx) {
         if (d < score) score = d;
       }
       if (score < bs) { bs = score; ba = ang; bp = power; }
-      if (bs === 0) break;
+      // no early break: take the true argmin over the grid so the solution is
+      // the genuinely best one before execution error is applied below
     }
-    if (bs === 0) break;
   }
+  // human-like execution error: the bot "mis-hits" its perfect solution the way
+  // a player does. jitter on angle/power, so scatter grows naturally with range
+  // (no cross-map lasers) and direct 125% hits become earned, not automatic.
+  ba += (Math.random() + Math.random() + Math.random() - 1.5) * 8;   // ±12° bell, ~±4° typical
+  bp = Math.min(100, Math.max(25, bp + (Math.random() + Math.random() + Math.random() - 1.5) * 10)); // ±15 pow bell, ~±5 typical
   return { ang: dir > 0 ? ba : 180 - ba, power: bp, weapon: wChoice };
 }
 
@@ -641,7 +648,7 @@ function startTurn() {
     st.win = st.mobiles.length;
     if (st.wcur === 'thor') st.thorX = W * (0.2 + turnRng() * 0.6);
     if (st.wcur === 'force') st.forceX = W * (0.25 + turnRng() * 0.5);
-    toast(WEATHER_LABEL[st.wcur] + ' weather!', 1800);
+    toast('Weather: ' + WEATHER_LABEL[st.wcur], 1800);
   }
   if (st.wcur === 'moon') m.hp = Math.min(MOBILES[m.mobile].hp, m.hp + 4);
   if (completedTurns >= 16 && !st.sudden) { st.sudden = true; toast('SUDDEN DEATH — all damage +50%!'); }
@@ -673,7 +680,7 @@ function onTurnUI() {
 }
 function updateWind() {
   const w = st.wind, dir = w === 0 ? '·' : (w > 0 ? '→' : '←');
-  $('wind-box').textContent = 'wind ' + dir + ' ' + Math.abs(w) + ' · ' + WEATHER_LABEL[st.wcur || 'calm'] + ' (next: ' + WEATHER_LABEL[st.wnext || 'calm'] + ')';
+  $('wind-box').textContent = Math.abs(w) + ' mph wind ' + dir + ' · ' + WEATHER_LABEL[st.wcur || 'calm'] + ' (next: ' + WEATHER_LABEL[st.wnext || 'calm'] + ')';
 }
 function updateWeapons() {
   const m = activeMobile(); if (!m) return;
@@ -854,9 +861,56 @@ function onShotDone() {
   // guests wait for host's 'turn' broadcast
 }
 
+/* ---------- music: tiny procedural chiptune loop ---------- */
+const Music = {
+  ctx: null, gain: null, timer: null, step: 0,
+  muted: (() => { try { return localStorage.getItem('cb-music') === 'off'; } catch (e) { return false; } })(),
+  // 16 eighth-notes @150bpm, cheerful C-major loop; bass on even steps
+  lead: [72, 76, 79, 81, 79, 76, 74, 76, 72, 76, 79, 84, 81, 79, 76, 74],
+  bass: [48, 0, 48, 0, 53, 0, 53, 0, 45, 0, 45, 0, 43, 0, 43, 0],
+  ensure() {
+    if (this.ctx || this.muted) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AC();
+      this.gain = this.ctx.createGain();
+      this.gain.gain.value = 0.5;
+      this.gain.connect(this.ctx.destination);
+      this.step = 0;
+      this.timer = setInterval(() => this.tick(), 200);
+    } catch (e) { /* no audio — stay silent */ }
+  },
+  note(midi, t, dur, type, vol) {
+    const f = 440 * Math.pow(2, (midi - 69) / 12);
+    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(this.gain);
+    o.start(t); o.stop(t + dur + 0.05);
+  },
+  tick() {
+    if (!this.ctx || this.muted) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    const t = this.ctx.currentTime + 0.05, s = this.step % 16;
+    if (this.lead[s]) this.note(this.lead[s], t, 0.18, 'square', 0.045);
+    if (this.bass[s]) this.note(this.bass[s], t, 0.22, 'triangle', 0.09);
+    this.step++;
+  },
+  toggle() {
+    this.muted = !this.muted;
+    try { localStorage.setItem('cb-music', this.muted ? 'off' : 'on'); } catch (e) {}
+    if (!this.muted) this.ensure();
+    const b = $('music-btn'); if (b) b.textContent = this.muted ? '🔇' : '🔊';
+    return this.muted;
+  },
+};
+window.addEventListener('pointerdown', () => Music.ensure(), { passive: true });
+window.addEventListener('keydown', () => Music.ensure());
+
 /* ---------- bot ---------- */
-function botFire() {
-  if (turnState !== 'aim') return;
+function botFire() {  if (turnState !== 'aim') return;
   const m = activeMobile();
   if (!m || !m.isBot) return;
   const s = botAim(st, activeIdx);
@@ -1096,6 +1150,23 @@ function drawMobile(m, i) {
   // team ring
   ctx.strokeStyle = teamCol; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.ellipse(0, 0, 22, 7, 0, 0, 6.29); ctx.stroke();
+  // little robot wheels — spin as the crumb drives around
+  if (m._lx == null) m._lx = m.x;
+  m.wheelA = (m.wheelA || 0) + (m.x - m._lx) / 6;
+  m._lx = m.x;
+  const wa = m.wheelA;
+  for (const wx of [-13, 13]) {
+    ctx.fillStyle = '#23232f';
+    ctx.beginPath(); ctx.arc(wx, -7, 8, 0, 6.29); ctx.fill();
+    ctx.strokeStyle = '#8a8aa8'; ctx.lineWidth = 2;
+    for (let s = 0; s < 3; s++) {
+      const a = wa + s * Math.PI * 2 / 3;
+      ctx.beginPath(); ctx.moveTo(wx, -7);
+      ctx.lineTo(wx + Math.cos(a) * 6, -7 + Math.sin(a) * 6); ctx.stroke();
+    }
+    ctx.fillStyle = '#c9c9e0';
+    ctx.beginPath(); ctx.arc(wx, -7, 2.5, 0, 6.29); ctx.fill();
+  }
   const k = m.mobile;
   if (k === 'shortcake') {
     ctx.fillStyle = '#ffb3c7'; ctx.beginPath(); ctx.arc(0, -18, 16, 0, 6.29); ctx.fill();       // cake body
@@ -1642,6 +1713,9 @@ function startSolo() {
 
 /* ---------- wiring ---------- */
 function wireUI() {
+  $('music-btn').onclick = () => Music.toggle();
+  // reflect saved mute state on the button
+  if (Music.muted) $('music-btn').textContent = '🔇';
   $('btn-create').onclick = () => {
     const code = Array.from({ length: 4 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[(Math.random() * 32) | 0]).join('');
     joinRoom(code, true);
