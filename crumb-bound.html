@@ -55,6 +55,10 @@
   .mobbtn,.teambtn,.rdybtn{font-family:inherit;border:2px solid #4a3f7a;background:#241b45;color:#fff;border-radius:10px;
     padding:7px 10px;font-size:13px;font-weight:800;cursor:pointer}
   .mobbtn.sel{border-color:#ffd166;background:#3d2f6b}
+  .botbtn{font-family:inherit;border:2px solid #4a3f7a;background:#241b45;color:#fff;border-radius:10px;
+    padding:7px 10px;font-size:13px;font-weight:800;cursor:pointer}
+  .botbtn.sel{border-color:#e599f7;background:#3d2f6b}
+  #bot-blurb{min-height:18px;color:#b197fc;font-size:12px}
   .teambtn.selA{border-color:#4dabf7;background:#1c3a5e}
   .teambtn.selB{border-color:#ff8787;background:#5e1c1c}
   .rdybtn.sel{border-color:#7bed9f;background:#1d5b3f}
@@ -75,7 +79,9 @@
   @keyframes blink{to{opacity:.4}}
   #weapBar{position:absolute;left:12px;bottom:12px;display:flex;gap:8px;z-index:10}
   .wbtn{font-family:inherit;background:rgba(20,12,40,.78);border:2px solid #4a3f7a;color:#fff;border-radius:10px;
-    padding:8px 12px;font-size:13px;font-weight:800;cursor:pointer;pointer-events:auto}
+    padding:8px 12px;font-size:13px;font-weight:800;cursor:pointer;pointer-events:auto;
+    display:inline-flex;align-items:center;gap:7px}
+  .wbtn svg{flex:none;display:block}
   .wbtn.sel{border-color:#ffd166}
   .wbtn.ssready{border-color:#e599f7;box-shadow:0 0 10px #e599f799}
   .wbtn:disabled{opacity:.4}
@@ -134,6 +140,14 @@
       <button class="big" id="btn-create">Create Room</button>
       <button class="big" id="btn-solo">Vs Bot</button>
     </div>
+    <div class="pickRow" id="bot-pick"><span class="lbl">Bot:</span>
+      <button class="botbtn" data-b="baker">🤖 Bot Baker</button>
+      <button class="botbtn" data-b="deadeye">🎯 Deadeye Dot</button>
+      <button class="botbtn" data-b="cannon">💥 Loose Cannon</button>
+      <button class="botbtn" data-b="prof">🎓 Professor Proof</button>
+      <button class="botbtn" data-b="baby">🍼 Baby Batter</button>
+    </div>
+    <div class="hintline" id="bot-blurb"></div>
     <div class="joinRow">
       <input id="room-input" maxlength="4" placeholder="CODE">
       <button class="big" id="btn-joinb">Join</button>
@@ -261,6 +275,18 @@ const MOBILES = {
          { n: 'Fudgequake', dmg: 90, r: 60, kind: 'shell' } ] },
 };
 const MOB_KEYS = Object.keys(MOBILES);
+
+/* Thumbnails for the weapon bar: one tiny SVG per projectile kind */
+const WPN_ICON = {
+  shell: '<svg width="34" height="24" viewBox="0 0 36 26"><path d="M4 21 Q18 3 32 19" stroke="#a5d8ff" stroke-width="2" fill="none" stroke-dasharray="3 3"/><circle cx="32" cy="19" r="5" fill="#ffd166"/></svg>',
+  twin: '<svg width="34" height="24" viewBox="0 0 36 26"><path d="M4 21 Q18 3 32 19" stroke="#a5d8ff" stroke-width="2" fill="none" stroke-dasharray="3 3"/><circle cx="29" cy="16" r="4" fill="#ffd166"/><circle cx="34" cy="21" r="4" fill="#ffd166"/></svg>',
+  pierce: '<svg width="34" height="24" viewBox="0 0 36 26"><path d="M4 13 L20 13" stroke="#a5d8ff" stroke-width="2" stroke-dasharray="3 3"/><path d="M8 8 L14 13 L8 18" stroke="#a5d8ff" stroke-width="2" fill="none"/><circle cx="27" cy="13" r="5" fill="#ffd166"/></svg>',
+  twinpierce: '<svg width="34" height="24" viewBox="0 0 36 26"><path d="M4 13 L18 13" stroke="#a5d8ff" stroke-width="2" stroke-dasharray="3 3"/><circle cx="25" cy="9" r="4" fill="#ffd166"/><circle cx="25" cy="17" r="4" fill="#ffd166"/></svg>',
+  beam: '<svg width="34" height="24" viewBox="0 0 36 26"><path d="M21 2 L11 15 L17 15 L14 24 L27 10 L20 10 Z" fill="#e599f7" stroke="#b197fc" stroke-width="1"/></svg>',
+  boomerang: '<svg width="34" height="24" viewBox="0 0 36 26"><path d="M6 20 Q18 2 30 16" stroke="#a5d8ff" stroke-width="2.5" fill="none"/><path d="M24 12 L31 17 L25 21" stroke="#a5d8ff" stroke-width="2.5" fill="none"/></svg>',
+  spread5: '<svg width="34" height="24" viewBox="0 0 36 26"><circle cx="6" cy="20" r="3" fill="#ffd166"/><circle cx="13" cy="13" r="3" fill="#ffd166"/><circle cx="20" cy="9" r="3" fill="#ffd166"/><circle cx="27" cy="8" r="3" fill="#ffd166"/><circle cx="33" cy="10" r="3" fill="#ffd166"/></svg>',
+  cluster6: '<svg width="34" height="24" viewBox="0 0 36 26"><circle cx="18" cy="13" r="6" fill="#ffd166"/><circle cx="7" cy="6" r="2.5" fill="#e599f7"/><circle cx="29" cy="6" r="2.5" fill="#e599f7"/><circle cx="7" cy="20" r="2.5" fill="#e599f7"/><circle cx="29" cy="20" r="2.5" fill="#e599f7"/><circle cx="18" cy="3" r="2.5" fill="#e599f7"/><circle cx="18" cy="23" r="2.5" fill="#e599f7"/></svg>',
+};
 
 /* ---------- terrain ---------- */
 function genTerrain(seed) {
@@ -510,8 +536,19 @@ function spawnPositions(defs) {
 }
 
 /* bot aim: coarse search minimizing distance to nearest enemy; returns {ang,power,weapon} */
+/* Bot roster: 5 distinct sparring partners for solo mode */
+const BOTS = [
+  { id: 'baker',   name: 'Bot Baker',       icon: '🤖', mobile: 'shortcake', err: 1.0, twinRange: 420, ss: 'normal', blurb: 'Balanced all-rounder' },
+  { id: 'deadeye', name: 'Deadeye Dot',     icon: '🎯', mobile: 'eclair',    err: 0.45, twinRange: 300, ss: 'eager', blurb: 'Sharpshooter · barely misses' },
+  { id: 'cannon',  name: 'Loose Cannon',    icon: '💥', mobile: 'fudge',     err: 1.8, twinRange: 700, ss: 'eager', blurb: 'Wild · sprays Twin shots' },
+  { id: 'prof',    name: 'Professor Proof', icon: '🎓', mobile: 'meringue',  err: 0.7, twinRange: 420, ss: 'saver', blurb: 'Patient · saves SS for kills' },
+  { id: 'baby',    name: 'Baby Batter',     icon: '🍼', mobile: 'shortcake', err: 2.6, twinRange: 420, ss: 'lazy', blurb: 'Easy mode' },
+];
+function botDefOf(id) { return BOTS.find(b => b.id === id) || BOTS[0]; }
+
 function botAim(st, meIdx) {
   const me = st.mobiles[meIdx];
+  const bd = botDefOf(me.bot);
   let tgt = null, best = 1e9;
   for (let i = 0; i < st.mobiles.length; i++) {
     const m = st.mobiles[i];
@@ -521,7 +558,13 @@ function botAim(st, meIdx) {
   }
   if (!tgt) return { ang: 45, power: 50, weapon: 0 };
   const wdef = MOBILES[me.mobile].w;
-  const wChoice = me.ss >= SS_NEED ? 2 : (best < 420 ? 1 : 0);
+  // personality-driven weapon choice
+  let wChoice;
+  const ssUp = me.ss >= SS_NEED;
+  if (ssUp && (bd.ss === 'eager' || (bd.ss === 'normal' && Math.random() < 0.7) ||
+      (bd.ss === 'saver' && (tgt.hp <= 55 || Math.random() < 0.25)))) wChoice = 2;
+  else if (ssUp && bd.ss === 'lazy' && Math.random() < 0.25) wChoice = 2;
+  else wChoice = best < bd.twinRange ? 1 : 0;
   let ba = 45, bp = 50, bs = 1e12;
   const dir = tgt.x >= me.x ? 1 : -1;
   for (let ang = 15; ang <= 165; ang += 6) {
@@ -546,8 +589,9 @@ function botAim(st, meIdx) {
   // human-like execution error: the bot "mis-hits" its perfect solution the way
   // a player does. jitter on angle/power, so scatter grows naturally with range
   // (no cross-map lasers) and direct 125% hits become earned, not automatic.
-  ba += (Math.random() + Math.random() + Math.random() - 1.5) * 8;   // ±12° bell, ~±4° typical
-  bp = Math.min(100, Math.max(25, bp + (Math.random() + Math.random() + Math.random() - 1.5) * 10)); // ±15 pow bell, ~±5 typical
+  // each bot's err scales the bell: Deadeye is surgical, Baby Batter is chaos.
+  ba += (Math.random() + Math.random() + Math.random() - 1.5) * 8 * bd.err;   // ±12° bell, ~±4° typical
+  bp = Math.min(100, Math.max(25, bp + (Math.random() + Math.random() + Math.random() - 1.5) * 10 * bd.err)); // ±15 pow bell, ~±5 typical
   return { ang: dir > 0 ? ba : 180 - ba, power: bp, weapon: wChoice };
 }
 
@@ -614,7 +658,7 @@ function newMatch(seed, defs) {
     thorX: -1, thorLevel: 0, thorDmg: 0, forceX: -1 };
   defs.forEach((d, i) => {
     st.mobiles.push({ x: xs[i], y: surfY(terrain, xs[i]), hp: MOBILES[d.mobile].hp, ss: 0, alive: true,
-      ang: d.team === 'A' ? 45 : 135, mobile: d.mobile, team: d.team, pid: d.pid, name: d.name, isBot: !!d.isBot });
+      ang: d.team === 'A' ? 45 : 135, mobile: d.mobile, team: d.team, pid: d.pid, name: d.name, isBot: !!d.isBot, bot: d.bot || null });
   });
   turnRng = mulberry32(seed ^ 0x9e3779b9);
   st.opener = buildOpener(st.mobiles, mulberry32((seed ^ 0x51ed) >>> 0));
@@ -687,7 +731,7 @@ function updateWeapons() {
   const def = MOBILES[m.mobile];
   for (let i = 0; i < 3; i++) {
     const b = $('w' + i);
-    b.textContent = (i + 1) + ' · ' + def.w[i].n;
+    b.innerHTML = (WPN_ICON[def.w[i].kind] || '') + '<span>' + (i + 1) + ' · ' + def.w[i].n + '</span>';
     b.classList.toggle('sel', aim.weapon === i);
     b.classList.toggle('ssready', i === 2 && m.ss >= SS_NEED);
     b.disabled = (i === 2 && m.ss < SS_NEED) || !isMyTurn();
@@ -1697,15 +1741,24 @@ async function leaveRoom() {
 }
 
 /* ---------- solo vs bot ---------- */
+let myBot = (() => { try { return localStorage.getItem('cb-bot') || 'baker'; } catch (e) { return 'baker'; } })();
+function refreshBotPick() {
+  const bd = botDefOf(myBot);
+  document.querySelectorAll('.botbtn').forEach(b => b.classList.toggle('sel', b.dataset.b === bd.id));
+  const bl = $('bot-blurb');
+  if (bl) bl.textContent = bd.icon + ' ' + bd.name + ' — ' + bd.blurb;
+}
 function startSolo() {
   myName = ($('name-input').value || '').trim().slice(0, 14) || 'Player';
   try { localStorage.setItem('cb-name', myName); } catch (e) {}
   Net.role = 'solo'; Net.channel = null;
-  const botMob = MOB_KEYS[(MOB_KEYS.indexOf(myMobile) + 2) % MOB_KEYS.length];
+  const bd = botDefOf(myBot);
+  let botMob = bd.mobile;
+  if (botMob === myMobile) botMob = MOB_KEYS[(MOB_KEYS.indexOf(myMobile) + 2) % MOB_KEYS.length];
   const seed = (Math.random() * 0x7fffffff) | 0;
   const defs = [
     { pid: myId, name: myName, mobile: myMobile, team: 'A', isBot: false },
-    { pid: 'bot', name: 'Bot Baker', mobile: botMob, team: 'B', isBot: true },
+    { pid: 'bot', name: bd.name, mobile: botMob, team: 'B', isBot: true, bot: bd.id },
   ];
   beginPlay(seed, defs);
   startTurn();
@@ -1729,6 +1782,12 @@ function wireUI() {
   };
   $('btn-leave').onclick = leaveRoom;
   document.querySelectorAll('.mobbtn').forEach(b => b.onclick = () => { myMobile = b.dataset.m; updatePresence(); });
+  document.querySelectorAll('.botbtn').forEach(b => b.onclick = () => {
+    myBot = b.dataset.b;
+    try { localStorage.setItem('cb-bot', myBot); } catch (e) {}
+    refreshBotPick();
+  });
+  refreshBotPick();
   document.querySelectorAll('.teambtn').forEach(b => b.onclick = () => { myTeam = b.dataset.t; updatePresence(); });
   $('btn-ready').onclick = async () => {
     if (!Net.channel) return;
