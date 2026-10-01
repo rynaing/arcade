@@ -719,9 +719,7 @@ function simulateShot(st, shot, env) {
       const td2 = Math.round(35 * (env.sudden ? 1.5 : 1));
       const ar2 = applyBoom(t, mobiles, L.x, L.y, 38, td2, shot.srcIdx, 20, undefined, env.islands);
       dmgDealt[shot.srcIdx] = (dmgDealt[shot.srcIdx] || 0) + ar2.src;
-      for (const idx in ar2.victims) victims[idx] = (victims[idx] || 0) + ar2.victims[idx];
       itemStrikes.push({ x: L.x, y: L.y, dmg: td2 });
-      if (ar2.src > 0) hitSomething = true;
     }
   }
   // Thor weather: satellite fires one laser per projectile landing near it.
@@ -1864,7 +1862,14 @@ window.addEventListener('resize', fit);
 /* ================= Crumb Bound netcode (Supabase Realtime, host-authoritative) ================= */
 const SUPABASE_URL = 'https://ukrxoqsvyvlyeblubjeo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+/* Multiplayer-only client, loaded lazily: the menu, solo mode, and shop must
+   keep working even if the Supabase CDN is unreachable. Resolves to null then. */
+const sbReady = (async () => {
+  try {
+    const supa = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    return supa.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } catch (e) { return null; }
+})();
 
 let lobbyState = {};   // id -> presence {id,name,mobile,team,ready,joinedAt}
 let lastSnap = null;
@@ -1932,6 +1937,8 @@ async function joinRoom(code, asHost) {
   try { localStorage.setItem('cb-name', myName); } catch (e) {}
   if (!/^[A-Z2-9]{4}$/.test(code)) { setMenuErr('Enter the 4-letter room code.'); return; }
   setMenuErr('');
+  const sb = await sbReady;
+  if (!sb) { setMenuErr('Multiplayer is unreachable right now — Solo still works.'); return; }
   const ch = sb.channel('cb:' + code, { config: { presence: { key: myId }, broadcast: { ack: false } } });
   Net.channel = ch; Net.room = code; Net.role = asHost ? 'host' : 'guest';
   lobbyState = {};
