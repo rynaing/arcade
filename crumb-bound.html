@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Crumb Bound — Mossbell Arcade</title>
+<title>Crumb Bound — Ryan Cake Studios</title>
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;height:100%;background:#1b1430;overflow:hidden;
@@ -190,14 +190,14 @@
       <button class="big" id="btn-create">Create Room</button>
       <button class="big" id="btn-solo">Vs Bot</button>
     </div>
-    <div class="pickRow" id="bot-pick"><span class="lbl">Bot:</span>
+    <div class="pickRow hidden" id="bot-pick"><span class="lbl">Bot:</span>
       <button class="botbtn" data-b="baker">🤖 Bot Baker</button>
       <button class="botbtn" data-b="deadeye">🎯 Deadeye Dot</button>
       <button class="botbtn" data-b="cannon">💥 Loose Cannon</button>
       <button class="botbtn" data-b="prof">🎓 Professor Proof</button>
       <button class="botbtn" data-b="baby">🍼 Baby Batter</button>
     </div>
-    <div class="hintline" id="bot-blurb"></div>
+    <div class="hintline hidden" id="bot-blurb"></div>
     <div class="joinRow">
       <input id="room-input" maxlength="4" placeholder="CODE">
       <button class="big" id="btn-joinb">Join</button>
@@ -1799,6 +1799,10 @@ function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<':
 function showScreen(s) {
   screen = s;
   $('menuOv').classList.toggle('hidden', s !== 'menu');
+  if (s === 'menu') {
+    $('bot-pick').classList.add('hidden'); $('bot-blurb').classList.add('hidden');
+    $('btn-solo').textContent = 'Vs Bot'; refreshEconPills();
+  }
   $('lobby').classList.toggle('hidden', s !== 'lobby');
   const inPlay = s === 'play';
   $('hud').classList.toggle('hidden', !inPlay);
@@ -2352,7 +2356,12 @@ function wireUI() {
   };
   $('btn-joinb').onclick = () => joinRoom($('room-input').value, false);
   $('room-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom($('room-input').value, false); });
-  $('btn-solo').onclick = startSolo;
+  $('btn-solo').onclick = () => {
+    if ($('bot-pick').classList.contains('hidden')) {
+      $('bot-pick').classList.remove('hidden'); $('bot-blurb').classList.remove('hidden');
+      $('btn-solo').textContent = 'Pick your opponent \u2193';
+    }
+  };
   $('btn-shop').onclick = openShop;
   $('btn-shopclose').onclick = closeShop;
   document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => { shopTab = b.dataset.t; renderShop(); });
@@ -2367,6 +2376,7 @@ function wireUI() {
     myBot = b.dataset.b;
     try { localStorage.setItem('cb-bot', myBot); } catch (e) {}
     refreshBotPick();
+    startSolo();
   });
   refreshBotPick();
   document.querySelectorAll('.teambtn').forEach(b => b.onclick = () => { myTeam = b.dataset.t; updatePresence(); });
