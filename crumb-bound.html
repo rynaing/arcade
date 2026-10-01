@@ -54,9 +54,9 @@
   .crown{font-size:11px;color:#ffd166}
   .pickRow{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap;justify-content:center}
   .pickRow .lbl{font-size:13px;color:#c6d8f2;font-weight:800}
-  .mobbtn,.teambtn,.rdybtn{font-family:inherit;border:2px solid #4a3f7a;background:#241b45;color:#fff;border-radius:10px;
+  .mobbtn,.vmobbtn,.teambtn,.rdybtn{font-family:inherit;border:2px solid #4a3f7a;background:#241b45;color:#fff;border-radius:10px;
     padding:7px 10px;font-size:13px;font-weight:800;cursor:pointer}
-  .mobbtn.sel{border-color:#ffd166;background:#3d2f6b}
+  .mobbtn.sel,.vmobbtn.sel{border-color:#ffd166;background:#3d2f6b}
   .botbtn{font-family:inherit;border:2px solid #4a3f7a;background:#241b45;color:#fff;border-radius:10px;
     padding:7px 10px;font-size:13px;font-weight:800;cursor:pointer}
   .botbtn.sel{border-color:#e599f7;background:#3d2f6b}
@@ -190,6 +190,13 @@
       <button class="big" id="btn-create">Create Room</button>
       <button class="big" id="btn-solo">Vs Bot</button>
     </div>
+    <div class="pickRow hidden" id="veh-pick"><span class="lbl">Vehicle:</span>
+      <button class="vmobbtn" data-m="shortcake">🍰</button>
+      <button class="vmobbtn" data-m="eclair">🥖</button>
+      <button class="vmobbtn" data-m="meringue">🍦</button>
+      <button class="vmobbtn" data-m="fudge">🍫</button>
+    </div>
+    <div class="hintline hidden" id="veh-blurb"></div>
     <div class="pickRow hidden" id="bot-pick"><span class="lbl">Bot:</span>
       <button class="botbtn" data-b="baker">🤖 Bot Baker</button>
       <button class="botbtn" data-b="deadeye">🎯 Deadeye Dot</button>
@@ -229,6 +236,7 @@
         <button class="mobbtn" data-m="meringue">🍦 Meringue</button>
         <button class="mobbtn" data-m="fudge">🍫 Fudge</button>
       </div>
+      <div class="hintline" id="mob-blurb"></div>
       <div class="pickRow"><span class="lbl">Team:</span>
         <button class="teambtn" data-t="A">Team A</button>
         <button class="teambtn" data-t="B">Team B</button>
@@ -318,19 +326,19 @@ function mulberry32(seed) {
 
 /* Mobile definitions: original designs, original names */
 const MOBILES = {
-  shortcake: { name: 'Shortcake', icon: '🍰', hp: 100, move: 95, ta: [30, 150], desc: 'Balanced all-rounder',
+  shortcake: { name: 'Shortcake', icon: '🍰', hp: 100, move: 95, ta: [30, 150], desc: 'Balanced all-rounder', pro: 'no real weakness', con: 'no specialty either',
     w: [ { n: 'Shell', dmg: 35, r: 26, kind: 'shell' },
          { n: 'Twin', dmg: 22, r: 20, kind: 'twin' },
          { n: 'Berry Barrage', dmg: 20, r: 18, kind: 'spread5' } ] },
-  eclair:    { name: 'Éclair', icon: '🥖', hp: 90, move: 72, ta: [35, 145], desc: 'Long-range piercer',
+  eclair:    { name: 'Éclair', icon: '🥖', hp: 90, move: 72, ta: [35, 145], desc: 'Long-range piercer', pro: 'piercing shots + huge SS beam', con: 'fragile at 90 HP',
     w: [ { n: 'Bolt', dmg: 40, r: 14, kind: 'pierce' },
          { n: 'Twin Bolt', dmg: 26, r: 12, kind: 'twinpierce' },
          { n: 'Long Lance', dmg: 70, r: 30, kind: 'beam' } ] },
-  meringue:  { name: 'Meringue', icon: '🍦', hp: 80, move: 125, ta: [25, 155], desc: 'Light skirmisher',
+  meringue:  { name: 'Meringue', icon: '🍦', hp: 80, move: 125, ta: [25, 155], desc: 'Light skirmisher', pro: 'fastest mover, widest firing angle', con: 'lowest HP at 80',
     w: [ { n: 'Puff', dmg: 28, r: 22, kind: 'shell' },
          { n: 'Boomerang', dmg: 30, r: 20, kind: 'boomerang' },
          { n: 'Meringue Storm', dmg: 15, r: 14, kind: 'cluster6' } ] },
-  fudge:     { name: 'Fudge', icon: '🍫', hp: 130, move: 52, ta: [40, 140], desc: 'Heavy bruiser',
+  fudge:     { name: 'Fudge', icon: '🍫', hp: 130, move: 52, ta: [40, 140], desc: 'Heavy bruiser', pro: '130 HP + massive blast radius', con: 'slow with a narrow firing angle',
     w: [ { n: 'Heavy Bomb', dmg: 50, r: 34, kind: 'shell' },
          { n: 'Mega Bomb', dmg: 65, r: 42, kind: 'shell' },
          { n: 'Fudgequake', dmg: 90, r: 60, kind: 'shell' } ] },
@@ -857,7 +865,7 @@ let screen = 'menu';      // menu|lobby|play
 let turnState = 'idle';   // idle|aim|anim
 let activeIdx = -1;
 let timeLeft = TURN_TIME, timerId = null;
-let aim = { ang: 45, power: 0, charging: false, weapon: 0 };
+let aim = { ang: 45, power: 0, charging: false, weapon: 0, powDir: 1 };
 let moveLeft = 0, turnStartX = 0;
 let myMatchDmg = 0, armedItem = null;
 let particles = [];
@@ -868,7 +876,16 @@ let shake = 0;
 let anim = null;          // active shot animation
 let pendingTurn = null;   // turn broadcast received mid-animation (guests)
 let chatScope = 'team';
-let myTeam = 'A', myMobile = 'shortcake';
+let myTeam = 'A', myMobile = (() => { try { const v = localStorage.getItem('cb-mobile'); return v && MOBILES[v] ? v : 'shortcake'; } catch (e) { return 'shortcake'; } })();
+function saveMobile() { try { localStorage.setItem('cb-mobile', myMobile); } catch (e) {} }
+function refreshMobilePick() {
+  const m = MOBILES[myMobile];
+  document.querySelectorAll('.vmobbtn').forEach(b => b.classList.toggle('sel', b.dataset.m === myMobile));
+  document.querySelectorAll('.mobbtn').forEach(b => b.classList.toggle('sel', b.dataset.m === myMobile));
+  const t = m.icon + ' ' + m.name + ' · ' + m.desc + ' — +' + m.pro + ' / −' + m.con;
+  const v = $('veh-blurb'); if (v) v.textContent = t;
+  const l = $('mob-blurb'); if (l) l.textContent = t;
+}
 let myDefIdx = -1;
 let turnRng = null;
 let turnQueue = [];       // preview of upcoming turns (indices)
@@ -931,7 +948,7 @@ function startTurn() {
   turnState = 'aim';
   timeLeft = TURN_TIME;
   turnStartT = performance.now();
-  aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = 0;
+  aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = 0; aim.powDir = 1;
   moveLeft = moveBudgetOf(m); turnStartX = m.x;
   turnQueue = queuePreview(st, 3);
   Net.sendTurn({ turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, activeIdx,
@@ -1170,7 +1187,7 @@ function onShotDone() {
   if (st.dualLeft > 0 && !st.over) {
     st.dualLeft--;
     turnState = 'aim'; timeLeft = TURN_TIME; turnStartT = performance.now();
-    aim.power = 0; aim.charging = false;
+    aim.power = 0; aim.charging = false; aim.powDir = 1;
     if (st.dualPlus) { aim.weapon = aim.weapon === 0 ? 1 : 0; st.dualPlus = false; }
     onTurnUI(); startTimer();
     if (Net.role === 'host') Net.sendTurn({ turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, activeIdx,
@@ -1308,7 +1325,7 @@ window.addEventListener('keydown', e => {
     if (w === 2 && m.ss < SS_NEED) { toast('SS not charged yet!'); return; }
     aim.weapon = w; updateWeapons();
   }
-  if (e.key === ' ' && !aim.charging) { aim.charging = true; aim.power = 0; }
+  if (e.key === ' ' && !aim.charging) { aim.charging = true; aim.power = 0; aim.powDir = 1; }
 });
 window.addEventListener('keyup', e => {
   keys[e.key] = false;
@@ -1360,7 +1377,9 @@ function pollAim(dt) {
     if (aimAcc > 0.15) { aimAcc = 0; Net.sendAim({ ang: aim.ang, idx: activeIdx }); }
   }
   if (aim.charging) {
-    aim.power = Math.min(100, aim.power + dt * 85);
+    aim.power += aim.powDir * dt * 85;
+    if (aim.power >= 100) { aim.power = 100; aim.powDir = -1; }
+    else if (aim.power <= 0) { aim.power = 0; aim.powDir = 1; }
     $('powFill').style.width = aim.power + '%';
   } else if ($('powFill').style.width !== '0%') $('powFill').style.width = '0%';
 }
@@ -1801,6 +1820,7 @@ function showScreen(s) {
   $('menuOv').classList.toggle('hidden', s !== 'menu');
   if (s === 'menu') {
     $('bot-pick').classList.add('hidden'); $('bot-blurb').classList.add('hidden');
+    $('veh-pick').classList.add('hidden'); $('veh-blurb').classList.add('hidden');
     $('btn-solo').textContent = 'Vs Bot'; refreshEconPills();
   }
   $('lobby').classList.toggle('hidden', s !== 'lobby');
@@ -2123,7 +2143,7 @@ function onRemoteTurn(p) {
   if (st.wcur === 'moon' && m) m.hp = Math.min(maxHpOf(m), m.hp + 4);
   turnState = 'aim'; timeLeft = TURN_TIME;
   turnStartT = performance.now();
-  aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = p.dual ? (p.dualWeapon || 0) : 0;
+  aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = p.dual ? (p.dualWeapon || 0) : 0; aim.powDir = 1;
   if (!p.dual) { moveLeft = moveBudgetOf(m); turnStartX = m.x; }
   onTurnUI(); startTimer();
 }
@@ -2359,9 +2379,12 @@ function wireUI() {
   $('btn-solo').onclick = () => {
     if ($('bot-pick').classList.contains('hidden')) {
       $('bot-pick').classList.remove('hidden'); $('bot-blurb').classList.remove('hidden');
-      $('btn-solo').textContent = 'Pick your opponent \u2193';
+      $('veh-pick').classList.remove('hidden'); $('veh-blurb').classList.remove('hidden');
+      refreshMobilePick();
+      $('btn-solo').textContent = 'Pick your vehicle & opponent ↓';
     }
   };
+  document.querySelectorAll('.vmobbtn').forEach(b => b.onclick = () => { myMobile = b.dataset.m; saveMobile(); refreshMobilePick(); });
   $('btn-shop').onclick = openShop;
   $('btn-shopclose').onclick = closeShop;
   document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => { shopTab = b.dataset.t; renderShop(); });
@@ -2371,14 +2394,14 @@ function wireUI() {
     (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => toast('Invite link copied!', 1500)).catch(() => prompt('Copy your invite link:', url));
   };
   $('btn-leave').onclick = leaveRoom;
-  document.querySelectorAll('.mobbtn').forEach(b => b.onclick = () => { myMobile = b.dataset.m; updatePresence(); });
+  document.querySelectorAll('.mobbtn').forEach(b => b.onclick = () => { myMobile = b.dataset.m; saveMobile(); updatePresence(); refreshMobilePick(); });
   document.querySelectorAll('.botbtn').forEach(b => b.onclick = () => {
     myBot = b.dataset.b;
     try { localStorage.setItem('cb-bot', myBot); } catch (e) {}
     refreshBotPick();
     startSolo();
   });
-  refreshBotPick();
+  refreshBotPick(); refreshMobilePick();
   document.querySelectorAll('.teambtn').forEach(b => b.onclick = () => { myTeam = b.dataset.t; updatePresence(); });
   $('btn-ready').onclick = async () => {
     if (!Net.channel) return;
@@ -2423,4 +2446,3 @@ requestAnimationFrame(loop);
 
 </script>
 </body>
-</html>
