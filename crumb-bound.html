@@ -933,8 +933,12 @@ function startTurn() {
   if (activeIdx < 0 || !st.mobiles[activeIdx]) return; // no one left; checkWin covers
   const m = st.mobiles[activeIdx];
   m.ang = m.team === 'A' ? 45 : 135;
-  // wind from seeded rng: -26..26
-  st.wind = Math.round((turnRng() * 2 - 1) * 26);
+  // wind: gentle + predictable. New target every 3rd turn (capped at ±14 mph),
+  // and the actual wind eases toward the target by at most 4 mph per turn —
+  // no more wild turn-to-turn swings.
+  if (st.turnIdx % 3 === 0) st.windTarget = Math.round((turnRng() * 2 - 1) * 14);
+  if (st.windTarget == null) st.windTarget = 0;
+  st.wind = (st.wind || 0) + Math.max(-4, Math.min(4, st.windTarget - st.wind));
   // weather cycle: every N turns where N = 2 x players per team
   st.win--;
   if (st.win <= 0) {
@@ -1300,13 +1304,16 @@ function botMove(m, done) {
   const step = () => {
     if (turnState !== 'aim') return done();
     const dx = targetX - m.x;
-    if (Math.abs(dx) < 4 || moveLeft <= 0) { Net.sendMove({ x: m.x, idx: activeIdx, face: m.face }); return done(); }
+    if (Math.abs(dx) < 4 || moveLeft <= 0) { Net.sendMove({ x: m.x, idx: activeIdx, face: m.face, ang: m.ang }); return done(); }
     const s = Math.sign(dx) * Math.min(10, Math.abs(dx));
     const nx = Math.max(10, Math.min(W - 10, m.x + s));
     if (Math.abs(groundAt(st.terrain, st.islands, nx, m.y) - groundAt(st.terrain, st.islands, m.x, m.y)) > climbOf(m)) {
-      Net.sendMove({ x: m.x, idx: activeIdx, face: m.face }); return done();
+      Net.sendMove({ x: m.x, idx: activeIdx, face: m.face, ang: m.ang }); return done();
     }
-    m.x = nx; m.y = groundAt(st.terrain, st.islands, nx, m.y); m.face = s > 0 ? 1 : -1;
+    m.x = nx; m.y = groundAt(st.terrain, st.islands, nx, m.y);
+    const nfs = s > 0 ? 1 : -1;
+    if (nfs !== (m.face || 1)) m.ang = 180 - m.ang; // turned around: barrel follows last-faced direction
+    m.face = nfs;
     moveLeft = Math.max(0, moveLeft - Math.abs(s));
     setTimeout(step, 40);
   };
@@ -1359,10 +1366,12 @@ function pollMove(dt) {
   // slope check: can't climb cliffs
   if (Math.abs(surfY(st.terrain, nx) - surfY(st.terrain, m.x)) > climbOf(m)) return;
   const used = Math.min(moveLeft, Math.abs(step));
-  m.face = dx > 0 ? 1 : -1;
+  const nf = dx > 0 ? 1 : -1;
+  if (nf !== (m.face || 1)) { m.ang = 180 - m.ang; aim.ang = m.ang; } // turned around: barrel follows last-faced direction
+  m.face = nf;
   m.x = nx; m.y = groundAt(st.terrain, st.islands, nx, m.y); moveLeft -= used;
   moveAcc += dt;
-  if (moveAcc > 0.12) { moveAcc = 0; Net.sendMove({ x: m.x, idx: activeIdx, face: m.face }); }
+  if (moveAcc > 0.12) { moveAcc = 0; Net.sendMove({ x: m.x, idx: activeIdx, face: m.face, ang: m.ang }); }
 }
 function pollAim(dt) {
   if (!isMyTurn() || turnState !== 'aim' || anim) return;
@@ -1654,7 +1663,9 @@ function drawMobile(m, i) {
     ctx.beginPath(); ctx.moveTo(-8, -22); ctx.lineTo(-2, -16); ctx.moveTo(-2, -22); ctx.lineTo(-8, -16); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(2, -22); ctx.lineTo(8, -16); ctx.moveTo(8, -22); ctx.lineTo(2, -16); ctx.stroke();
   }
-  // barrel (aim direction)
+  ctx.restore(); // unflip
+  // barrel (aim direction) — drawn UNFLIPPED in world space so it always matches
+  // the aim guide + the actual shot trajectory, whichever way the body faces
   if (m.alive) {
     const a = (m.ang || 45) * Math.PI / 180;
     ctx.save(); ctx.translate(0, -24); ctx.rotate(-a);
@@ -1662,7 +1673,6 @@ function drawMobile(m, i) {
     ctx.fillStyle = teamCol; ctx.fillRect(24, -4, 6, 8);
     ctx.restore();
   }
-  ctx.restore(); // unflip
   ctx.restore();
   // name + hp + ss
   ctx.save();
@@ -1996,7 +2006,7 @@ async function joinRoom(code, asHost) {
   ch.on('broadcast', { event: 'move' }, ({ payload }) => {
     if (payload.id === myId || !st || screen !== 'play') return;
     const m = st.mobiles[payload.idx];
-    if (m && m.alive) { m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); if (payload.face) m.face = payload.face; }
+    if (m && m.alive) { m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); if (payload.face) m.face = payload.face; if (payload.ang != null) m.ang = payload.ang; }
   });
   ch.on('broadcast', { event: 'itemuse' }, ({ payload }) => {
     if (Net.role !== 'host' || !st || screen !== 'play' || turnState !== 'aim') return;
@@ -2228,6 +2238,7 @@ function applyInstantItem(id, isLocal) {
     if (isLocal) toast(it.icon + ' +' + amt + ' HP');
   } else if (id === 'windchange') {
     st.wind = -st.wind;
+    if (st.windTarget != null) st.windTarget = -st.windTarget;
     if (isLocal) { updateWind(); toast('🌪️ Wind reversed!'); }
   }
   if (Net.role !== 'guest') st.delays[activeIdx] += Math.round(it.delay * (1 - gearStats().delay));
