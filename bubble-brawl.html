@@ -7,11 +7,11 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{background:#101828 radial-gradient(1200px 700px at 50% -10%,#1d3a5f 0%,#101828 60%);color:#eef4ff;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100%;padding:10px;overflow-x:hidden}
+body{background:#101828 radial-gradient(1200px 700px at 50% -10%,#1d3a5f 0%,#101828 60%);color:#eef4ff;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100%;padding:10px 10px 64px;overflow-x:hidden}
 a.home{color:#9fc1ff;text-decoration:none;font-size:13px;margin-bottom:6px;opacity:.85}
 a.home:hover{opacity:1;text-decoration:underline}
 .hud{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;max-width:800px}
-.hud-bottom{margin:8px auto 0}
+.hud-bottom{position:fixed;left:0;right:0;bottom:0;margin:0;z-index:7;max-width:none;padding:8px 10px;background:rgba(13,22,40,.94);border-top:1px solid #2c4a75}
 .chip{background:rgba(20,34,58,.85);border:1px solid #2c4a75;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 .chip b{color:#ffd76a}
 .chip .pips{color:#7cc4ff;letter-spacing:1px;font-size:11px}
@@ -67,7 +67,7 @@ button.mini:hover{background:#33507e}
 @media (max-height:780px){.lobby-card{padding:12px 18px}.lobby-title{font-size:22px;margin-bottom:2px}.lobby-room{margin:4px 0}.pslot{min-height:66px;padding:6px 4px}.pslot .avatar{font-size:24px}#chat-box{height:48px;margin:6px 0 4px}.hintline{margin:4px 0;font-size:12px}}
 #menu-err{color:#ff8a8a;font-size:13px;min-height:18px;margin-top:6px}
 #name-input,.code-input{font-size:15px;padding:9px 12px;border-radius:10px;border:2px solid #33507e;background:#0e1a30;color:#fff;font-family:inherit;text-align:center;margin:4px}
-#race-chat{position:fixed;left:10px;bottom:10px;width:250px;z-index:6;display:none}
+#race-chat{position:fixed;left:10px;bottom:66px;width:250px;z-index:6;display:none}
 #race-chat-msgs{font-size:12px;color:#fff;text-shadow:1px 1px 0 #000}
 #race-chat-msgs div{background:rgba(10,14,30,.65);border-radius:8px;padding:3px 8px;margin:3px 0;display:inline-block;clear:both;float:left;max-width:100%}
 #race-chat-in{display:none;width:100%;font-size:13px;padding:6px 8px;border-radius:8px;border:2px solid #4a5a8a;background:#1a2340ee;color:#fff;margin-top:4px;font-family:inherit}
@@ -305,14 +305,18 @@ function showEnd(title,html,win){
 function endMultiplayer(winner){
   if(state!=='play')return;state='over';
   const wname=winner?winner.name:'Nobody';
-  try{S.channel.send({type:'broadcast',event:'mend',payload:{pid:winner?winner.pid:'',name:wname}});}catch(e){}
+  const wpops=winner?(winner.pops||0):0;
+  try{S.channel.send({type:'broadcast',event:'mend',payload:{pid:winner?winner.pid:'',name:wname,pops:wpops}});}catch(e){}
   const won=!!winner&&winner.pid===myId;
-  showEnd(won?'\uD83C\uDFC6 You win!':'\uD83C\uDFC6 '+esc(wname)+' wins!',won?'Last blob standing!':('<b>'+esc(wname)+'</b> popped everyone else.'),won);
+  const wtxt=wpops>0?('<b>'+esc(wname)+'</b> popped <b>'+wpops+'</b> rival'+(wpops===1?'':'s')+'.'):'Last blob standing!';
+  showEnd(won?'\uD83C\uDFC6 You win!':'\uD83C\uDFC6 '+esc(wname)+' wins!',won?'Last blob standing!':wtxt,won);
 }
 function onGuestMend(pl){
   if(state!=='play')return;state='over';
   const won=pl.pid!==''&&pl.pid===myId;
-  showEnd(won?'\uD83C\uDFC6 You win!':'\uD83C\uDFC6 '+esc(pl.name)+' wins!',won?'Last blob standing!':('<b>'+esc(pl.name)+'</b> popped everyone else.'),won);
+  const gpops=pl.pops||0;
+  const gtxt=gpops>0?('<b>'+esc(pl.name)+'</b> popped <b>'+gpops+'</b> rival'+(gpops===1?'':'s')+'.'):'Last blob standing!';
+  showEnd(won?'\uD83C\uDFC6 You win!':'\uD83C\uDFC6 '+esc(pl.name)+' wins!',won?'Last blob standing!':gtxt,won);
 }
 const $=id=>document.getElementById(id);
 /* ===== Button wiring ===== */
@@ -394,7 +398,7 @@ function makePlayers(defs){
   const d=defs[i];
   players.push({id:i,pid:d.pid||'',name:d.name,color:d.color,dark:d.dark,isBot:d.isBot,isRemote:!!d.isRemote,netDir:null,
    x:d.cx*CELL+CELL/2,y:d.cy*CELL+CELL/2,cx:d.cx,cy:d.cy,tx2:null,ty2:null,queuedDir:null,
-   alive:true,knocked:0,invuln:0,strikes:[],r:16,
+   alive:true,knocked:0,invuln:0,strikes:[],r:16,pops:0,
    spd:0,maxBombs:1,power:1,active:0,
    face:1,walkPh:Math.random()*6,moving:false,
    ai:{think:Math.random()*0.2,dir:null}});
@@ -488,7 +492,7 @@ function detonate(b){
   }
  }
  for(const c of cells){
-  flames.push({tx:c.tx,ty:c.ty,start:now+c.at,end:now+c.at+KILL_WIN,vis:now+c.at+0.55});
+  flames.push({tx:c.tx,ty:c.ty,start:now+c.at,end:now+c.at+KILL_WIN,vis:now+c.at+0.55,owner:b.owner});
  }
  shake=Math.min(12.5,shake+5);sfx('boom');
 }
@@ -506,17 +510,23 @@ function lethalAt(tx,ty){
  for(const f of flames)if(f.tx===tx&&f.ty===ty&&now>=f.start&&now<=f.end)return true;
  return false;
 }
+function flameOwnerAt(tx,ty){
+ const now=performance.now()/1000;
+ for(const f of flames)if(f.tx===tx&&f.ty===ty&&now>=f.start&&now<=f.end)return f.owner;
+ return -1;
+}
 function stunPlayer(p){
  const tx=Math.floor(p.x/CELL),ty=Math.floor(p.y/CELL);
  const key=SKEY(tx,ty),now=performance.now()/1000;
+ const by=flameOwnerAt(tx,ty);
  p.strikes=p.strikes.filter(s=>now-s.t<19);
- if(p.strikes.filter(s=>s.key===key).length>=2){killPlayer(p);return}
- p.strikes.push({key,t:now});
+ if(p.strikes.filter(s=>s.key===key).length>=2){killPlayer(p,by);return}
+ p.strikes.push({key,t:now,by});
  p.knocked=STUN_TIME;p.invuln=0.2;p.tx2=null;p.ty2=null;p.queuedDir=null;
  sfx('stun');
  burst(p.x,p.y,'#bfe9ff',12,120);
 }
-function killPlayer(p){
+function killPlayer(p,killerId){
  p.alive=false;p.knocked=0;sfx('pop');
  burst(p.x,p.y,p.color,22,180);burst(p.x,p.y,'#ffffff',10,120);
  // death drops 4 powerups in a 5x5 around the corpse
@@ -529,11 +539,16 @@ function killPlayer(p){
   powerups.push({tx,ty,type:types[(Math.random()*3)|0],ph:Math.random()*6});
   placed++;
  }
+ // killer attribution: a self-pop is never anyone's pop
+ const selfPop=killerId===p.id;
+ const killer=(typeof killerId==='number'&&killerId>=0&&players[killerId])?players[killerId]:null;
+ if(killer&&!selfPop)killer.pops=(killer.pops||0)+1;
  if(S.netRole==='host'){
   const alive=players.filter(q=>q.alive);
   if(alive.length<=1)endMultiplayer(alive[0]||null);
  }else if(p.isBot){
-  kills++;score+=250;
+  // solo: only pops the local player actually caused count toward kills/score
+  if(!selfPop&&killer&&killer.pid===myId){kills++;score+=250;}
   if(!players.some(q=>q.isBot&&q.alive))endMatch('win');
  }else{
   endMatch('lose');
@@ -547,7 +562,7 @@ function updateHits(dt){
   const tx=Math.floor(p.x/CELL),ty=Math.floor(p.y/CELL);
   if(p.knocked>0){
    p.knocked-=dt;
-   if(p.invuln<=0&&lethalAt(tx,ty))killPlayer(p);
+   if(p.invuln<=0&&lethalAt(tx,ty))killPlayer(p,flameOwnerAt(tx,ty));
    continue;
   }
   if(p.invuln>0)continue;
