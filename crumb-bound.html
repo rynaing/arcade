@@ -15,8 +15,10 @@
   .ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
     background:rgba(20,12,40,.82);backdrop-filter:blur(3px);z-index:20}
   .hidden{display:none!important}
-  h1.title{font-size:52px;margin:0 0 4px;letter-spacing:2px;color:#ffd166;
-    text-shadow:0 4px 0 #a33d00,0 8px 24px rgba(0,0,0,.5)}
+  h1.title{font-size:56px;margin:0 0 4px;letter-spacing:3px;font-weight:900;
+    background:linear-gradient(180deg,#fff3bf 15%,#ffd166 45%,#ff922b 75%,#e8590c);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 4px 0 rgba(120,40,0,.85)) drop-shadow(0 10px 22px rgba(0,0,0,.5))}
   .sub{color:#cdbcf2;margin:0 0 18px;font-size:15px}
   .nameRow{display:flex;gap:8px;margin-bottom:14px}
   #name-input{font-size:17px;padding:10px 14px;border-radius:12px;border:2px solid #6c5aa8;background:#2c2350;color:#fff;width:210px;outline:none}
@@ -104,6 +106,52 @@
   #endOv h1{font-size:44px;margin:0 0 8px}
   #end-sub{color:#cdbcf2;margin-bottom:16px}
   kbd{background:#4a3f7a;border-radius:5px;padding:1px 7px;font-family:inherit;font-size:12px}
+  /* ---- glass HUD ---- */
+  .hudBox{background:linear-gradient(180deg,rgba(48,36,86,.82),rgba(24,17,48,.82));
+    border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:7px 14px;font-weight:800;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    box-shadow:0 4px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)}
+  /* ---- item bar ---- */
+  #itemBar{position:absolute;left:12px;bottom:64px;display:flex;gap:8px;z-index:10}
+  .itembtn{font-family:inherit;position:relative;background:rgba(20,12,40,.82);border:2px solid #4a3f7a;
+    color:#fff;border-radius:12px;padding:9px 12px;font-size:19px;cursor:pointer;pointer-events:auto;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,.4)}
+  .itembtn .cnt{position:absolute;top:-7px;right:-7px;background:#7048e8;border-radius:50%;font-size:11px;
+    font-weight:900;min-width:20px;height:20px;line-height:20px;text-align:center;padding:0 4px}
+  .itembtn.armed{border-color:#ffd166;box-shadow:0 0 14px #ffd166aa;transform:translateY(-3px)}
+  /* ---- power bar sheen ---- */
+  #powFill{background:linear-gradient(90deg,#51cf66,#ffd166 55%,#ff6b6b);position:relative;overflow:hidden}
+  #powFill::after{content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,0) 55%)}
+  /* ---- economy + shop ---- */
+  .econrow{display:flex;gap:10px;align-items:center;justify-content:center;margin:8px 0;flex-wrap:wrap}
+  .pill{background:rgba(20,12,40,.8);border:1px solid #ffd16688;border-radius:999px;padding:6px 14px;
+    font-weight:900;font-size:14px;color:#ffd166;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  #btn-shop{background:linear-gradient(180deg,#b197fc,#7048e8);box-shadow:0 3px 0 #4527a0;font-size:14px;padding:8px 18px}
+  #shopOv .lobby-card{width:700px}
+  #shopTabs{display:flex;gap:8px;margin:6px 0 10px}
+  #shopTabs button{font-family:inherit;font-size:14px;font-weight:900;color:#cdbcf2;background:#241b45;
+    border:2px solid #4a3f7a;border-radius:10px;padding:8px 18px;cursor:pointer}
+  #shopTabs button.sel{border-color:#ffd166;background:#3d2f6b;color:#fff}
+  #shopGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;width:100%;
+    max-height:44vh;overflow-y:auto;padding:2px}
+  .shopcard{background:#241b45;border:2px solid #4a3f7a;border-radius:12px;padding:10px;
+    display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+  .shopcard .sic{font-size:30px}
+  .shopcard .snm{font-weight:900;font-size:14px}
+  .shopcard .sds{font-size:11.5px;color:#b197fc;line-height:1.4;min-height:32px}
+  .shopcard .smt{font-size:11px;color:#9d8fd0}
+  .buybtn{font-family:inherit;font-size:12px;font-weight:900;color:#1b1430;border:none;border-radius:9px;
+    padding:7px 12px;cursor:pointer;background:linear-gradient(180deg,#ffd166,#f59f00);box-shadow:0 2px 0 #a33d00;width:100%}
+  .eqbtn{font-family:inherit;font-size:12px;font-weight:800;color:#fff;border:2px solid #4a3f7a;border-radius:9px;
+    padding:6px 10px;cursor:pointer;background:#2c2350;width:100%}
+  .eqbtn.on{border-color:#7bed9f;background:#1d5b3f}
+  #loadoutRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;margin-bottom:10px;
+    background:#1b1430;border:1px solid #4a3f7a;border-radius:10px;padding:8px 12px;width:100%}
+  .loadbtn{font-family:inherit;font-size:12px;font-weight:800;color:#fff;background:#3d2f6b;border:2px solid #ffd166;
+    border-radius:9px;padding:6px 10px;cursor:pointer}
+  .equiprow{grid-column:1/-1;font-size:13px;color:#cdbcf2;background:#1b1430;border:1px solid #4a3f7a;
+    border-radius:10px;padding:8px 12px}
 </style>
 </head>
 <body>
@@ -122,6 +170,7 @@
     <button class="wbtn" id="w1">2 · Twin</button>
     <button class="wbtn" id="w2">3 · SS</button>
   </div>
+  <div id="itemBar" class="hidden"></div>
   <div id="powWrap" class="hidden">
     <div id="powBar"><div id="powFill"></div></div>
     <div id="powLbl">hold <kbd>Space</kbd> to charge, release to fire</div>
@@ -136,6 +185,7 @@
     <h1 class="title">CRUMB BOUND</h1>
     <p class="sub">turn-based artillery · 1v1 &amp; 2v2 · destructible terrain · a ryan cake studios joint</p>
     <div class="nameRow"><input id="name-input" maxlength="14" placeholder="your name"></div>
+    <div class="econrow"><span class="pill" id="gold-pill">🪙 500</span><span class="pill" id="rank-pill">🏅 Chick</span><button class="mini" id="btn-shop">🛒 Shop</button></div>
     <div class="btnRow">
       <button class="big" id="btn-create">Create Room</button>
       <button class="big" id="btn-solo">Vs Bot</button>
@@ -154,6 +204,18 @@
     </div>
     <div id="menu-err"></div>
     <p class="hintline"><kbd>←</kbd><kbd>→</kbd> move · <kbd>↑</kbd><kbd>↓</kbd> aim · hold <kbd>Space</kbd> charge, release to fire · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons · move, then shoot, before the 20s timer runs out · fast shots act sooner (delay order) · weather changes the battlefield</p>
+  </div>
+
+  <div id="shopOv" class="ov hidden">
+    <div class="lobby-card">
+      <div class="lobby-title">🛒 Item Shop</div>
+      <div class="econrow"><span class="pill" id="shop-gold">🪙 500</span></div>
+      <div id="shopTabs"><button data-t="items" class="sel">Battle Items</button><button data-t="gear">Gear</button></div>
+      <div id="loadoutRow"></div>
+      <div id="shopGrid"></div>
+      <div class="btnRow" style="margin-top:12px"><button class="big" id="btn-shopclose" style="background:linear-gradient(180deg,#7bed9f,#2f9e5f);box-shadow:0 4px 0 #1d6b3f">Done</button></div>
+      <p class="hintline">Battle items: buy stock, equip up to 6 slots, tap in battle to arm. Gear: equip up to 4 permanent boosts.</p>
+    </div>
   </div>
 
   <div id="lobby" class="ov hidden">
@@ -189,7 +251,6 @@
 </div>
 </div>
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 /* ================= Crumb Bound core sim (pure logic, no DOM) ================= */
 'use strict';
 const W = 960, H = 540, COLS = 240, COLW = W / COLS;
@@ -257,24 +318,84 @@ function mulberry32(seed) {
 
 /* Mobile definitions: original designs, original names */
 const MOBILES = {
-  shortcake: { name: 'Shortcake', icon: '🍰', hp: 100, move: 95,  desc: 'Balanced all-rounder',
+  shortcake: { name: 'Shortcake', icon: '🍰', hp: 100, move: 95, ta: [30, 150], desc: 'Balanced all-rounder',
     w: [ { n: 'Shell', dmg: 35, r: 26, kind: 'shell' },
          { n: 'Twin', dmg: 22, r: 20, kind: 'twin' },
          { n: 'Berry Barrage', dmg: 20, r: 18, kind: 'spread5' } ] },
-  eclair:    { name: 'Éclair', icon: '🥖', hp: 90, move: 72,  desc: 'Long-range piercer',
+  eclair:    { name: 'Éclair', icon: '🥖', hp: 90, move: 72, ta: [35, 145], desc: 'Long-range piercer',
     w: [ { n: 'Bolt', dmg: 40, r: 14, kind: 'pierce' },
          { n: 'Twin Bolt', dmg: 26, r: 12, kind: 'twinpierce' },
          { n: 'Long Lance', dmg: 70, r: 30, kind: 'beam' } ] },
-  meringue:  { name: 'Meringue', icon: '🍦', hp: 80, move: 125,  desc: 'Light skirmisher',
+  meringue:  { name: 'Meringue', icon: '🍦', hp: 80, move: 125, ta: [25, 155], desc: 'Light skirmisher',
     w: [ { n: 'Puff', dmg: 28, r: 22, kind: 'shell' },
          { n: 'Boomerang', dmg: 30, r: 20, kind: 'boomerang' },
          { n: 'Meringue Storm', dmg: 15, r: 14, kind: 'cluster6' } ] },
-  fudge:     { name: 'Fudge', icon: '🍫', hp: 130, move: 52,  desc: 'Heavy bruiser',
+  fudge:     { name: 'Fudge', icon: '🍫', hp: 130, move: 52, ta: [40, 140], desc: 'Heavy bruiser',
     w: [ { n: 'Heavy Bomb', dmg: 50, r: 34, kind: 'shell' },
          { n: 'Mega Bomb', dmg: 65, r: 42, kind: 'shell' },
          { n: 'Fudgequake', dmg: 90, r: 60, kind: 'shell' } ] },
 };
 const MOB_KEYS = Object.keys(MOBILES);
+
+/* ---------- items, gear, gold: the GunBound loadout loop ----------
+   Battle items (OG list): equip up to 6 slots pre-match, buy stock with gold.
+   Gear: permanent stat boosts, equip up to 4. */
+const ITEMS = {
+  dual:      { n: 'Dual',        icon: '✌️', slots: 2, delay: 550, price: 400, kind: 'arm', desc: 'Fire the same weapon twice this turn. Not with SS.' },
+  dualplus:  { n: 'Dual+',       icon: '🔀', slots: 2, delay: 400, price: 550, kind: 'arm', desc: 'Two shots, alternating S1 / S2. Not with SS.' },
+  blood:     { n: 'Blood',       icon: '🩸', slots: 1, delay: 0,   price: 250, kind: 'arm', desc: '-8% of your HP, +33% damage this shot.' },
+  powerup:   { n: 'Power Up',    icon: '⚡', slots: 1, delay: 150, price: 300, kind: 'arm', desc: '+33% damage this shot.' },
+  bunge:     { n: 'Bunge Shot',  icon: '⛏️', slots: 1, delay: 50,  price: 200, kind: 'arm', desc: '+25% terrain destruction this shot.' },
+  thunder:   { n: 'Thunderbolt', icon: '🌩️', slots: 2, delay: 100, price: 450, kind: 'arm', desc: 'Lightning strikes everywhere your shot lands.' },
+  teleport:  { n: 'Teleport',    icon: '🌀', slots: 2, delay: 100, price: 500, kind: 'arm', desc: 'Fire a green orb; teleport to where it lands.' },
+  bandaid:   { n: 'Band-Aid',    icon: '🩹', slots: 1, delay: 50,  price: 150, kind: 'now', desc: 'Recover 10% HP right now.' },
+  medipak:   { n: 'Medipak',     icon: '💊', slots: 2, delay: 300, price: 350, kind: 'now', desc: 'Recover 25% HP right now.' },
+  windchange:{ n: 'Wind Change', icon: '🌪️', slots: 1, delay: 100, price: 200, kind: 'now', desc: 'Reverse the wind direction.' },
+};
+const ITEM_KEYS = Object.keys(ITEMS);
+const GEAR = {
+  sword:     { n: 'Sword',     icon: '🗡️', price: 600, desc: '+8% attack damage' },
+  shield:    { n: 'Shield',    icon: '🛡️', price: 600, desc: '-8% damage taken' },
+  heart:     { n: 'Heart',     icon: '💖', price: 500, desc: '+15 max HP' },
+  wheel:     { n: 'Wheel',     icon: '🛞', price: 400, desc: '+25 move distance' },
+  crosshair: { n: 'Crosshair', icon: '🎯', price: 450, desc: '+8° true-angle each side' },
+  hourglass: { n: 'Hourglass', icon: '⏳', price: 550, desc: '-12% delay' },
+  star:      { n: 'Star',      icon: '⭐', price: 350, desc: '+25% gold earned' },
+  mountain:  { n: 'Mountain',  icon: '⛰️', price: 400, desc: 'Climb steeper slopes' },
+};
+const GEAR_KEYS = Object.keys(GEAR);
+const MAX_EQUIP = 4;
+const RANKS = [[0, 'Chick'], [3, 'Wooden Hammer'], [8, 'Stone Hammer'], [15, 'Metal Axe'], [25, 'Silver Axe'], [40, 'Gold Axe'], [60, 'Double Gold Axe'], [100, 'Purple Wand']];
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+let gold = store.get('cb-gold', 500);
+let inv = store.get('cb-inv', {});
+let loadout = store.get('cb-loadout', []);
+let gearOwned = store.get('cb-gear-owned', []);
+let gearEquipped = store.get('cb-gear-equipped', []);
+let wins = store.get('cb-wins', 0);
+function saveEcon() {
+  store.set('cb-gold', gold); store.set('cb-inv', inv); store.set('cb-loadout', loadout);
+  store.set('cb-gear-owned', gearOwned); store.set('cb-gear-equipped', gearEquipped); store.set('cb-wins', wins);
+}
+function loadoutSlots() { return loadout.reduce((a, id) => a + (ITEMS[id] ? ITEMS[id].slots : 0), 0); }
+function gearStats() {
+  const s = { atk: 0, def: 0, hp: 0, move: 0, ta: 0, delay: 0, gold: 0, climb: 0 };
+  for (const g of gearEquipped) {
+    if (g === 'sword') s.atk += 0.08; else if (g === 'shield') s.def += 0.08;
+    else if (g === 'heart') s.hp += 15; else if (g === 'wheel') s.move += 25;
+    else if (g === 'crosshair') s.ta += 8; else if (g === 'hourglass') s.delay += 0.12;
+    else if (g === 'star') s.gold += 0.25; else if (g === 'mountain') s.climb += 18;
+  }
+  return s;
+}
+function rankFor(w) { let r = RANKS[0][1]; for (const [n, name] of RANKS) if (w >= n) r = name; return r; }
+function maxHpOf(m) { return m.hpMax != null ? m.hpMax : MOBILES[m.mobile].hp; }
+function moveBudgetOf(m) { return MOBILES[m.mobile].move + (m.pid === myId ? gearStats().move : 0); }
+function climbOf(m) { return 30 + (m.pid === myId ? gearStats().climb : 0); }
+function trueRangeOf(m) { const t = MOBILES[m.mobile].ta; const e = (m.pid === myId ? gearStats().ta : 0); return [t[0] - e, t[1] + e]; }
 
 /* Thumbnails for the weapon bar: one tiny SVG per projectile kind */
 const WPN_ICON = {
@@ -334,6 +455,57 @@ function carve(t, cx, cy, r) {
   }
 }
 
+/* ---------- floating islands: destructible box platforms ----------
+   islands are {x, y, w, h} boxes (x,y = top-left). Bombs take box bites
+   out of them — only the box where the bomb landed is destroyed. */
+function genIslands(seed, terrain) {
+  const rnd = mulberry32(seed ^ 0x5f3759df);
+  const n = 2 + Math.floor(rnd() * 2);
+  const out = [];
+  for (let k = 0; k < n; k++) {
+    const w = 90 + rnd() * 60, h = 20 + rnd() * 8;
+    const x = W * (0.22 + 0.56 * (n === 1 ? 0.5 : k / (n - 1))) + (rnd() - 0.5) * 50;
+    let minT = 1e9;
+    for (let i = 0; i < COLS; i++) {
+      const cx = (i + 0.5) * COLW;
+      if (cx >= x - 12 && cx <= x + w + 12) minT = Math.min(minT, terrain[i]);
+    }
+    const top = minT - h - (70 + rnd() * 60);
+    if (top < 70) continue;
+    out.push({ x: Math.round(x), y: Math.round(top), w: Math.round(w), h: Math.round(h) });
+  }
+  return out;
+}
+function inIsland(islands, x, y, pad) {
+  if (!islands) return null;
+  pad = pad || 0;
+  for (const s of islands) if (x >= s.x - pad && x <= s.x + s.w + pad && y >= s.y - pad && y <= s.y + s.h + pad) return s;
+  return null;
+}
+/* highest solid surface at x that isn't above the feet: terrain or an island top */
+function groundAt(t, islands, x, refY) {
+  let g = surfY(t, x);
+  if (islands) for (const s of islands) {
+    if (x >= s.x - 6 && x <= s.x + s.w + 6 && s.y >= refY - 12 && s.y < g) g = s.y;
+  }
+  return g;
+}
+/* box carve: subtract the blast's bounding box from overlapped islands */
+function carveIslands(islands, cx, cy, r) {
+  const bx0 = cx - r, bx1 = cx + r, by0 = cy - r, by1 = cy + r;
+  const out = [];
+  for (const s of islands) {
+    const ix0 = Math.max(s.x, bx0), ix1 = Math.min(s.x + s.w, bx1);
+    const iy0 = Math.max(s.y, by0), iy1 = Math.min(s.y + s.h, by1);
+    if (ix0 >= ix1 || iy0 >= iy1) { out.push(s); continue; }
+    if (ix0 > s.x) out.push({ x: s.x, y: s.y, w: ix0 - s.x, h: s.h });
+    if (ix1 < s.x + s.w) out.push({ x: ix1, y: s.y, w: s.x + s.w - ix1, h: s.h });
+    if (iy0 > s.y) out.push({ x: ix0, y: s.y, w: iy0 - s.y, h: ix1 - ix0 });
+    if (iy1 < s.y + s.h) out.push({ x: ix0, y: iy1, w: ix1 - ix0, h: s.y + s.h - iy1 });
+  }
+  return out.filter(b => b.w >= 16 && b.h >= 8).slice(0, 14);
+}
+
 /* ---------- projectiles ---------- */
 /* A shot: {x,y,vx,vy,kind,dmg,r,team,srcIdx,wind,age,curve}
    kinds: shell, twin(2 shells), pierce, twinpierce, beam, boomerang, spread5, cluster6 */
@@ -356,6 +528,7 @@ function makeProjectiles(kind, x, y, angDeg, power, dmg, r, team, srcIdx, wind) 
       return out;
     }
     case 'cluster6': return [P(0, 0, 'cluster', dmg, r, { bomblets: 6 })];
+    case 'tpshot': return [P(0, 0, 'tpshot', 0, 8)];
     case 'boomerang': return [P(0, 0, 'boomerang', dmg, r, { ret: false })];
     default: return [P(0, 0, kind, dmg, r)];
   }
@@ -380,7 +553,7 @@ function stepProj(p, t, mobiles, env) {
   p.y += p.vy * DT;
   // Force weather: crossing the beam boosts the shot +33%
   if (env.forceX >= 0 && !p.boosted && (px - env.forceX) * (p.x - env.forceX) <= 0) p.boosted = true;
-  const dmgMul = (env.sudden ? 1.5 : 1) * (env.wmod || 1) * (p.boosted ? 1.33 : 1);
+  const dmgMul = (env.sudden ? 1.5 : 1) * (env.wmod || 1) * (p.boosted ? 1.33 : 1) * (env.weak ? 0.8 : 1) * (env.atkMul || 1) * (env.dmgMult || 1);
 
   const explode = (x, y, direct) => {
     evs.push({ type: 'boom', x, y, r: p.r, dmg: p.dmg * dmgMul, team: p.team, srcIdx: p.srcIdx, kind: p.kind, direct });
@@ -400,6 +573,17 @@ function stepProj(p, t, mobiles, env) {
   }
   // out of bounds
   if (p.x < -40 || p.x > W + 40 || p.y > H + 80 || p.age > 9) { p.boom = true; return evs; }
+  // teleport orb: drifts through mobiles, lands on terrain or an island
+  if (p.kind === 'tpshot') {
+    const hitIsl = inIsland(env.islands, p.x, p.y, 0);
+    if (hitIsl || p.y >= surfY(t, p.x) - 2) {
+      evs.push({ type: 'tp', x: p.x, y: hitIsl ? hitIsl.y : Math.min(p.y, surfY(t, p.x)), srcIdx: p.srcIdx });
+      p.boom = true; return evs;
+    }
+  } else if (inIsland(env.islands, p.x, p.y, 0)) {
+    // floating island hit: explode right at the contact point
+    explode(p.x, p.y); return evs;
+  }
   // terrain hit
   if (p.y >= surfY(t, p.x) - 2) { explode(p.x, Math.min(p.y, surfY(t, p.x))); return evs; }
   // mobile hit (center ~14px above feet)
@@ -422,8 +606,9 @@ function stepProj(p, t, mobiles, env) {
 
 /* apply an explosion: terrain carve + damage to mobiles.
    returns {src: total damage credited to srcIdx, victims: {idx: dmg}} */
-function applyBoom(t, mobiles, x, y, r, dmg, srcIdx, carveR, direct) {
+function applyBoom(t, mobiles, x, y, r, dmg, srcIdx, carveR, direct, islands) {
   carve(t, x, y, carveR || r * 0.95);
+  if (islands) { const ni = carveIslands(islands, x, y, carveR || r * 0.95); islands.length = 0; for (const b of ni) islands.push(b); }
   let srcTotal = 0;
   const victims = {};
   for (let i = 0; i < mobiles.length; i++) {
@@ -439,6 +624,8 @@ function applyBoom(t, mobiles, x, y, r, dmg, srcIdx, carveR, direct) {
       let dd = Math.round(dmg * (0.3 + 0.7 * fall * fall));
       // direct body contact: flat 125% — no falloff ambiguity
       if (direct === i) dd = Math.round(dmg * 1.25);
+      // Shield gear: damage taken -8%
+      if (m.pid === myId) { const gd = gearStats().def; if (gd > 0) dd = Math.max(1, Math.round(dd * (1 - gd))); }
       m.hp -= dd;
       srcTotal += dd;
       victims[i] = (victims[i] || 0) + dd;
@@ -453,19 +640,20 @@ function applyBoom(t, mobiles, x, y, r, dmg, srcIdx, carveR, direct) {
 function applyHit(mobiles, target, dmg, srcIdx) {
   const m = mobiles[target];
   if (!m || !m.alive) return 0;
-  const dd = Math.round(dmg);
+  let dd = Math.round(dmg);
+  if (m.pid === myId) { const gd = gearStats().def; if (gd > 0) dd = Math.max(1, Math.round(dd * (1 - gd))); }
   m.hp -= dd;
   if (m.hp <= 0) { m.hp = 0; m.alive = false; }
   return dd;
 }
 /* settle mobiles onto terrain after carving; returns fall map {idx:'fell'} for pit deaths.
    OG-faithful: no fall damage — only the bottomless pit kills. */
-function settle(t, mobiles) {
+function settle(t, mobiles, islands) {
   const falls = {};
   for (let i = 0; i < mobiles.length; i++) {
     const m = mobiles[i];
     if (!m.alive) continue;
-    const sy = surfY(t, m.x);
+    const sy = groundAt(t, islands, m.x, m.y);
     if (m.y < sy - 2) m.y = sy;
     else if (m.y > sy + 4) m.y = sy; // popped out of ground
     if (m.y > H + 40 || m.x < -30 || m.x > W + 30) { m.alive = false; m.hp = 0; falls[i] = 'fell'; }
@@ -480,7 +668,15 @@ function simulateShot(st, shot, env) {
   env = env || {};
   const t = st.terrain, mobiles = st.mobiles;
   const wdef = MOBILES[shot.mobile].w[shot.weapon];
-  let projs = makeProjectiles(wdef.kind, shot.x, shot.y - 32, shot.ang, shot.power, wdef.dmg, wdef.r, shot.team, shot.srcIdx, shot.wind);
+  // battle items: translate the armed item into sim modifiers (OG: never with SS)
+  if (shot.item === 'blood') { const sm = mobiles[shot.srcIdx]; if (sm) sm.hp = Math.max(1, sm.hp - Math.round(maxHpOf(sm) * 0.08)); shot.atkMul = 1.33; }
+  if (shot.item === 'powerup') shot.atkMul = 1.33;
+  if (shot.item === 'bunge') shot.bungeMul = 1.25;
+  if (shot.item === 'thunder') shot.thunderItem = true;
+  env.weak = !!shot.weak; env.atkMul = shot.atkMul || 1; env.bungeMul = shot.bungeMul || 1; env.dmgMult = shot.dmgMult || 1;
+  const tp = shot.item === 'teleport';
+  let projs = tp ? makeProjectiles('tpshot', shot.x, shot.y - 32, shot.ang, shot.power, 0, 8, shot.team, shot.srcIdx, shot.wind)
+    : makeProjectiles(wdef.kind, shot.x, shot.y - 32, shot.ang, shot.power, wdef.dmg, Math.round(wdef.r * (shot.sizeScale || 1)), shot.team, shot.srcIdx, shot.wind);
   const dmgDealt = {};
   const landed = [];
   let guard = 0;
@@ -492,8 +688,11 @@ function simulateShot(st, shot, env) {
       for (const e of evs) {
         if (e.type === 'boom') {
           landed.push({ x: e.x, y: e.y });
-          const ar = applyBoom(t, mobiles, e.x, e.y, e.r, e.dmg, e.srcIdx, undefined, e.direct);
+          const ar = applyBoom(t, mobiles, e.x, e.y, e.r, e.dmg, e.srcIdx, e.r * 0.95 * (env.bungeMul || 1), e.direct, env.islands);
           dmgDealt[e.srcIdx] = (dmgDealt[e.srcIdx] || 0) + ar.src;
+        } else if (e.type === 'tp') {
+          const m = mobiles[e.srcIdx];
+          if (m && m.alive) { m.x = Math.max(8, Math.min(W - 8, e.x)); m.y = groundAt(t, env.islands, m.x, e.y); }
         } else if (e.type === 'hit') {
           const dd = applyHit(mobiles, e.target, e.dmg, e.srcIdx);
           dmgDealt[e.srcIdx] = (dmgDealt[e.srcIdx] || 0) + dd;
@@ -505,6 +704,18 @@ function simulateShot(st, shot, env) {
     }
     projs = next;
   }
+  // Thunderbolt item: lightning strikes everywhere the shot landed
+  const itemStrikes = [];
+  if (shot.thunderItem) {
+    for (const L of landed) {
+      const td2 = Math.round(35 * (env.sudden ? 1.5 : 1));
+      const ar2 = applyBoom(t, mobiles, L.x, L.y, 38, td2, shot.srcIdx, 20, undefined, env.islands);
+      dmgDealt[shot.srcIdx] = (dmgDealt[shot.srcIdx] || 0) + ar2.src;
+      for (const idx in ar2.victims) victims[idx] = (victims[idx] || 0) + ar2.victims[idx];
+      itemStrikes.push({ x: L.x, y: L.y, dmg: td2 });
+      if (ar2.src > 0) hitSomething = true;
+    }
+  }
   // Thor weather: satellite fires one laser per projectile landing near it.
   // Thor damage never charges SS (environmental, not a shot).
   const thorStrikes = [], thorDmgByVictim = {};
@@ -513,15 +724,15 @@ function simulateShot(st, shot, env) {
     const tdmg = THOR_DMG[env.thorLevel || 0] * (env.sudden ? 1.5 : 1);
     for (const L of landed) {
       if (Math.abs(L.x - env.thorX) < 90) {
-        const ar = applyBoom(t, mobiles, L.x, L.y, 55, tdmg, -1, 16);
+        const ar = applyBoom(t, mobiles, L.x, L.y, 55, tdmg, -1, 16, undefined, env.islands);
         thorStrikes.push({ x: Math.round(L.x * 10) / 10, y: Math.round(L.y * 10) / 10, dmg: Math.round(tdmg) });
         thorDmgTotal += ar.src;
         for (const vi in ar.victims) thorDmgByVictim[vi] = (thorDmgByVictim[vi] || 0) + ar.victims[vi];
       }
     }
   }
-  const falls = settle(t, mobiles);
-  return { dmgDealt, thorDmgByVictim, thorDmgTotal, thorStrikes, falls };
+  const falls = settle(t, mobiles, env.islands);
+  return { dmgDealt, thorDmgByVictim, thorDmgTotal, thorStrikes, falls, itemStrikes };
 }
 
 /* spawn layout: team A left plateau, team B right plateau */
@@ -538,11 +749,21 @@ function spawnPositions(defs) {
 /* bot aim: coarse search minimizing distance to nearest enemy; returns {ang,power,weapon} */
 /* Bot roster: 5 distinct sparring partners for solo mode */
 const BOTS = [
-  { id: 'baker',   name: 'Bot Baker',       icon: '🤖', mobile: 'shortcake', err: 1.0, twinRange: 420, ss: 'normal', blurb: 'Balanced all-rounder' },
-  { id: 'deadeye', name: 'Deadeye Dot',     icon: '🎯', mobile: 'eclair',    err: 0.45, twinRange: 300, ss: 'eager', blurb: 'Sharpshooter · barely misses' },
-  { id: 'cannon',  name: 'Loose Cannon',    icon: '💥', mobile: 'fudge',     err: 1.8, twinRange: 700, ss: 'eager', blurb: 'Wild · sprays Twin shots' },
-  { id: 'prof',    name: 'Professor Proof', icon: '🎓', mobile: 'meringue',  err: 0.7, twinRange: 420, ss: 'saver', blurb: 'Patient · saves SS for kills' },
-  { id: 'baby',    name: 'Baby Batter',     icon: '🍼', mobile: 'shortcake', err: 2.6, twinRange: 420, ss: 'lazy', blurb: 'Easy mode' },
+  { id: 'baker',   name: 'Bot Baker',       icon: '🤖', mobile: 'shortcake', err: 1.0, twinRange: 420, ss: 'normal',
+    type: 'Balanced', pro: 'no weaknesses', con: 'no strengths',
+    dmgMult: 1, blastMult: 1, hpMult: 1, moveMult: 1, moveStyle: 'mid', wantDist: 320, blurb: 'Balanced all-rounder' },
+  { id: 'deadeye', name: 'Deadeye Dot',     icon: '🎯', mobile: 'eclair',    err: 0.45, twinRange: 300, ss: 'eager',
+    type: 'Sharpshooter', pro: '+55% accuracy', con: '−20% damage',
+    dmgMult: 0.8, blastMult: 1, hpMult: 1, moveMult: 1, moveStyle: 'mid', wantDist: 280, blurb: 'Sharpshooter · barely misses' },
+  { id: 'cannon',  name: 'Loose Cannon',    icon: '💥', mobile: 'fudge',     err: 1.8, twinRange: 700, ss: 'eager',
+    type: 'Demolitionist', pro: '+25% blast size', con: 'wild aim',
+    dmgMult: 1, blastMult: 1.25, hpMult: 1, moveMult: 1, moveStyle: 'mid', wantDist: 480, blurb: 'Wild · sprays Twin shots' },
+  { id: 'prof',    name: 'Professor Proof', icon: '🎓', mobile: 'meringue',  err: 0.7, twinRange: 420, ss: 'saver',
+    type: 'Juggernaut', pro: '+30% HP', con: '−40% move distance',
+    dmgMult: 1, blastMult: 1, hpMult: 1.3, moveMult: 0.6, moveStyle: 'high', wantDist: 300, blurb: 'Patient · saves SS for kills' },
+  { id: 'baby',    name: 'Baby Batter',     icon: '🍼', mobile: 'shortcake', err: 2.6, twinRange: 420, ss: 'lazy',
+    type: 'Rookie', pro: 'harmless (easy mode)', con: '−30% damage, shaky aim',
+    dmgMult: 0.7, blastMult: 1, hpMult: 1, moveMult: 1, moveStyle: 'random', wantDist: 320, blurb: 'Easy mode' },
 ];
 function botDefOf(id) { return BOTS.find(b => b.id === id) || BOTS[0]; }
 
@@ -575,7 +796,7 @@ function botAim(st, meIdx) {
       let score = 1e12;
       for (let s = 0; s < 240; s++) {
         vx += st.wind * 2.2 * DT; vy += GRAV * DT; x += vx * DT; y += vy * DT;
-        if (y >= surfY(st.terrain, x) - 2 || x < -40 || x > W + 40 || y > H + 80) break;
+        if (inIsland(st.islands, x, y, 0) || y >= surfY(st.terrain, x) - 2 || x < -40 || x > W + 40 || y > H + 80) break;
         const dx = x - tgt.x, dy = y - (tgt.y - 14);
         const d = dx * dx + dy * dy;
         if (d < 24 * 24) { score = 0; break; }
@@ -599,7 +820,9 @@ function botAim(st, meIdx) {
 function snapState(st) {
   return {
     terrain: Array.from(st.terrain, v => Math.round(v * 10) / 10),
-    mobiles: st.mobiles.map(m => ({ x: Math.round(m.x * 10) / 10, y: Math.round(m.y * 10) / 10, hp: m.hp, ss: Math.round(m.ss), alive: m.alive, ang: m.ang })),
+    mobiles: st.mobiles.map(m => ({ x: Math.round(m.x * 10) / 10, y: Math.round(m.y * 10) / 10, hp: m.hp, ss: Math.round(m.ss), alive: m.alive, ang: m.ang, face: m.face })),
+    islands: st.islands.map(o => ({ x: o.x, y: o.y, w: o.w, h: o.h })),
+    theme: st.theme || 'meadow',
     turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, over: st.over, winner: st.winner,
     delays: st.delays ? st.delays.slice() : [], opener: st.opener ? st.opener.slice() : [],
     wcur: st.wcur || 'calm', wnext: st.wnext || 'calm', win: st.win || 0,
@@ -609,6 +832,8 @@ function snapState(st) {
 }
 function applySnapState(st, s) {
   st.terrain = Float32Array.from(s.terrain);
+  if (s.islands) st.islands = s.islands.map(o => ({ x: o.x, y: o.y, w: o.w, h: o.h }));
+  if (s.theme) st.theme = s.theme;
   s.mobiles.forEach((sm, i) => Object.assign(st.mobiles[i], sm));
   st.turnIdx = s.turnIdx; st.wind = s.wind; st.sudden = s.sudden; st.over = s.over; st.winner = s.winner;
   if (s.delays) st.delays = s.delays.slice();
@@ -634,6 +859,7 @@ let activeIdx = -1;
 let timeLeft = TURN_TIME, timerId = null;
 let aim = { ang: 45, power: 0, charging: false, weapon: 0 };
 let moveLeft = 0, turnStartX = 0;
+let myMatchDmg = 0, armedItem = null;
 let particles = [];
 let dmgNums = [];   // floating damage numbers {x,y,txt,t,ttl,col}
 let flashes = [];   // explosion flash rings {x,y,r,t,ttl}
@@ -653,13 +879,19 @@ let completedTurns = 0;
 function newMatch(seed, defs) {
   const terrain = genTerrain(seed);
   const xs = spawnPositions(defs);
+  const islands = genIslands(seed, terrain);
   st = { seed, terrain, mobiles: [], turnIdx: -1, wind: 0, sudden: false, over: false, winner: null,
     delays: defs.map(() => 0), opener: [], wcur: 'calm', wnext: 'calm', win: defs.length,
-    thorX: -1, thorLevel: 0, thorDmg: 0, forceX: -1 };
+    thorX: -1, thorLevel: 0, thorDmg: 0, forceX: -1,
+    islands, theme: ['meadow', 'sunset', 'night'][(seed >>> 0) % 3], dualLeft: 0, dualPlus: false };
   defs.forEach((d, i) => {
-    st.mobiles.push({ x: xs[i], y: surfY(terrain, xs[i]), hp: MOBILES[d.mobile].hp, ss: 0, alive: true,
-      ang: d.team === 'A' ? 45 : 135, mobile: d.mobile, team: d.team, pid: d.pid, name: d.name, isBot: !!d.isBot, bot: d.bot || null });
+    const bd = d.bot ? botDefOf(d.bot) : null;
+    const hpMax = Math.round(MOBILES[d.mobile].hp * (bd ? (bd.hpMult || 1) : 1)) + ((!d.isBot && d.pid === myId) ? gearStats().hp : 0);
+    st.mobiles.push({ x: xs[i], y: surfY(terrain, xs[i]), hp: hpMax, hpMax, ss: 0, alive: true,
+      ang: d.team === 'A' ? 45 : 135, mobile: d.mobile, team: d.team, pid: d.pid, name: d.name, isBot: !!d.isBot, bot: d.bot || null,
+      face: d.team === 'A' ? 1 : -1 });
   });
+  myMatchDmg = 0; armedItem = null;
   turnRng = mulberry32(seed ^ 0x9e3779b9);
   st.opener = buildOpener(st.mobiles, mulberry32((seed ^ 0x51ed) >>> 0));
   st.wnext = rollWeather(turnRng, 'calm');
@@ -694,13 +926,13 @@ function startTurn() {
     if (st.wcur === 'force') st.forceX = W * (0.25 + turnRng() * 0.5);
     toast('Weather: ' + WEATHER_LABEL[st.wcur], 1800);
   }
-  if (st.wcur === 'moon') m.hp = Math.min(MOBILES[m.mobile].hp, m.hp + 4);
+  if (st.wcur === 'moon') m.hp = Math.min(maxHpOf(m), m.hp + 4);
   if (completedTurns >= 16 && !st.sudden) { st.sudden = true; toast('SUDDEN DEATH — all damage +50%!'); }
   turnState = 'aim';
   timeLeft = TURN_TIME;
   turnStartT = performance.now();
   aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = 0;
-  moveLeft = MOBILES[m.mobile].move; turnStartX = m.x;
+  moveLeft = moveBudgetOf(m); turnStartX = m.x;
   turnQueue = queuePreview(st, 3);
   Net.sendTurn({ turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, activeIdx,
     wcur: st.wcur, wnext: st.wnext, win: st.win,
@@ -721,6 +953,7 @@ function onTurnUI() {
   const mine = isMyTurn();
   $('weapBar').classList.toggle('hidden', !mine);
   $('powWrap').classList.toggle('hidden', !mine);
+  renderItemBar();
 }
 function updateWind() {
   const w = st.wind, dir = w === 0 ? '·' : (w > 0 ? '→' : '←');
@@ -728,6 +961,7 @@ function updateWind() {
 }
 function updateWeapons() {
   const m = activeMobile(); if (!m) return;
+  if (aim.weapon === 2 && armedItem) { armedItem = null; renderItemBar(); } // OG: items can't pair with SS
   const def = MOBILES[m.mobile];
   for (let i = 0; i < 3; i++) {
     const b = $('w' + i);
@@ -776,11 +1010,18 @@ function fireShot(shot) {
   if (turnState !== 'aim') return;
   turnState = 'anim'; stopTimer();
   const secs = shot.secs != null ? shot.secs : turnSecs();
-  const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)) };
+  const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)), islands: st.islands.map(o => ({ x: o.x, y: o.y, w: o.w, h: o.h })) };
+  const m0 = st.mobiles[shot.srcIdx];
+  const botD0 = m0 && m0.isBot ? botDefOf(m0.bot) : null;
+  shot.weak = isWeakAngle(shot);
+  shot.dmgMult = botD0 ? (botD0.dmgMult || 1) : 1;
+  shot.sizeScale = (st.sudden ? 1.12 : 1) * (botD0 ? (botD0.blastMult || 1) : 1);
+  if (shot.item === 'dual' || shot.item === 'dualplus') { st.dualLeft = 1; st.dualPlus = shot.item === 'dualplus'; }
   const env = { sudden: shot.sudden, wmod: st.wcur === 'dark' ? 0.5 : 1,
     forceX: st.wcur === 'force' ? st.forceX : -1,
-    thorX: st.wcur === 'thor' ? st.thorX : -1, thorLevel: st.thorLevel };
+    thorX: st.wcur === 'thor' ? st.thorX : -1, thorLevel: st.thorLevel, islands: st.islands };
   const res = simulateShot(st, shot, env);
+  if (shot.srcIdx === myDefIdx) myMatchDmg += res.dmgDealt[shot.srcIdx] || 0;
   // SS charge ~1 per 4 turns: dealing charges attacker, taking charges victim (Thor excluded)
   const ssMul = st.wcur === 'eclipse' ? 2 : 1;
   const src = st.mobiles[shot.srcIdx];
@@ -794,7 +1035,10 @@ function fireShot(shot) {
   });
   if (shot.weapon === 2 && src) src.ss = 0;
   // delay cost: weapon + time spent aiming
-  st.delays[shot.srcIdx] += (DELAY_COST[shot.weapon] || DELAY_COST.pass) + DELAY_PER_SEC * Math.min(TURN_TIME, secs);
+  { const me0 = m0 && m0.pid === myId;
+    const hgm = me0 ? gearStats().delay : 0;
+    const itD = shot.item ? ITEMS[shot.item].delay : 0;
+    st.delays[shot.srcIdx] += Math.round(((DELAY_COST[shot.weapon] || DELAY_COST.pass) + DELAY_PER_SEC * Math.min(TURN_TIME, secs) + itD) * (1 - hgm)); }
   // Thor levels up with cumulative Thor damage
   if (res.thorDmgTotal > 0) {
     st.thorDmg += res.thorDmgTotal;
@@ -804,7 +1048,7 @@ function fireShot(shot) {
   completedTurns++;
   checkWin();
   const snap = snapState(st);
-  Net.sendSnap({ shot: { x: shot.x, y: shot.y, ang: shot.ang, power: shot.power, weapon: shot.weapon, mobile: shot.mobile, team: shot.team, srcIdx: shot.srcIdx, wind: shot.wind, sudden: shot.sudden }, final: snap, thor: res.thorStrikes });
+  Net.sendSnap({ shot: { x: shot.x, y: shot.y, ang: shot.ang, power: shot.power, weapon: shot.weapon, mobile: shot.mobile, team: shot.team, srcIdx: shot.srcIdx, wind: shot.wind, sudden: shot.sudden, item: shot.item || null, weak: !!shot.weak, atkMul: shot.atkMul || 1, bungeMul: shot.bungeMul || 1, dmgMult: shot.dmgMult || 1, sizeScale: shot.sizeScale || 1 }, final: snap, thor: res.thorStrikes, itemStrikes: res.itemStrikes });
   // rewind visual state to pre-shot: the replay animation lands each boom's
   // damage the moment of impact (hp bars, craters, damage numbers) instead of
   // everything jumping at fire time. SS/delays/thor stay charged; the final
@@ -814,7 +1058,9 @@ function fireShot(shot) {
     const m = st.mobiles[i];
     m.hp = pm.hp; m.alive = pm.alive; m.x = pm.x; m.y = pm.y;
   });
-  animateShot(pre, snap, shot, res.thorStrikes);
+  st.islands.length = 0;
+  for (const b of pre.islands) st.islands.push({ x: b.x, y: b.y, w: b.w, h: b.h });
+  animateShot(pre, snap, shot, res.thorStrikes, res.itemStrikes);
 }
 
 function checkWin() {
@@ -827,22 +1073,27 @@ function checkWin() {
 }
 
 /* animate a shot from pre-shot state; then apply canonical final */
-function animateShot(pre, finalSnap, shot, thorStrikes) {
+function animateShot(pre, finalSnap, shot, thorStrikes, itemStrikes) {
   let projs = [];
   if (shot) {
     const wdef = MOBILES[shot.mobile].w[shot.weapon];
-    projs = makeProjectiles(wdef.kind, shot.x, shot.y - 32, shot.ang, shot.power, wdef.dmg, wdef.r, shot.team, shot.srcIdx, shot.wind);
+    const tp = shot.item === 'teleport';
+    projs = tp ? makeProjectiles('tpshot', shot.x, shot.y - 32, shot.ang, shot.power, 0, 8, shot.team, shot.srcIdx, shot.wind)
+      : makeProjectiles(wdef.kind, shot.x, shot.y - 32, shot.ang, shot.power, wdef.dmg, Math.round(wdef.r * (shot.sizeScale || 1)), shot.team, shot.srcIdx, shot.wind);
   }
   const simT = pre.terrain.slice();
   const simM = pre.mobiles.map(m => Object.assign({}, m));
-  anim = { projs, simT, simM, final: finalSnap, shot, thor: thorStrikes || [], t: 0 };
+  const simI = (pre.islands || []).map(o => ({ x: o.x, y: o.y, w: o.w, h: o.h }));
+  anim = { projs, simT, simM, simI, final: finalSnap, shot, thor: thorStrikes || [], itemStrikes: itemStrikes || [], t: 0 };
   $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden');
 }
 
 function animEnv() {
-  return { sudden: anim.shot ? anim.shot.sudden : false,
+  const s = anim.shot || {};
+  return { sudden: s.sudden || false,
     wmod: st.wcur === 'dark' ? 0.5 : 1,
-    forceX: st.wcur === 'force' ? st.forceX : -1 };
+    forceX: st.wcur === 'force' ? st.forceX : -1,
+    islands: anim.simI, weak: !!s.weak, atkMul: s.atkMul || 1, bungeMul: s.bungeMul || 1, dmgMult: s.dmgMult || 1 };
 }
 
 function stepAnim(dt) {
@@ -863,9 +1114,17 @@ function stepAnim(dt) {
           burst(e.x, e.y, e.r, e.kind);
           flashes.push({ x: e.x, y: e.y, r: e.r, t: 0, ttl: 0.35 });
           shake = Math.min(14, shake + e.r * 0.12);
-          const res = applyBoom(anim.simT, anim.simM, e.x, e.y, e.r, e.dmg, e.srcIdx, undefined, e.direct);
-          st.terrain.set(anim.simT); // craters form in real time
+          const res = applyBoom(anim.simT, anim.simM, e.x, e.y, e.r, e.dmg, e.srcIdx, e.r * 0.95 * (env.bungeMul || 1), e.direct, anim.simI);
+          st.terrain.set(anim.simT); st.islands = anim.simI; // craters form in real time
           syncLiveDamage(res.victims, e.direct);
+        } else if (e.type === 'tp') {
+          const mm = anim.simM[e.srcIdx];
+          if (mm && mm.alive) {
+            mm.x = Math.max(8, Math.min(W - 8, e.x)); mm.y = groundAt(anim.simT, anim.simI, mm.x, e.y);
+            burst(e.x, e.y, 18, 'beam'); flashes.push({ x: e.x, y: e.y, r: 40, t: 0, ttl: 0.4 });
+            const live = st.mobiles[e.srcIdx];
+            if (live) { live.x = mm.x; live.y = mm.y; }
+          }
         } else if (e.type === 'hit') {
           burst(e.x, e.y, e.r, e.kind);
           flashes.push({ x: e.x, y: e.y, r: e.r, t: 0, ttl: 0.3 });
@@ -885,11 +1144,21 @@ function stepAnim(dt) {
       burst(ts.x, ts.y, 30, 'beam');
       flashes.push({ x: ts.x, y: ts.y, r: 55, t: 0, ttl: 0.4 });
       shake = Math.min(14, shake + 4);
-      const tres = applyBoom(anim.simT, anim.simM, ts.x, ts.y, 55, ts.dmg, -1, 16);
-      st.terrain.set(anim.simT);
+      const tres = applyBoom(anim.simT, anim.simM, ts.x, ts.y, 55, ts.dmg, -1, 16, undefined, anim.simI);
+      st.terrain.set(anim.simT); st.islands = anim.simI;
       syncLiveDamage(tres.victims);
     }
-    settle(anim.simT, anim.simM);
+    // Thunderbolt item strikes: visual replay (canonical damage already in the final snap)
+    for (const s of anim.itemStrikes) {
+      beams.push({ x: s.x, y: s.y, t: 0, ttl: 0.5, col: '#ffe066' });
+      burst(s.x, s.y, 22, 'beam');
+      flashes.push({ x: s.x, y: s.y, r: 55, t: 0, ttl: 0.4 });
+      shake = Math.min(14, shake + 4);
+      const r2 = applyBoom(anim.simT, anim.simM, s.x, s.y, 38, s.dmg, -1, 20, undefined, anim.simI);
+      st.terrain.set(anim.simT); st.islands = anim.simI;
+      syncLiveDamage(r2.victims);
+    }
+    settle(anim.simT, anim.simM, anim.simI);
     applySnapState(st, anim.final);
     anim = null; shake = 0;
     onShotDone();
@@ -897,6 +1166,20 @@ function stepAnim(dt) {
 }
 
 function onShotDone() {
+  // Dual / Dual+: the second shot happens now — same turn, no turn advance
+  if (st.dualLeft > 0 && !st.over) {
+    st.dualLeft--;
+    turnState = 'aim'; timeLeft = TURN_TIME; turnStartT = performance.now();
+    aim.power = 0; aim.charging = false;
+    if (st.dualPlus) { aim.weapon = aim.weapon === 0 ? 1 : 0; st.dualPlus = false; }
+    onTurnUI(); startTimer();
+    if (Net.role === 'host') Net.sendTurn({ turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, activeIdx,
+      wcur: st.wcur, wnext: st.wnext, win: st.win,
+      thorX: st.thorX, thorLevel: st.thorLevel, thorDmg: st.thorDmg, forceX: st.forceX,
+      queue: turnQueue, dual: true, dualWeapon: aim.weapon });
+    toast('DUAL — shoot again!');
+    return;
+  }
   if (st.over) return endMatch();
   if (pendingTurn) { const p = pendingTurn; pendingTurn = null; onRemoteTurn(p); return; }
   if (Net.role === 'host' || Net.role === 'solo') {
@@ -954,16 +1237,61 @@ window.addEventListener('pointerdown', () => Music.ensure(), { passive: true });
 window.addEventListener('keydown', () => Music.ensure());
 
 /* ---------- bot ---------- */
-function botFire() {  if (turnState !== 'aim') return;
+function botFire() {
+  if (turnState !== 'aim') return;
   const m = activeMobile();
   if (!m || !m.isBot) return;
-  const s = botAim(st, activeIdx);
-  // animate bot "aiming"
-  m.ang = s.ang;
-  setTimeout(() => {
-    if (turnState !== 'aim') return;
-    fireShot({ x: m.x, y: m.y, ang: s.ang, power: s.power, weapon: s.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden });
-  }, 700);
+  // bots walk before they shoot: personality-driven repositioning within the move budget
+  botMove(m, () => {
+    const s = botAim(st, activeIdx);
+    // animate bot "aiming"
+    m.ang = s.ang;
+    setTimeout(() => {
+      if (turnState !== 'aim') return;
+      fireShot({ x: m.x, y: m.y, ang: s.ang, power: s.power, weapon: s.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: 2 });
+    }, 700);
+  });
+}
+/* bot walks toward a personality target, step by step, then reports its move */
+function botMove(m, done) {
+  const bd = botDefOf(m.bot);
+  const budget = moveLeft * (bd.moveMult || 1);
+  if (budget <= 0) return done();
+  let tgt = null, best = 1e9;
+  for (const o of st.mobiles) { if (!o.alive || o.team === m.team) continue; const d = Math.abs(o.x - m.x); if (d < best) { best = d; tgt = o; } }
+  const want = bd.wantDist || 320;
+  let dir = 0;
+  if (bd.moveStyle === 'random') dir = Math.random() < 0.5 ? -1 : 1;
+  else if (bd.moveStyle === 'high') {
+    const gy0 = groundAt(st.terrain, st.islands, m.x, m.y);
+    let bx = m.x, bh = gy0;
+    for (let x = m.x - budget; x <= m.x + budget; x += 20) {
+      const cx = Math.max(10, Math.min(W - 10, x));
+      const gy = groundAt(st.terrain, st.islands, cx, m.y);
+      if (gy < bh - 4 && Math.abs(gy - gy0) <= climbOf(m)) { bh = gy; bx = cx; }
+    }
+    dir = Math.sign(bx - m.x);
+  } else {
+    if (!tgt) dir = m.team === 'A' ? 1 : -1;
+    else if (best > want + 60) dir = Math.sign(tgt.x - m.x);
+    else if (best < want - 60) dir = -Math.sign(tgt.x - m.x);
+  }
+  if (!dir) return done();
+  const targetX = Math.max(10, Math.min(W - 10, m.x + dir * Math.min(budget, 60 + Math.random() * 60)));
+  const step = () => {
+    if (turnState !== 'aim') return done();
+    const dx = targetX - m.x;
+    if (Math.abs(dx) < 4 || moveLeft <= 0) { Net.sendMove({ x: m.x, idx: activeIdx, face: m.face }); return done(); }
+    const s = Math.sign(dx) * Math.min(10, Math.abs(dx));
+    const nx = Math.max(10, Math.min(W - 10, m.x + s));
+    if (Math.abs(groundAt(st.terrain, st.islands, nx, m.y) - groundAt(st.terrain, st.islands, m.x, m.y)) > climbOf(m)) {
+      Net.sendMove({ x: m.x, idx: activeIdx, face: m.face }); return done();
+    }
+    m.x = nx; m.y = groundAt(st.terrain, st.islands, nx, m.y); m.face = s > 0 ? 1 : -1;
+    moveLeft = Math.max(0, moveLeft - Math.abs(s));
+    setTimeout(step, 40);
+  };
+  step();
 }
 
 /* ---------- input ---------- */
@@ -992,7 +1320,9 @@ window.addEventListener('keyup', e => {
 
 function doFire() {
   const m = activeMobile(); if (!m) return;
-  const shot = { x: m.x, y: m.y, ang: aim.ang, power: Math.max(5, Math.round(aim.power)), weapon: aim.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: turnSecs() };
+  const shot = { x: m.x, y: m.y, ang: aim.ang, power: Math.max(5, Math.round(aim.power)), weapon: aim.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: turnSecs(), item: armedItem, face: m.face };
+  if (armedItem) { inv[armedItem] = Math.max(0, (inv[armedItem] || 0) - 1); if (!inv[armedItem]) delete inv[armedItem]; saveEcon(); }
+  armedItem = null; renderItemBar();
   if (Net.role === 'guest') { Net.sendShot(shot); turnState = 'anim'; stopTimer(); $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden'); }
   else fireShot(shot);
 }
@@ -1008,11 +1338,12 @@ function pollMove(dt) {
   const step = dx * 130 * dt;
   const nx = Math.max(10, Math.min(W - 10, m.x + step));
   // slope check: can't climb cliffs
-  if (Math.abs(surfY(st.terrain, nx) - surfY(st.terrain, m.x)) > 30) return;
+  if (Math.abs(surfY(st.terrain, nx) - surfY(st.terrain, m.x)) > climbOf(m)) return;
   const used = Math.min(moveLeft, Math.abs(step));
-  m.x = nx; m.y = surfY(st.terrain, nx); moveLeft -= used;
+  m.face = dx > 0 ? 1 : -1;
+  m.x = nx; m.y = groundAt(st.terrain, st.islands, nx, m.y); moveLeft -= used;
   moveAcc += dt;
-  if (moveAcc > 0.12) { moveAcc = 0; Net.sendMove({ x: m.x, idx: activeIdx }); }
+  if (moveAcc > 0.12) { moveAcc = 0; Net.sendMove({ x: m.x, idx: activeIdx, face: m.face }); }
 }
 function pollAim(dt) {
   if (!isMyTurn() || turnState !== 'aim' || anim) return;
@@ -1124,20 +1455,38 @@ function initDeco(seed) {
   clouds = [];
   for (let i = 0; i < 7; i++) clouds.push({ x: rnd() * W, y: 30 + rnd() * 130, s: 0.6 + rnd() * 1.1, v: 6 + rnd() * 10 });
 }
+const THEMES = {
+  meadow: { sky: ['#6ec1f5', '#b8e6ff', '#ffe3ee'], hill: ['#5da862', '#478a4e'], frost: ['#ff9ec6', '#ffe3ee'], sun: '#fff6c9', cloud: '#ffffffb0' },
+  sunset: { sky: ['#ff9a6a', '#f76b9a', '#4a2a6e'], hill: ['#8c5a6e', '#684052'], frost: ['#ffb066', '#ffe8c9'], sun: '#ffd166', cloud: '#ffffff70' },
+  night:  { sky: ['#0b0e2e', '#2b1f5c', '#5b3a8c'], hill: ['#3a2a6e', '#2a1f55'], frost: ['#9ec6ff', '#e2efff'], sun: '#ffe9a8', cloud: '#ffffff2e' },
+};
 function drawSky() {
+  const th = THEMES[(st && st.theme) || 'meadow'];
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#2b1f5c'); g.addColorStop(0.55, '#5b3a8c'); g.addColorStop(1, '#c86b9a');
+  g.addColorStop(0, th.sky[0]); g.addColorStop(0.55, th.sky[1]); g.addColorStop(1, th.sky[2]);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  // stars
-  ctx.fillStyle = '#ffffffaa';
-  const rnd = mulberry32(99);
-  for (let i = 0; i < 60; i++) { ctx.fillRect(rnd() * W, rnd() * H * 0.45, 2, 2); }
-  // moon
-  ctx.fillStyle = '#ffe9a8'; ctx.beginPath(); ctx.arc(830, 80, 34, 0, 6.29); ctx.fill();
-  ctx.fillStyle = '#2b1f5c'; ctx.beginPath(); ctx.arc(818, 72, 30, 0, 6.29); ctx.fill();
-  // clouds
-  ctx.fillStyle = '#ffffff22';
+  const night = (st && st.theme) === 'night';
+  if (night) {
+    // twinkling stars
+    const rnd = mulberry32(99), now = performance.now() / 700;
+    for (let i = 0; i < 90; i++) {
+      ctx.globalAlpha = 0.25 + 0.65 * (0.5 + 0.5 * Math.sin(now + i * 1.7));
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(rnd() * W, rnd() * H * 0.5, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+  // sun / moon with halo
+  const halo = ctx.createRadialGradient(830, 80, 8, 830, 80, 95);
+  halo.addColorStop(0, th.sun); halo.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(830, 80, 95, 0, 6.29); ctx.fill();
+  ctx.fillStyle = th.sun; ctx.beginPath(); ctx.arc(830, 80, night ? 30 : 36, 0, 6.29); ctx.fill();
+  if (night) { // crescent cutout
+    ctx.fillStyle = th.sky[0]; ctx.beginPath(); ctx.arc(818, 72, 26, 0, 6.29); ctx.fill();
+  }
+  // soft multi-puff clouds
   for (const c of clouds) {
+    ctx.fillStyle = th.cloud;
     ctx.beginPath();
     ctx.ellipse(c.x, c.y, 46 * c.s, 16 * c.s, 0, 0, 6.29);
     ctx.ellipse(c.x - 30 * c.s, c.y + 6 * c.s, 26 * c.s, 12 * c.s, 0, 0, 6.29);
@@ -1145,7 +1494,7 @@ function drawSky() {
     ctx.fill();
   }
   // parallax hills
-  for (const [amp, base, col] of [[36, 470, '#3a2a6e'], [22, 500, '#2f2360']]) {
+  for (const [amp, base, col] of [[36, 470, th.hill[0]], [22, 500, th.hill[1]]]) {
     ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, H);
     for (let x = 0; x <= W; x += 8) ctx.lineTo(x, base - Math.abs(Math.sin(x * 0.008 + amp)) * amp);
     ctx.lineTo(W, H); ctx.fill();
@@ -1163,12 +1512,20 @@ function terrTopPath(offset) {
   ctx.lineTo(W + 6, st.terrain[COLS - 1] + offset);
 }
 function drawTerrain() {
-  // dirt body
+  // dirt body: rich gradient + strata bands
   terrTopPath(0);
   ctx.lineTo(W + 6, H + 6); ctx.lineTo(-6, H + 6); ctx.closePath();
   const g = ctx.createLinearGradient(0, 200, 0, H);
-  g.addColorStop(0, '#8a5a33'); g.addColorStop(1, '#4a2c14');
+  g.addColorStop(0, '#a06a3c'); g.addColorStop(0.35, '#7d5027'); g.addColorStop(1, '#3d2410');
   ctx.fillStyle = g; ctx.fill();
+  ctx.save(); ctx.clip();
+  ctx.strokeStyle = 'rgba(0,0,0,0.14)'; ctx.lineWidth = 3;
+  for (let yy = 300; yy < H; yy += 46) {
+    ctx.beginPath();
+    for (let x = -6; x <= W + 6; x += 24) ctx.lineTo(x, yy + Math.sin(x * 0.02 + yy) * 8);
+    ctx.stroke();
+  }
+  ctx.restore();
   // dirt speckles: seeded per column so they don't shimmer, they ride the surface
   for (let i = 0; i < COLS; i += 2) {
     const hr = mulberry32(i * 7919 + 101);
@@ -1177,10 +1534,40 @@ function drawTerrain() {
     ctx.beginPath(); ctx.ellipse(x + (hr() - 0.5) * COLW, y + 14 + hr() * 46, 3.2, 2.2, 0, 0, 6.29); ctx.fill();
     ctx.beginPath(); ctx.ellipse(x + (hr() - 0.5) * COLW, y + 22 + hr() * 60, 2.2, 1.6, 0, 0, 6.29); ctx.fill();
   }
-  // frosting rim on the smoothed edge
+  // frosting rim on the smoothed edge (theme-tinted)
+  const thf = THEMES[(st && st.theme) || 'meadow'];
   ctx.lineCap = 'round';
-  ctx.strokeStyle = '#ff9ec6'; ctx.lineWidth = 9; terrTopPath(3); ctx.stroke();
-  ctx.strokeStyle = '#ffe3ee'; ctx.lineWidth = 5; terrTopPath(0); ctx.stroke();
+  ctx.strokeStyle = thf.frost[0]; ctx.lineWidth = 9; terrTopPath(3); ctx.stroke();
+  ctx.strokeStyle = thf.frost[1]; ctx.lineWidth = 5; terrTopPath(0); ctx.stroke();
+}
+function drawIslands() {
+  if (!st || !st.islands) return;
+  const th = THEMES[st.theme || 'meadow'];
+  for (const s of st.islands) {
+    ctx.save();
+    // soft drop shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.beginPath(); ctx.ellipse(s.x + s.w / 2, s.y + s.h + 16, s.w / 2, 10, 0, 0, 6.29); ctx.fill();
+    // dirt body
+    const g = ctx.createLinearGradient(0, s.y, 0, s.y + s.h);
+    g.addColorStop(0, '#a06a3c'); g.addColorStop(1, '#4a2c14');
+    ctx.fillStyle = g;
+    roundRect(s.x, s.y, s.w, s.h, 8); ctx.fill();
+    // grassy cap
+    ctx.fillStyle = th.frost[0];
+    roundRect(s.x - 2, s.y - 6, s.w + 4, 13, 6); ctx.fill();
+    ctx.fillStyle = th.frost[1];
+    roundRect(s.x - 2, s.y - 6, s.w + 4, 6, 3); ctx.fill();
+    // grass tufts
+    ctx.strokeStyle = th.frost[0]; ctx.lineWidth = 2;
+    const gr = mulberry32(((s.x * 31 + s.y * 17) | 0) >>> 0);
+    for (let i = 0; i < Math.max(2, s.w / 18); i++) {
+      const gx = s.x + 8 + gr() * (s.w - 16);
+      ctx.beginPath(); ctx.moveTo(gx, s.y - 5); ctx.lineTo(gx - 3, s.y - 13);
+      ctx.moveTo(gx, s.y - 5); ctx.lineTo(gx + 3, s.y - 12); ctx.stroke();
+    }
+    ctx.restore();
+  }
 }
 function drawMobile(m, i) {
   const x = m.x, yb = m.y; // yb = feet
@@ -1211,6 +1598,8 @@ function drawMobile(m, i) {
     ctx.fillStyle = '#c9c9e0';
     ctx.beginPath(); ctx.arc(wx, -7, 2.5, 0, 6.29); ctx.fill();
   }
+  const f = m.face || 1;
+  ctx.save(); ctx.scale(f, 1); // face the direction of travel
   const k = m.mobile;
   if (k === 'shortcake') {
     ctx.fillStyle = '#ffb3c7'; ctx.beginPath(); ctx.arc(0, -18, 16, 0, 6.29); ctx.fill();       // cake body
@@ -1232,10 +1621,13 @@ function drawMobile(m, i) {
     ctx.fillStyle = '#8f5a2e'; roundRect(-16, -34, 32, 8, 4); ctx.fill();
     ctx.fillStyle = '#ffd166'; ctx.fillRect(-10, -22, 6, 6); ctx.fillRect(4, -22, 6, 6);        // chips
   }
-  // face
+  // gloss highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.beginPath(); ctx.ellipse(-4, -30, 9, 5, -0.4, 0, 6.29); ctx.fill();
+  // face (eyes look toward the facing direction)
   if (m.alive) {
     ctx.fillStyle = '#3a2a1a';
-    ctx.beginPath(); ctx.arc(-5, -20, 2.2, 0, 6.29); ctx.arc(5, -20, 2.2, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.arc(-2, -20, 2.2, 0, 6.29); ctx.arc(8, -20, 2.2, 0, 6.29); ctx.fill();
   } else {
     ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(-8, -22); ctx.lineTo(-2, -16); ctx.moveTo(-2, -22); ctx.lineTo(-8, -16); ctx.stroke();
@@ -1249,6 +1641,7 @@ function drawMobile(m, i) {
     ctx.fillStyle = teamCol; ctx.fillRect(24, -4, 6, 8);
     ctx.restore();
   }
+  ctx.restore(); // unflip
   ctx.restore();
   // name + hp + ss
   ctx.save();
@@ -1256,7 +1649,7 @@ function drawMobile(m, i) {
   ctx.fillStyle = m.alive ? '#fff' : '#ff8787';
   ctx.fillText((i === myDefIdx ? '▶ ' : '') + m.name, x, yb - 58);
   ctx.fillStyle = '#00000088'; ctx.fillRect(x - 22, yb - 54, 44, 6);
-  const hpf = Math.max(0, m.hp / MOBILES[m.mobile].hp);
+  const hpf = Math.max(0, m.hp / maxHpOf(m));
   ctx.fillStyle = hpf > 0.5 ? '#7bed9f' : (hpf > 0.25 ? '#ffd166' : '#ff8787');
   ctx.fillRect(x - 22, yb - 54, 44 * hpf, 6);
   // ss pips
@@ -1272,6 +1665,18 @@ function roundRect(x, y, w, h, r) {
 function drawAim() {
   if (!isMyTurn() || turnState !== 'aim' || anim) return;
   const m = activeMobile(); if (!m || !m.alive) return;
+  // true-angle arc: solid green = full damage, faded = weak angle (-20%)
+  const [tlo, thi] = trueRangeOf(m);
+  ctx.lineWidth = 4;
+  const arcs = [[tlo, thi, '#51cf66'], [5, tlo, 'rgba(81,207,102,0.28)'], [thi, 175, 'rgba(81,207,102,0.28)']];
+  for (const [a0, a1, col] of arcs) {
+    if (a1 <= a0) continue;
+    ctx.strokeStyle = col;
+    ctx.beginPath(); ctx.arc(m.x, m.y - 24, 46, -a1 * Math.PI / 180, -a0 * Math.PI / 180); ctx.stroke();
+  }
+  // current-angle tick
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(m.x, m.y - 24, 46, -(aim.ang + 2.5) * Math.PI / 180, -(aim.ang - 2.5) * Math.PI / 180); ctx.stroke();
   // dotted trajectory preview (~0.8s)
   const sp = muzzleVel(Math.max(5, aim.power || 40));
   const a = aim.ang * Math.PI / 180;
@@ -1280,7 +1685,7 @@ function drawAim() {
   for (let s = 0; s < 48; s++) {
     vx += st.wind * 2.2 * DT; vy += GRAV * DT; x += vx * DT; y += vy * DT;
     if (s % 4 === 0) { ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 6.29); ctx.fill(); }
-    if (y >= surfY(st.terrain, x)) break;
+    if (inIsland(st.islands, x, y, 0) || y >= surfY(st.terrain, x)) break;
   }
   // move budget arc
   if (moveLeft > 0) {
@@ -1292,12 +1697,12 @@ function drawAim() {
 function drawProjsAnim() {
   if (!anim) return;
   for (const p of anim.projs) {
-    const big = p.kind === 'beam';
+    const big = p.kind === 'beam', tp = p.kind === 'tpshot';
     // soft glow
-    ctx.fillStyle = big ? '#fff7ae' : '#ffd166'; ctx.globalAlpha = 0.28;
+    ctx.fillStyle = big ? '#fff7ae' : tp ? '#51cf66' : '#ffd166'; ctx.globalAlpha = 0.28;
     ctx.beginPath(); ctx.arc(p.x, p.y, big ? 18 : 13, 0, 6.29); ctx.fill();
     ctx.globalAlpha = 1;
-    ctx.fillStyle = big ? '#fffbe8' : '#ffe8a8';
+    ctx.fillStyle = big ? '#fffbe8' : tp ? '#d3f9d8' : '#ffe8a8';
     ctx.beginPath(); ctx.arc(p.x, p.y, big ? 9 : 6, 0, 6.29); ctx.fill();
     ctx.strokeStyle = '#ffffff88'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.05, p.y - p.vy * 0.05); ctx.stroke();
@@ -1349,6 +1754,7 @@ function render(dt) {
   drawSky();
   if (st) {
     drawTerrain();
+    drawIslands();
     for (let i = 0; i < st.mobiles.length; i++) drawMobile(st.mobiles[i], i);
     drawAim();
     drawProjsAnim();
@@ -1411,7 +1817,14 @@ function endMatch() {
   }
   $('end-title').textContent = title;
   $('end-title').style.color = title === 'VICTORY!' ? '#7bed9f' : (title === 'DRAW' ? '#ffd166' : '#ff8787');
-  $('end-sub').textContent = sub;
+  // gold economy: result base + damage share, Star gear boosts; wins feed the rank ladder
+  const meM = myDefIdx >= 0 ? st.mobiles[myDefIdx] : null;
+  const won = w !== 'draw' && meM && meM.team === w;
+  let gg = w === 'draw' ? 60 : (won ? 120 : 40);
+  gg += Math.round(myMatchDmg / 25);
+  gg = Math.round(gg * (1 + gearStats().gold));
+  if (meM) { gold += gg; if (won) wins++; saveEcon(); }
+  $('end-sub').textContent = sub + '  +' + gg + ' 🪙';
   $('endOv').classList.remove('hidden');
   Net.sendEnd({ winner: w });
 }
@@ -1468,6 +1881,9 @@ Net.sendShot = function (shot) {
       try { Net.channel.send({ type: 'broadcast', event: 'reqsnap', payload: { id: myId } }); } catch (e2) {}
     }
   }, 8000);
+};
+Net.sendItemUse = function (p) {
+  try { Net.channel.send({ type: 'broadcast', event: 'itemuse', payload: Object.assign({ id: myId }, p) }); } catch (e) {}
 };
 Net.sendMove = function (p) {
   if (!Net.channel || Net.role === 'solo') return;
@@ -1545,7 +1961,12 @@ async function joinRoom(code, asHost) {
   ch.on('broadcast', { event: 'move' }, ({ payload }) => {
     if (payload.id === myId || !st || screen !== 'play') return;
     const m = st.mobiles[payload.idx];
-    if (m && m.alive) { m.x = payload.x; m.y = surfY(st.terrain, m.x); }
+    if (m && m.alive) { m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); if (payload.face) m.face = payload.face; }
+  });
+  ch.on('broadcast', { event: 'itemuse' }, ({ payload }) => {
+    if (Net.role !== 'host' || !st || screen !== 'play' || turnState !== 'aim') return;
+    if (payload.id !== st.mobiles[activeIdx].pid) return; // not their turn
+    applyInstantItem(payload.item, false);
   });
   ch.on('broadcast', { event: 'aim' }, ({ payload }) => {
     if (payload.id === myId || !st || screen !== 'play') return;
@@ -1557,19 +1978,20 @@ async function joinRoom(code, asHost) {
     if (payload.id !== st.mobiles[activeIdx].pid) return; // not their turn
     const m = st.mobiles[activeIdx];
     // validate: move budget + SS charge
-    if (Math.abs(payload.x - turnStartX) > MOBILES[m.mobile].move + 2) payload.x = turnStartX;
+    if (Math.abs(payload.x - turnStartX) > moveBudgetOf(m) + 2) payload.x = turnStartX;
     if (payload.weapon === 2 && m.ss < SS_NEED) payload.weapon = 0;
-    m.x = payload.x; m.y = surfY(st.terrain, m.x); m.ang = payload.ang;
-    fireShot({ x: m.x, y: m.y, ang: payload.ang, power: Math.max(5, Math.min(100, payload.power)), weapon: payload.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: payload.secs });
+    if (payload.item && payload.weapon === 2) payload.item = null; // OG: no items with SS
+    m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); m.ang = payload.ang; if (payload.face) m.face = payload.face;
+    fireShot({ x: m.x, y: m.y, ang: payload.ang, power: Math.max(5, Math.min(100, payload.power)), weapon: payload.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: payload.secs, item: payload.item });
   });
   ch.on('broadcast', { event: 'snap' }, ({ payload }) => {
     if (Net.role !== 'guest' || screen !== 'play') return;
     clearTimeout(shotAckTimer);
     lastSnap = payload;
     if (!payload.shot) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
-    const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)) };
+    const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)), islands: st.islands.map(o => ({ x: o.x, y: o.y, w: o.w, h: o.h })) };
     turnState = 'anim'; stopTimer();
-    animateShot(pre, payload.final, payload.shot, payload.thor);
+    animateShot(pre, payload.final, payload.shot, payload.thor, payload.itemStrikes);
   });
   ch.on('broadcast', { event: 'reqsnap' }, () => {
     if (Net.role === 'host' && lastSnap) {
@@ -1694,11 +2116,11 @@ function onRemoteTurn(p) {
   st.forceX = p.forceX != null ? p.forceX : -1;
   turnQueue = p.queue || [];
   const m = st.mobiles[activeIdx];
-  if (st.wcur === 'moon' && m) m.hp = Math.min(MOBILES[m.mobile].hp, m.hp + 4);
+  if (st.wcur === 'moon' && m) m.hp = Math.min(maxHpOf(m), m.hp + 4);
   turnState = 'aim'; timeLeft = TURN_TIME;
   turnStartT = performance.now();
-  aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = 0;
-  moveLeft = MOBILES[m.mobile].move; turnStartX = m.x;
+  aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = p.dual ? (p.dualWeapon || 0) : 0;
+  if (!p.dual) { moveLeft = moveBudgetOf(m); turnStartX = m.x; }
   onTurnUI(); startTimer();
 }
 
@@ -1740,13 +2162,168 @@ async function leaveRoom() {
   showScreen('menu');
 }
 
+/* ---------- battle items ---------- */
+function isWeakAngle(shot) {
+  const m = st.mobiles[shot.srcIdx]; if (!m) return false;
+  const [lo, hi] = trueRangeOf(m);
+  return shot.ang < lo || shot.ang > hi;
+}
+function renderItemBar() {
+  const bar = $('itemBar'); if (!bar) return;
+  bar.innerHTML = '';
+  for (const id of loadout) {
+    const it = ITEMS[id]; if (!it) continue;
+    const n = inv[id] || 0; if (n <= 0) continue;
+    const b = document.createElement('button');
+    b.className = 'itembtn' + (armedItem === id ? ' armed' : '');
+    b.innerHTML = it.icon + '<span class="cnt">' + n + '</span>';
+    b.title = it.n + ' — ' + it.desc;
+    b.onclick = () => useItem(id);
+    bar.appendChild(b);
+  }
+  bar.classList.toggle('hidden', !(isMyTurn() && turnState === 'aim') || !bar.children.length);
+}
+function applyInstantItem(id, isLocal) {
+  const it = ITEMS[id]; if (!it) return;
+  const m = st.mobiles[activeIdx]; if (!m || !m.alive) return;
+  if (id === 'bandaid' || id === 'medipak') {
+    const frac = id === 'bandaid' ? 0.10 : 0.25;
+    const amt = Math.round(maxHpOf(m) * frac);
+    m.hp = Math.min(maxHpOf(m), m.hp + amt);
+    if (isLocal) toast(it.icon + ' +' + amt + ' HP');
+  } else if (id === 'windchange') {
+    st.wind = -st.wind;
+    if (isLocal) { updateWind(); toast('🌪️ Wind reversed!'); }
+  }
+  if (Net.role !== 'guest') st.delays[activeIdx] += Math.round(it.delay * (1 - gearStats().delay));
+  else if (isLocal) st.delays[activeIdx] += Math.round(it.delay * (1 - gearStats().delay));
+}
+function useItem(id) {
+  if (!isMyTurn() || turnState !== 'aim' || anim) return;
+  const it = ITEMS[id]; if (!it || !(inv[id] > 0)) return;
+  if (it.kind === 'now') {
+    applyInstantItem(id, true);
+    inv[id]--; if (!inv[id]) delete inv[id]; saveEcon();
+    if (Net.role === 'guest') Net.sendItemUse({ item: id });
+    renderItemBar();
+    return;
+  }
+  // arm-type: OG rule — items cannot be used with SS
+  if (aim.weapon === 2) { toast("Items can't be used with the SS!"); return; }
+  armedItem = armedItem === id ? null : id;
+  toast(armedItem ? it.icon + ' ' + it.n + ' armed — fire to use' : it.n + ' disarmed');
+  renderItemBar();
+}
+
+/* ---------- shop: gold -> battle items + gear ---------- */
+let shopTab = 'items';
+function openShop() { shopTab = 'items'; renderShop(); $('shopOv').classList.remove('hidden'); }
+function closeShop() { $('shopOv').classList.add('hidden'); refreshEconPills(); }
+function refreshEconPills() {
+  const g = $('gold-pill'); if (g) g.textContent = '🪙 ' + gold;
+  const r = $('rank-pill'); if (r) r.textContent = '🏅 ' + rankFor(wins) + ' (' + wins + '🏆)';
+  const sg = $('shop-gold'); if (sg) sg.textContent = '🪙 ' + gold;
+}
+function buyItem(id) {
+  const it = ITEMS[id];
+  if (gold < it.price) { toast('Not enough gold!'); return; }
+  gold -= it.price; inv[id] = (inv[id] || 0) + 1; saveEcon(); renderShop();
+}
+function toggleLoadout(id) {
+  const i = loadout.indexOf(id);
+  if (i >= 0) loadout.splice(i, 1);
+  else {
+    if (loadoutSlots() + ITEMS[id].slots > 6) { toast('Loadout full — 6 slots max'); return; }
+    loadout.push(id);
+  }
+  saveEcon(); renderShop();
+}
+function buyGear(id) {
+  const gr = GEAR[id];
+  if (gold < gr.price) { toast('Not enough gold!'); return; }
+  gold -= gr.price;
+  if (!gearOwned.includes(id)) gearOwned.push(id);
+  saveEcon(); renderShop();
+}
+function toggleGearEquip(id) {
+  if (!gearOwned.includes(id)) return;
+  const i = gearEquipped.indexOf(id);
+  if (i >= 0) gearEquipped.splice(i, 1);
+  else {
+    if (gearEquipped.length >= MAX_EQUIP) { toast('Max ' + MAX_EQUIP + ' gear equipped'); return; }
+    gearEquipped.push(id);
+  }
+  saveEcon(); renderShop();
+}
+function renderShop() {
+  refreshEconPills();
+  document.querySelectorAll('#shopTabs button').forEach(b => b.classList.toggle('sel', b.dataset.t === shopTab));
+  const grid = $('shopGrid'); grid.innerHTML = '';
+  if (shopTab === 'items') {
+    const lo = $('loadoutRow');
+    lo.innerHTML = '<span class="lbl">Loadout ' + loadoutSlots() + '/6:</span>';
+    for (const id of loadout) {
+      const b = document.createElement('button');
+      b.className = 'loadbtn'; b.textContent = ITEMS[id].icon + ' ' + ITEMS[id].n;
+      b.title = 'Click to remove';
+      b.onclick = () => toggleLoadout(id);
+      lo.appendChild(b);
+    }
+    lo.classList.remove('hidden');
+    for (const id of ITEM_KEYS) {
+      const it = ITEMS[id];
+      const owned = inv[id] || 0, inLo = loadout.includes(id);
+      const d = document.createElement('div');
+      d.className = 'shopcard';
+      d.innerHTML = '<div class="sic">' + it.icon + '</div><div class="snm">' + it.n + '</div>' +
+        '<div class="sds">' + it.desc + '</div>' +
+        '<div class="smt">' + it.slots + ' slot' + (it.slots > 1 ? 's' : '') + ' · owned ' + owned + '</div>';
+      const bb = document.createElement('button');
+      bb.className = 'buybtn'; bb.textContent = 'Buy 🪙' + it.price;
+      bb.onclick = () => buyItem(id);
+      const eb = document.createElement('button');
+      eb.className = 'eqbtn' + (inLo ? ' on' : ''); eb.textContent = inLo ? 'In loadout ✓' : 'Add to loadout';
+      eb.onclick = () => toggleLoadout(id);
+      d.appendChild(bb); d.appendChild(eb);
+      grid.appendChild(d);
+    }
+  } else {
+    $('loadoutRow').classList.add('hidden');
+    const eq = document.createElement('div');
+    eq.className = 'equiprow';
+    eq.innerHTML = '<span class="lbl">Equipped ' + gearEquipped.length + '/' + MAX_EQUIP + ':</span>' +
+      gearEquipped.map(id => GEAR[id].icon + ' ' + GEAR[id].n).join(' · ');
+    grid.appendChild(eq);
+    for (const id of GEAR_KEYS) {
+      const gr = GEAR[id];
+      const owned = gearOwned.includes(id), eqd = gearEquipped.includes(id);
+      const d = document.createElement('div');
+      d.className = 'shopcard';
+      d.innerHTML = '<div class="sic">' + gr.icon + '</div><div class="snm">' + gr.n + '</div>' +
+        '<div class="sds">' + gr.desc + '</div>';
+      if (!owned) {
+        const bb = document.createElement('button');
+        bb.className = 'buybtn'; bb.textContent = 'Buy 🪙' + gr.price;
+        bb.onclick = () => buyGear(id);
+        d.appendChild(bb);
+      } else {
+        const eb = document.createElement('button');
+        eb.className = 'eqbtn' + (eqd ? ' on' : ''); eb.textContent = eqd ? 'Equipped ✓' : 'Equip';
+        eb.onclick = () => toggleGearEquip(id);
+        d.appendChild(eb);
+      }
+      grid.appendChild(d);
+    }
+  }
+}
+
 /* ---------- solo vs bot ---------- */
 let myBot = (() => { try { return localStorage.getItem('cb-bot') || 'baker'; } catch (e) { return 'baker'; } })();
 function refreshBotPick() {
   const bd = botDefOf(myBot);
   document.querySelectorAll('.botbtn').forEach(b => b.classList.toggle('sel', b.dataset.b === bd.id));
   const bl = $('bot-blurb');
-  if (bl) bl.textContent = bd.icon + ' ' + bd.name + ' — ' + bd.blurb;
+  if (bl) bl.textContent = bd.icon + ' ' + bd.name + ' · ' + bd.type + ' — +' + bd.pro + ' / −' + bd.con;
 }
 function startSolo() {
   myName = ($('name-input').value || '').trim().slice(0, 14) || 'Player';
@@ -1776,6 +2353,10 @@ function wireUI() {
   $('btn-joinb').onclick = () => joinRoom($('room-input').value, false);
   $('room-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom($('room-input').value, false); });
   $('btn-solo').onclick = startSolo;
+  $('btn-shop').onclick = openShop;
+  $('btn-shopclose').onclick = closeShop;
+  document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => { shopTab = b.dataset.t; renderShop(); });
+  refreshEconPills();
   $('btn-copy').onclick = () => {
     const url = location.origin + location.pathname + '?room=' + $('room-code').textContent;
     (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => toast('Invite link copied!', 1500)).catch(() => prompt('Copy your invite link:', url));
