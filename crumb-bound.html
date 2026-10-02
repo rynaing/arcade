@@ -521,9 +521,14 @@ function saveEcon() {
   store.set('cb-gear-owned', gearOwned); store.set('cb-gear-equipped', gearEquipped); store.set('cb-wins', wins);
 }
 function loadoutSlots() { return loadout.reduce((a, id) => a + (ITEMS[id] ? ITEMS[id].slots : 0), 0); }
-function gearStats() {
+/* gear bonuses for ANY player: each mobile carries its owner's equipped gear (sent in
+   the match defs), so every client applies everyone's gear identically. */
+function gearOf(m) { return gearStatsOf(m && m.gear); }
+function cleanGear(list) { return Array.isArray(list) ? list.filter(g => GEAR[g]).slice(0, MAX_EQUIP) : []; }
+function gearStats() { return gearStatsOf(gearEquipped); } // the local player's own loadout (shop, gold)
+function gearStatsOf(list) {
   const s = { atk: 0, def: 0, hp: 0, move: 0, ta: 0, delay: 0, gold: 0, climb: 0 };
-  for (const g of gearEquipped) {
+  for (const g of cleanGear(list)) {
     if (g === 'sword') s.atk += 0.08; else if (g === 'shield') s.def += 0.08;
     else if (g === 'heart') s.hp += 15; else if (g === 'wheel') s.move += 25;
     else if (g === 'crosshair') s.ta += 8; else if (g === 'hourglass') s.delay += 0.12;
@@ -533,9 +538,9 @@ function gearStats() {
 }
 function rankFor(w) { let r = RANKS[0][1]; for (const [n, name] of RANKS) if (w >= n) r = name; return r; }
 function maxHpOf(m) { return m.hpMax != null ? m.hpMax : MOBILES[m.mobile].hp; }
-function moveBudgetOf(m) { return MOBILES[m.mobile].move + (m.pid === myId ? gearStats().move : 0); }
-function climbOf(m) { return 30 + (m.pid === myId ? gearStats().climb : 0); }
-function trueRangeOf(m) { const t = MOBILES[m.mobile].ta; const e = (m.pid === myId ? gearStats().ta : 0); return [t[0] - e, t[1] + e]; }
+function moveBudgetOf(m) { return MOBILES[m.mobile].move + gearOf(m).move; }
+function climbOf(m) { return 30 + gearOf(m).climb; }
+function trueRangeOf(m) { const t = MOBILES[m.mobile].ta; const e = gearOf(m).ta; return [t[0] - e, t[1] + e]; }
 
 /* Thumbnails for the weapon bar: one tiny SVG per projectile kind */
 const WPN_ICON = {
@@ -773,7 +778,7 @@ function applyBoom(t, mobiles, x, y, r, dmg, srcIdx, carveR, direct, islands) {
       // direct body contact: flat 125% — no falloff ambiguity
       if (direct === i) dd = Math.round(dmg * 1.25);
       // Shield gear: damage taken -8%
-      if (m.pid === myId) { const gd = gearStats().def; if (gd > 0) dd = Math.max(1, Math.round(dd * (1 - gd))); }
+      { const gd = gearOf(m).def; if (gd > 0) dd = Math.max(1, Math.round(dd * (1 - gd))); }
       m.hp -= dd;
       srcTotal += dd;
       victims[i] = (victims[i] || 0) + dd;
@@ -789,7 +794,7 @@ function applyHit(mobiles, target, dmg, srcIdx) {
   const m = mobiles[target];
   if (!m || !m.alive) return 0;
   let dd = Math.round(dmg);
-  if (m.pid === myId) { const gd = gearStats().def; if (gd > 0) dd = Math.max(1, Math.round(dd * (1 - gd))); }
+  { const gd = gearOf(m).def; if (gd > 0) dd = Math.max(1, Math.round(dd * (1 - gd))); }
   m.hp -= dd;
   if (m.hp <= 0) { m.hp = 0; m.alive = false; }
   return dd;
@@ -1077,9 +1082,9 @@ function newMatch(seed, defs) {
     islands, theme: ['meadow', 'sunset', 'night'][(seed >>> 0) % 3], dualLeft: 0, dualPlus: false };
   defs.forEach((d, i) => {
     const bd = d.bot ? botDefOf(d.bot) : null;
-    const hpMax = Math.round(MOBILES[d.mobile].hp * (bd ? (bd.hpMult || 1) : 1)) + ((!d.isBot && d.pid === myId) ? gearStats().hp : 0);
+    const hpMax = Math.round(MOBILES[d.mobile].hp * (bd ? (bd.hpMult || 1) : 1)) + (d.isBot ? 0 : gearStatsOf(d.gear).hp);
     st.mobiles.push({ x: xs[i], y: surfY(terrain, xs[i]), hp: hpMax, hpMax, ss: 0, alive: true,
-      ang: d.team === 'A' ? 45 : 135, mobile: d.mobile, team: d.team, pid: d.pid, name: d.name, isBot: !!d.isBot, bot: d.bot || null,
+      ang: d.team === 'A' ? 45 : 135, gear: d.isBot ? [] : cleanGear(d.gear), mobile: d.mobile, team: d.team, pid: d.pid, name: d.name, isBot: !!d.isBot, bot: d.bot || null,
       face: d.team === 'A' ? 1 : -1 });
   });
   myMatchDmg = 0; armedItem = null;
@@ -1229,7 +1234,7 @@ function fireShot(shot) {
   const m0 = st.mobiles[shot.srcIdx];
   const botD0 = m0 && m0.isBot ? botDefOf(m0.bot) : null;
   shot.weak = isWeakAngle(shot);
-  shot.dmgMult = (botD0 ? (botD0.dmgMult || 1) : 1) * (m0 && m0.pid === myId ? 1 + gearStats().atk : 1); // Sword gear
+  shot.dmgMult = (botD0 ? (botD0.dmgMult || 1) : 1) * (m0 ? 1 + gearOf(m0).atk : 1); // Sword gear
   shot.sizeScale = (st.sudden ? 1.12 : 1) * (botD0 ? (botD0.blastMult || 1) : 1);
   if (shot.item === 'dual' || shot.item === 'dualplus') { st.dualLeft = 1; st.dualPlus = shot.item === 'dualplus'; }
   const env = { sudden: shot.sudden, wmod: st.wcur === 'dark' ? 0.5 : 1,
@@ -1251,7 +1256,7 @@ function fireShot(shot) {
   if (shot.weapon === 2 && src) src.ss = 0;
   // delay cost: weapon + time spent aiming
   { const me0 = m0 && m0.pid === myId;
-    const hgm = me0 ? gearStats().delay : 0;
+    const hgm = m0 ? gearOf(m0).delay : 0;
     const itD = shot.item ? ITEMS[shot.item].delay : 0;
     st.delays[shot.srcIdx] += Math.round(((DELAY_COST[shot.weapon] || DELAY_COST.pass) + DELAY_PER_SEC * Math.min(TURN_TIME, secs) + itD) * (1 - hgm)); }
   // Thor levels up with cumulative Thor damage
@@ -2337,7 +2342,7 @@ const SUPABASE_URL = 'https://ukrxoqsvyvlyeblubjeo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
 /* Bump when the match simulation or messages change, so players on an old cached
    copy can't join (and desync) a room with the new version. v2: 1600px world. */
-const NET_ROOM_PREFIX = 'cb-v5:'; // v5: secret Dragon Fruit Torte via Random
+const NET_ROOM_PREFIX = 'cb-v6:'; // v6: every player's gear travels in the match defs
 /* Multiplayer-only client, loaded lazily: the menu, solo mode, and shop must
    keep working even if the Supabase CDN is unreachable. Resolves to null then. */
 const sbReady = (async () => {
@@ -2521,7 +2526,7 @@ async function joinRoom(code, asHost) {
     ch.subscribe(st2 => { if (done) return; if (st2 === 'SUBSCRIBED') { done = true; clearTimeout(to); res(true); } else if (st2 === 'CHANNEL_ERROR' || st2 === 'TIMED_OUT') { done = true; clearTimeout(to); res(false); } });
   });
   if (!ok) { setMenuErr('Could not connect. Check your connection and retry.'); Net.channel = null; return; }
-  await ch.track({ id: myId, name: myName, mobile: myMobile, team: myTeam, ready: false, joinedAt: Date.now() });
+  await ch.track({ id: myId, name: myName, mobile: myMobile, gear: gearEquipped.slice(), team: myTeam, ready: false, joinedAt: Date.now() });
   await new Promise(r => setTimeout(r, 600));
   refreshLobbyState();
   showScreen('lobby');
@@ -2584,7 +2589,7 @@ function renderRoster() {
 
 async function updatePresence() {
   if (!Net.channel) return;
-  try { await Net.channel.track({ id: myId, name: myName, mobile: myMobile, team: myTeam, ready: !!(lobbyState[myId] && lobbyState[myId].ready), joinedAt: lobbyState[myId] ? lobbyState[myId].joinedAt : Date.now() }); } catch (e) {}
+  try { await Net.channel.track({ id: myId, name: myName, mobile: myMobile, gear: gearEquipped.slice(), team: myTeam, ready: !!(lobbyState[myId] && lobbyState[myId].ready), joinedAt: lobbyState[myId] ? lobbyState[myId].joinedAt : Date.now() }); } catch (e) {}
   renderRoster();
 }
 
@@ -2592,7 +2597,7 @@ function hostStartMatch() {
   if (!Net.channel || !isNetHost()) return;
   const ps = Object.values(lobbyState).sort((a, b) => a.joinedAt - b.joinedAt);
   const seed = (Math.random() * 0x7fffffff) | 0;
-  const defs = ps.map(p => ({ pid: p.id, name: p.name, mobile: resolveMobile(p.mobile), team: p.team, isBot: false })); // host rolls 'random'
+  const defs = ps.map(p => ({ pid: p.id, name: p.name, mobile: resolveMobile(p.mobile), gear: cleanGear(p.gear), team: p.team, isBot: false })); // host rolls 'random'
   Net.role = 'host';
   try { Net.channel.send({ type: 'broadcast', event: 'mstart', payload: { seed, defs } }); } catch (e) {}
   beginPlay(seed, defs);
@@ -2704,8 +2709,9 @@ function applyInstantItem(id, isLocal) {
     if (st.windTarget != null) st.windTarget = -st.windTarget;
     if (isLocal) { updateWind(); toast('🌪️ Wind reversed!'); }
   }
-  if (Net.role !== 'guest') st.delays[activeIdx] += Math.round(it.delay * (1 - gearStats().delay));
-  else if (isLocal) st.delays[activeIdx] += Math.round(it.delay * (1 - gearStats().delay));
+  const gdl = gearOf(st.mobiles[activeIdx]).delay;
+  if (Net.role !== 'guest') st.delays[activeIdx] += Math.round(it.delay * (1 - gdl));
+  else if (isLocal) st.delays[activeIdx] += Math.round(it.delay * (1 - gdl));
 }
 function useItem(id) {
   if (!isMyTurn() || turnState !== 'aim' || anim) return;
@@ -2844,7 +2850,7 @@ function startSolo() {
   if (botMob === mine) botMob = MOB_KEYS[(MOB_KEYS.indexOf(myMobile) + 2) % MOB_KEYS.length];
   const seed = (Math.random() * 0x7fffffff) | 0;
   const defs = [
-    { pid: myId, name: myName, mobile: mine, team: 'A', isBot: false },
+    { pid: myId, name: myName, mobile: mine, gear: gearEquipped.slice(), team: 'A', isBot: false },
     { pid: 'bot', name: bd.name, mobile: botMob, team: 'B', isBot: true, bot: bd.id },
   ];
   beginPlay(seed, defs);
