@@ -150,12 +150,13 @@
 
 <script src="leaderboard.js"></script>
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 /* ================= config ================= */
 const SUPABASE_URL='https://ukrxoqsvyvlyeblubjeo.supabase.co';
 const SUPABASE_KEY='sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
-const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
+/* Multiplayer-only client, loaded lazily so the menu and solo play work even
+   if the Supabase CDN is slow or blocked (school networks). Resolves to null then. */
+const sbReady=(async()=>{try{const supa=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');return supa.createClient(SUPABASE_URL,SUPABASE_KEY);}catch(e){return null;}})();
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const VW=960,VH=540;
 function fit(){const s=Math.min(innerWidth/VW,innerHeight/VH);cv.width=VW*s;cv.height=VH*s;cv.style.width=VW*s+'px';cv.style.height=VH*s+'px';ctx.setTransform(s,0,0,s,0,0);}
@@ -975,6 +976,8 @@ async function joinRoom(code,isHost){
   localStorage.setItem('hr-name',myName);
   if(!/^[A-Z2-9]{4}$/.test(code)){setErr('Enter the 4-letter room code.');return;}
   setErr('');
+  const sb=await sbReady;
+  if(!sb){setErr('Online play can\u2019t load right now \u2014 check your connection. Solo still works!');return;}
   const ch=sb.channel('hr2:'+code,{config:{presence:{key:myId},broadcast:{ack:false}}});
   S.channel=ch;S.room=code;S.solo=false;S.players={};
   ch.on('presence',{event:'sync'},renderRoster);
