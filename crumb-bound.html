@@ -80,7 +80,7 @@
   #hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;
     padding:8px 12px;pointer-events:none;z-index:10;font-size:14px}
   .hudBox{background:rgba(20,12,40,.72);border:1px solid #6c5aa8;border-radius:10px;padding:6px 12px;font-weight:800}
-  #music-btn{color:#fff;font-size:15px;line-height:1;font-family:inherit;pointer-events:auto}
+  #music-btn,#quit-btn{color:#fff;font-size:15px;line-height:1;font-family:inherit;pointer-events:auto;cursor:pointer}
   #turn-banner{color:#ffd166}#wind-box{color:#a5d8ff}#timer-box{color:#fff}
   #timer-box.low{color:#ff8787;animation:blink .5s infinite alternate}
   @keyframes blink{to{opacity:.4}}
@@ -178,6 +178,7 @@
     <div class="hudBox" id="wind-box">wind —</div>
     <div class="hudBox" id="timer-box">30</div>
     <button class="hudBox" id="music-btn" title="music on/off" style="cursor:pointer">🔊</button>
+    <button class="hudBox" id="quit-btn" title="Quit match" aria-label="Quit match">✕</button>
   </div>
   <div id="weapBar" class="hidden">
     <button class="wbtn sel" id="w0">1 · Shell</button>
@@ -2419,7 +2420,7 @@ function wireUI() {
       $('bot-pick').classList.remove('hidden'); $('bot-blurb').classList.remove('hidden');
       $('veh-pick').classList.remove('hidden'); $('veh-blurb').classList.remove('hidden');
       refreshMobilePick();
-      $('btn-solo').textContent = 'Pick your vehicle & opponent ↓';
+      $('btn-solo').textContent = 'Pick a vehicle, then tap an opponent to fight ↓';
     }
   };
   document.querySelectorAll('.vmobbtn').forEach(b => b.onclick = () => { myMobile = b.dataset.m; saveMobile(); refreshMobilePick(); });
@@ -2471,6 +2472,7 @@ function wireUI() {
     }
   };
   $('btn-menu2').onclick = leaveRoom;
+  $('quit-btn').onclick = () => { if (confirm(Net.role === 'solo' ? 'Quit this match?' : 'Leave this online match?')) leaveRoom(); };
   // ?room=CODE invite support
   const q = new URLSearchParams(location.search).get('room');
   if (q) $('room-input').value = q.toUpperCase();

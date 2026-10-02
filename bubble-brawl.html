@@ -119,6 +119,7 @@ button.mini:hover{background:#33507e}
 <p id="eText"></p>
 <div class="wins-lb" id="wl" hidden><h3>&#127757; Most wins vs bots</h3><ol id="wl-list"></ol><p id="wl-note" hidden></p></div>
 <button class="big" id="againBtn">Play again</button>
+<button class="mini" id="endMenuBtn" style="margin-top:10px">Menu</button>
 </div></div>
 <div id="race-chat"><div id="race-chat-msgs"></div><input id="race-chat-in" maxlength="120" placeholder="chat… (Enter to send)"></div>
 <div id="touch"><div class="tpad">
@@ -927,6 +928,12 @@ $('againBtn').addEventListener('click',()=>{
   if(S.netRole==='host')hostStartMatch();
   else if(S.netRole==='guest'){$('endOv').classList.add('hidden');$('lobby').style.display='flex';S.screen='lobby';state='lobby';renderRoster();}
   else resetMatch();
+});
+$('endMenuBtn').addEventListener('click',async()=>{
+  $('endOv').classList.add('hidden');
+  if(S.channel){try{await S.channel.unsubscribe();}catch(e){}S.channel=null;S.room=null;}
+  S.netRole='solo';S.solo=true;S.screen='menu';
+  $('lobby').style.display='none';$('menuOv').classList.remove('hidden');$('menuOv').style.display='flex';
 });
 buildGrid();makePlayers();updateHud();
 requestAnimationFrame(loop);
