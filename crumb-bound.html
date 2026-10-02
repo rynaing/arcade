@@ -262,7 +262,7 @@ body.in-menu #rotateHint{display:none!important}
     <div class="hudBox" id="turn-banner">—</div>
     <div class="hudBox" id="wind-box">wind —</div>
     <div class="hudBox" id="timer-box">30</div>
-    <button class="hudBox" id="music-btn" title="music on/off" style="cursor:pointer">🔊</button>
+    <button class="hudBox" id="music-btn" title="Sound on/off" style="cursor:pointer">🔊</button>
     <button class="hudBox" id="quit-btn" title="Quit match" aria-label="Quit match">✕</button>
   </div>
   <div id="delayPanel" aria-label="Turn order by delay"></div>
@@ -376,6 +376,7 @@ body.in-menu #rotateHint{display:none!important}
 </div>
 </div>
 <script src="leaderboard.js?v=2"></script>
+<script src="arcade-audio.js?v=1"></script>
 <script type="module">
 /* ================= Crumb Bound core sim (pure logic, no DOM) ================= */
 'use strict';
@@ -1101,7 +1102,7 @@ function newMatch(seed, defs) {
     setTimeout(() => {
       burst(m.x, m.y - 30, 60, 'beam'); burst(m.x, m.y - 30, 40, 'boom'); shake = Math.max(shake, 16);
       dmgNums.push({ x: m.x, y: m.y - 110, txt: 'LEGENDARY!', t: 0, ttl: 2.4, col: '#ffd43b', direct: true, ko: true });
-      toast((m.pid === myId ? 'You rolled' : m.name + ' rolled') + ' the legendary Dragon Fruit Torte!', 3200);
+      toast((m.pid === myId ? 'You rolled' : m.name + ' rolled') + ' the legendary Dragon Fruit Torte!', 3200); SND('legendary');
     }, 600);
   });
 }
@@ -1154,6 +1155,7 @@ function startTurn() {
 
 function onTurnUI() {
   camManual = false; camHoldX = null; // new turn: glide from the impact straight to the next mobile
+  if (isMyTurn()) SND('turn');
   const m = activeMobile();
   const q = turnQueue.map(i => st.mobiles[i] ? st.mobiles[i].name : '?').join(' ▸ ');
   $('turn-banner').innerHTML = esc(m ? (activeIdx === myDefIdx ? 'YOUR TURN — ' + MOBILES[m.mobile].name : m.name + ' — ' + MOBILES[m.mobile].name) : '—') + (q ? '<span class="tq"> · next: ' + esc(q) + '</span>' : '');
@@ -1295,6 +1297,7 @@ function checkWin() {
 /* animate a shot from pre-shot state; then apply canonical final */
 function animateShot(pre, finalSnap, shot, thorStrikes, itemStrikes) {
   camManual = false; camDrag = null; // follow the shot
+  SND('fire', { size: shot && shot.weapon === 2 ? 1.5 : 1 });
   let projs = [];
   if (shot) {
     const wdef = MOBILES[shot.mobile].w[shot.weapon];
@@ -1333,7 +1336,7 @@ function stepAnim(dt) {
       for (const e of evs) {
         if (e.type === 'boom') {
           burst(e.x, e.y, e.r, e.kind);
-          flashes.push({ x: e.x, y: e.y, r: e.r, t: 0, ttl: 0.35 });
+          flashes.push({ x: e.x, y: e.y, r: e.r, t: 0, ttl: 0.35 }); SND('boom', { size: e.r / 28 });
           shake = Math.min(14, shake + e.r * 0.12);
           const res = applyBoom(anim.simT, anim.simM, e.x, e.y, e.r, e.dmg, e.srcIdx, e.r * 0.95 * (env.bungeMul || 1), e.direct, anim.simI);
           st.terrain.set(anim.simT); st.islands = anim.simI; // craters form in real time
@@ -1342,13 +1345,13 @@ function stepAnim(dt) {
           const mm = anim.simM[e.srcIdx];
           if (mm && mm.alive) {
             mm.x = Math.max(8, Math.min(W - 8, e.x)); mm.y = groundAt(anim.simT, anim.simI, mm.x, e.y);
-            burst(e.x, e.y, 18, 'beam'); flashes.push({ x: e.x, y: e.y, r: 40, t: 0, ttl: 0.4 });
+            burst(e.x, e.y, 18, 'beam'); flashes.push({ x: e.x, y: e.y, r: 40, t: 0, ttl: 0.4 }); SND('hit');
             const live = st.mobiles[e.srcIdx];
             if (live) { live.x = mm.x; live.y = mm.y; }
           }
         } else if (e.type === 'hit') {
           burst(e.x, e.y, e.r, e.kind);
-          flashes.push({ x: e.x, y: e.y, r: e.r, t: 0, ttl: 0.3 });
+          flashes.push({ x: e.x, y: e.y, r: e.r, t: 0, ttl: 0.3 }); SND('boom', { size: e.r / 28 });
           const dd = applyHit(anim.simM, e.target, e.dmg, e.srcIdx);
           if (dd > 0) { const v = {}; v[e.target] = dd; syncLiveDamage(v); }
         } else if (e.type === 'spawn') next.push(e.proj);
@@ -1363,7 +1366,7 @@ function stepAnim(dt) {
     for (const ts of anim.thor) {
       beams.push({ x: ts.x, y: ts.y, t: 0, ttl: 0.6 });
       burst(ts.x, ts.y, 30, 'beam');
-      flashes.push({ x: ts.x, y: ts.y, r: 55, t: 0, ttl: 0.4 });
+      flashes.push({ x: ts.x, y: ts.y, r: 55, t: 0, ttl: 0.4 }); SND('zap');
       shake = Math.min(14, shake + 4);
       const tres = applyBoom(anim.simT, anim.simM, ts.x, ts.y, 55, ts.dmg, -1, 16, undefined, anim.simI);
       st.terrain.set(anim.simT); st.islands = anim.simI;
@@ -1373,7 +1376,7 @@ function stepAnim(dt) {
     for (const s of anim.itemStrikes) {
       beams.push({ x: s.x, y: s.y, t: 0, ttl: 0.5, col: '#ffe066' });
       burst(s.x, s.y, 22, 'beam');
-      flashes.push({ x: s.x, y: s.y, r: 55, t: 0, ttl: 0.4 });
+      flashes.push({ x: s.x, y: s.y, r: 55, t: 0, ttl: 0.4 }); SND('zap');
       shake = Math.min(14, shake + 4);
       const r2 = applyBoom(anim.simT, anim.simM, s.x, s.y, 38, s.dmg, -1, 20, undefined, anim.simI);
       st.terrain.set(anim.simT); st.islands = anim.simI;
@@ -1410,49 +1413,11 @@ function onShotDone() {
 }
 
 /* ---------- music: tiny procedural chiptune loop ---------- */
+/* sound: shared arcade engine (arcade-audio.js) — one mute for every game */
+const SND = (name, o) => { if (window.ArcadeAudio) ArcadeAudio.sfx(name, o); };
 const Music = {
-  ctx: null, gain: null, timer: null, step: 0,
-  muted: (() => { try { return localStorage.getItem('cb-music') === 'off'; } catch (e) { return false; } })(),
-  // 16 eighth-notes @150bpm, cheerful C-major loop; bass on even steps
-  lead: [72, 76, 79, 81, 79, 76, 74, 76, 72, 76, 79, 84, 81, 79, 76, 74],
-  bass: [48, 0, 48, 0, 53, 0, 53, 0, 45, 0, 45, 0, 43, 0, 43, 0],
-  ensure() {
-    if (this.ctx || this.muted) return;
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      this.ctx = new AC();
-      this.gain = this.ctx.createGain();
-      this.gain.gain.value = 0.5;
-      this.gain.connect(this.ctx.destination);
-      this.step = 0;
-      this.timer = setInterval(() => this.tick(), 200);
-    } catch (e) { /* no audio — stay silent */ }
-  },
-  note(midi, t, dur, type, vol) {
-    const f = 440 * Math.pow(2, (midi - 69) / 12);
-    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-    o.type = type; o.frequency.value = f;
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(vol, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(this.gain);
-    o.start(t); o.stop(t + dur + 0.05);
-  },
-  tick() {
-    if (!this.ctx || this.muted) return;
-    if (this.ctx.state === 'suspended') this.ctx.resume();
-    const t = this.ctx.currentTime + 0.05, s = this.step % 16;
-    if (this.lead[s]) this.note(this.lead[s], t, 0.18, 'square', 0.045);
-    if (this.bass[s]) this.note(this.bass[s], t, 0.22, 'triangle', 0.09);
-    this.step++;
-  },
-  toggle() {
-    this.muted = !this.muted;
-    try { localStorage.setItem('cb-music', this.muted ? 'off' : 'on'); } catch (e) {}
-    if (!this.muted) this.ensure();
-    const b = $('music-btn'); if (b) b.textContent = this.muted ? '🔇' : '🔊';
-    return this.muted;
-  },
+  ensure() { if (window.ArcadeAudio) ArcadeAudio.music(screen === 'play' ? 'cake' : 'menu'); },
+  toggle() { return window.ArcadeAudio ? ArcadeAudio.toggle() : true; },
 };
 window.addEventListener('pointerdown', () => Music.ensure(), { passive: true });
 window.addEventListener('keydown', () => Music.ensure());
@@ -1531,7 +1496,7 @@ window.addEventListener('keydown', e => {
     const w = +e.key - 1;
     const m = activeMobile();
     if (w === 2 && m.ss < SS_NEED) { toast('SS not charged yet!'); return; }
-    aim.weapon = w; updateWeapons();
+    aim.weapon = w; updateWeapons(); SND('select');
   }
   if (e.key === ' ' && !aim.charging) { aim.charging = true; aim.power = 0; aim.powDir = 1; }
 });
@@ -1591,13 +1556,14 @@ function pollAim(dt) {
     if (aimAcc > 0.15) { aimAcc = 0; Net.sendAim({ ang: aim.ang, idx: activeIdx }); }
   }
   if (aim.charging) {
+    chargeTick += dt; if (chargeTick > 0.09) { chargeTick = 0; SND('charge', { p: aim.power }); }
     aim.power += aim.powDir * dt * 85;
     if (aim.power >= 100) { aim.power = 100; aim.powDir = -1; }
     else if (aim.power <= 0) { aim.power = 0; aim.powDir = 1; }
     $('powFill').style.width = aim.power + '%';
   } else if ($('powFill').style.width !== '0%') $('powFill').style.width = '0%';
 }
-let aimAcc = 0;
+let aimAcc = 0, chargeTick = 0;
 function clampAim(a, team) {
   // keep barrel pointing generally toward enemy side; allow full 5..175 range
   return Math.max(5, Math.min(175, a));
@@ -1629,6 +1595,7 @@ function burst(x, y, r, kind) {
 /* K.O.: brief slow motion, big shake and a banner over the destroyed mobile */
 let slowmo = 0;
 function knockout(m) {
+  SND('ko');
   slowmo = 1.1; shake = Math.max(shake, 14);
   dmgNums.push({ x: m.x, y: m.y - 92, txt: 'K.O.!', t: 0, ttl: 1.6, col: '#ff6b6b', direct: true, ko: true });
   burst(m.x, m.y - 10, 34, 'boom');
@@ -1645,6 +1612,7 @@ function monitorFps(dt) {
 // mobiles (hp bars drop mid-animation) + floating damage numbers.
 // The final snap at the end of the anim still applies canonical state.
 function syncLiveDamage(victims, direct) {
+  SND('hit');
   for (const idx in victims) {
     const s = anim.simM[idx], live = st.mobiles[idx];
     if (!s || !live) continue;
@@ -2288,6 +2256,7 @@ function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<':
 function showScreen(s) {
   screen = s;
   document.body.classList.toggle('in-menu', s !== 'play');
+  if (window.ArcadeAudio) ArcadeAudio.music(s === 'play' ? 'cake' : 'menu');
   $('menuOv').classList.toggle('hidden', s !== 'menu');
   if (s === 'menu') {
     $('bot-pick').classList.add('hidden');
@@ -2319,6 +2288,7 @@ function endMatch() {
   gg += Math.round(myMatchDmg / 25);
   gg = Math.round(gg * (1 + gearStats().gold));
   if (meM) { gold += gg; if (won) wins++; saveEcon(); }
+  SND(won ? 'win' : 'lose');
   // world win board: bot matches only (online wins aren't verifiable here)
   $('wl').hidden = Net.role !== 'solo';
   if (Net.role === 'solo' && window.ArcadeBoard) ArcadeBoard.winBoard({ game: 'crumb-bound', won: !!won, name: myName, placeholder: /^player$/i, list: $('wl-list'), note: $('wl-note') });
@@ -2714,6 +2684,7 @@ function applyInstantItem(id, isLocal) {
   else if (isLocal) st.delays[activeIdx] += Math.round(it.delay * (1 - gdl));
 }
 function useItem(id) {
+  SND('item');
   if (!isMyTurn() || turnState !== 'aim' || anim) return;
   const it = ITEMS[id]; if (!it || !(inv[id] > 0)) return;
   if (it.kind === 'now') {
@@ -2859,11 +2830,9 @@ function startSolo() {
 
 /* ---------- wiring ---------- */
 function wireUI() {
-  $('music-btn').onclick = () => Music.toggle();
-  // reflect saved mute state on the button
-  if (Music.muted) $('music-btn').textContent = '🔇';
+  if (window.ArcadeAudio) ArcadeAudio.bindButton($('music-btn')); // shared arcade mute (remembered across games)
   $('btn-create').onclick = () => {
-    const code = Array.from({ length: 4 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[(Math.random() * 32) | 0]).join('');
+    const code = Array.from({ length: 4 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[(Math.random() * 31) | 0]).join('');
     joinRoom(code, true);
   };
   $('btn-joinb').onclick = () => joinRoom($('room-input').value, false);
@@ -2874,7 +2843,7 @@ function wireUI() {
     $('btn-solo').textContent = 'Choose your opponent ↓';
     $('bot-pick').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
-  document.querySelectorAll('.vmobbtn').forEach(b => b.onclick = () => { myMobile = b.dataset.m; saveMobile(); refreshMobilePick(); });
+  document.querySelectorAll('.vmobbtn').forEach(b => b.onclick = () => { myMobile = b.dataset.m; saveMobile(); refreshMobilePick(); SND('select'); });
   $('btn-shop').onclick = openShop;
   $('btn-shopclose').onclick = closeShop;
   document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => { shopTab = b.dataset.t; renderShop(); });

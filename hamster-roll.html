@@ -108,7 +108,7 @@
   <span class="chip" id="h-track">Track 1/4</span>
   <span class="t" id="h-time">0:45.0</span>
   <span class="chip" id="h-boost">⚡×0</span>
-  <span class="chip" id="h-coins">🪙0</span><span class="chip" id="h-quit" title="Quit race">✕</span>
+  <span class="chip" id="h-coins">🪙0</span><span class="chip" id="h-sound" role="button" tabindex="0" title="Sound on/off" style="cursor:pointer">🔊</span><span class="chip" id="h-quit" title="Quit race">✕</span>
 </div></div>
 
 <canvas id="minimap" width="240" height="48"></canvas>
@@ -159,6 +159,7 @@
 <div id="rotate-hint"><span>🔄 Rotate your phone for the full track</span></div>
 
 <script src="leaderboard.js?v=2"></script>
+<script src="arcade-audio.js?v=1"></script>
 <script type="module">
 
 /* ================= config ================= */
@@ -187,7 +188,9 @@ const myId='h'+Math.random().toString(36).slice(2,10);
 /* ================= audio ================= */
 let AC=null;
 function beep(f,d,type='sine',v=.12,slide=0){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,AC.currentTime);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),AC.currentTime+d);g.gain.setValueAtTime(v,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d);}catch(e){}}
-const sfx={
+/* sound: shared arcade engine when available (falls back to the old beeps) */
+const AA=(name,fallback)=>(...a)=>{if(window.ArcadeAudio)ArcadeAudio.sfx(name);else fallback(...a);};
+const legacySfx={
   jump:n=>beep(300+n*90,.12,'square',.07,220),
   wall:()=>beep(240,.1,'square',.08,300),
   boost:()=>beep(180,.3,'sawtooth',.1,700),
@@ -201,6 +204,9 @@ const sfx={
   bump:()=>beep(180,.05,'square',.05),
   crumble:()=>beep(180,.25,'sawtooth',.09,-100),
 };
+const sfx={jump:AA('jump',legacySfx.jump),wall:AA('boing',legacySfx.wall),boost:AA('boost',legacySfx.boost),coin:AA('coin',legacySfx.coin),
+  pickup:AA('pickup',legacySfx.pickup),land:AA('land',legacySfx.land),finish:AA('win',legacySfx.finish),dnf:AA('dnf',legacySfx.dnf),
+  count:AA('count',legacySfx.count),go:AA('go',legacySfx.go),bump:AA('bump',legacySfx.bump),crumble:AA('crumble',legacySfx.crumble)};
 
 /* ================= tracks ================= */
 // solids: [x,y,w,h]  coins/boosts: [x,y]  finish: {x,y,w,h}
@@ -1098,6 +1104,7 @@ $('btn-join').onclick=()=>{$('join-row').style.display='block';$('code-input').f
 $('btn-go').onclick=()=>joinRoom($('code-input').value,false);
 $('btn-leave').onclick=async()=>{await leaveRoom();location.reload();};
 $('h-quit').onclick=quitRace;
+if(window.ArcadeAudio)ArcadeAudio.bindButton($('h-sound'));
 $('btn-start').onclick=()=>{if(S.channel)S.channel.send({type:'broadcast',event:'start',payload:{}});startMatch(false);};
 $('chat-send').onclick=()=>{const i=$('chat-in');const t=i.value.trim();if(t){sendChat(t);lobbyChat(myName,t);}i.value='';};
 $('chat-in').addEventListener('keydown',e=>{if(e.key==='Enter')$('chat-send').click();e.stopPropagation();});
@@ -1106,6 +1113,7 @@ $('race-chat-in').addEventListener('keydown',e=>{e.stopPropagation();if(e.key===
 /* ================= main loop ================= */
 let last=performance.now(),posT=0;
 function loop(now){
+  if(window.ArcadeAudio)ArcadeAudio.music(S.screen==='race'?'race':'menu');
   try{
   const dt=Math.min(.033,(now-last)/1000);last=now;
   if(S.screen==='race'&&S.race){
