@@ -215,7 +215,7 @@
 .topbar #name-input{width:170px}
 .sec{margin:8px 0 2px;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 .sec-sub{text-transform:none;letter-spacing:0;font-weight:600;opacity:.75;font-size:13px}
-.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%}
+.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;width:100%}
 .cards.bots{grid-template-columns:repeat(5,minmax(0,1fr))}
 .vcard,.bcard{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 10px 12px;border-radius:16px;
   background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,240,248,.93));color:#4a2c45;box-shadow:0 4px 0 rgba(120,60,110,.35),0 8px 18px rgba(40,10,40,.25);border:2px solid transparent;transition:transform .12s}
@@ -303,6 +303,7 @@ body.in-menu #rotateHint{display:none!important}
         <button class="vcard vmobbtn" data-m="eclair"></button>
         <button class="vcard vmobbtn" data-m="meringue"></button>
         <button class="vcard vmobbtn" data-m="fudge"></button>
+        <button class="vcard vmobbtn" data-m="random"></button>
       </div>
       <div class="hintline hidden" id="veh-blurb"></div>
       <div class="btnRow">
@@ -349,6 +350,7 @@ body.in-menu #rotateHint{display:none!important}
         <button class="mobbtn" data-m="eclair">🥖 Éclair</button>
         <button class="mobbtn" data-m="meringue">🍦 Meringue</button>
         <button class="mobbtn" data-m="fudge">🍫 Fudge</button>
+<button class="mobbtn" data-m="random">🎲 Random</button>
       </div>
       <div class="hintline" id="mob-blurb"></div>
       <div class="pickRow"><span class="lbl">Team:</span>
@@ -461,7 +463,19 @@ const MOBILES = {
          { n: 'Mega Bomb', dmg: 65, r: 42, kind: 'shell' },
          { n: 'Fudgequake', dmg: 90, r: 60, kind: 'shell' } ] },
 };
-const MOB_KEYS = Object.keys(MOBILES);
+// secret legendary: only reachable by picking Random (1 in 20 rolls), like the old Dragon/Knight
+MOBILES.dragonfruit = { name: 'Dragon Fruit Torte', icon: '🐉', hp: 150, move: 110, ta: [20, 160], secret: true,
+  desc: 'Legendary', pro: 'huge HP, big fiery shots, widest firing angle', con: 'only 1 in 20 Random rolls',
+  w: [ { n: 'Ember Glaze', dmg: 46, r: 30, kind: 'shell' },
+       { n: 'Twin Flame', dmg: 30, r: 22, kind: 'twin' },
+       { n: "Dragon's Breath", dmg: 85, r: 38, kind: 'beam' } ] };
+const MOB_KEYS = Object.keys(MOBILES).filter(k => !MOBILES[k].secret); // pickable vehicles
+const RANDOM_MOBILE = 'random', LEGEND_ODDS = 1 / 20;
+/* 'random' becomes a real vehicle when a match starts (solo: here; online: the host decides and tells everyone) */
+function resolveMobile(k) {
+  if (k !== RANDOM_MOBILE) return MOBILES[k] ? k : 'shortcake';
+  return Math.random() < LEGEND_ODDS ? 'dragonfruit' : MOB_KEYS[(Math.random() * MOB_KEYS.length) | 0];
+}
 
 /* ---------- items, gear, gold: the GunBound loadout loop ----------
    Battle items (OG list): equip up to 6 slots pre-match, buy stock with gold.
@@ -1000,16 +1014,23 @@ let shake = 0;
 let anim = null;          // active shot animation
 let pendingTurn = null;   // turn broadcast received mid-animation (guests)
 let chatScope = 'team';
-let myTeam = 'A', myMobile = (() => { try { const v = localStorage.getItem('cb-mobile'); return v && MOBILES[v] ? v : 'shortcake'; } catch (e) { return 'shortcake'; } })();
+let myTeam = 'A', myMobile = (() => { try { const v = localStorage.getItem('cb-mobile'); return v && (v === RANDOM_MOBILE || (MOBILES[v] && !MOBILES[v].secret)) ? v : 'shortcake'; } catch (e) { return 'shortcake'; } })();
 function saveMobile() { try { localStorage.setItem('cb-mobile', myMobile); } catch (e) {} }
 /* menu cards: drawn portraits, stats and plain-language descriptions */
-const ROLE_TXT = { shortcake: 'All-rounder', eclair: 'Sniper', meringue: 'Skirmisher', fudge: 'Bruiser' };
+const ROLE_TXT = { shortcake: 'All-rounder', eclair: 'Sniper', meringue: 'Skirmisher', fudge: 'Bruiser', dragonfruit: 'Legendary', random: 'Mystery' };
 function statRows(d) {
   const rows = [['Health', d.hp / 130], ['Power', d.w[0].dmg / 50], ['Blast', d.w[0].r / 34], ['Speed', d.move / 125], ['Aim range', (d.ta[1] - d.ta[0]) / 130]];
   return rows.map(([n, v]) => '<span>' + n + '</span><i><b style="width:' + Math.round(Math.max(.12, Math.min(1, v)) * 100) + '%"></b></i>').join('');
 }
 function buildMenuCards() {
   document.querySelectorAll('.vcard').forEach(b => {
+    if (b.dataset.m === RANDOM_MOBILE) {
+      b.innerHTML = '<canvas class="card-thumb"></canvas><span class="card-name">Random</span><span class="card-role">Mystery</span>' +
+        '<span class="shots" style="font-size:12px;margin-top:4px">Roll one of the four vehicles when the match starts…</span>' +
+        '<span class="procon"><span class="p">+ 1 in 20 rolls: the secret<br><b>Dragon Fruit Torte</b></span><br><span class="c">− you don’t get to choose</span></span>';
+      b.setAttribute('aria-label', 'Random vehicle. One in twenty rolls gives the secret legendary Dragon Fruit Torte');
+      return;
+    }
     const d = MOBILES[b.dataset.m];
     b.innerHTML = '<canvas class="card-thumb"></canvas><span class="card-name">' + d.name + '</span><span class="card-role">' + ROLE_TXT[b.dataset.m] + '</span>' +
       '<span class="stats">' + statRows(d) + '</span>' +
@@ -1032,7 +1053,7 @@ function drawMenuThumbs() {
     document.querySelectorAll('.bcard').forEach((b, i) => { const c = b.querySelector('canvas'), bd = botDefOf(b.dataset.b); if (c) drawThumb(c, bd.mobile, 'B', bd.id, i + 8); });
 }
 function refreshMobilePick() {
-  const m = MOBILES[myMobile];
+  const m = MOBILES[myMobile] || { icon: '?', name: 'Random', desc: 'Mystery', pro: '1 in 20: Dragon Fruit Torte', con: 'no choice' };
   document.querySelectorAll('.vmobbtn').forEach(b => b.classList.toggle('sel', b.dataset.m === myMobile));
   document.querySelectorAll('.mobbtn').forEach(b => b.classList.toggle('sel', b.dataset.m === myMobile));
   const t = m.icon + ' ' + m.name + ' · ' + m.desc + ' — +' + m.pro + ' / −' + m.con;
@@ -1069,6 +1090,15 @@ function newMatch(seed, defs) {
   myTeam = myDefIdx >= 0 ? st.mobiles[myDefIdx].team : 'A';
   completedTurns = 0;
   particles = []; beams = []; dmgNums = []; flashes = []; shake = 0; anim = null; turnQueue = [];
+  // legendary entrance
+  st.mobiles.forEach(m => {
+    if (m.mobile !== 'dragonfruit') return;
+    setTimeout(() => {
+      burst(m.x, m.y - 30, 60, 'beam'); burst(m.x, m.y - 30, 40, 'boom'); shake = Math.max(shake, 16);
+      dmgNums.push({ x: m.x, y: m.y - 110, txt: 'LEGENDARY!', t: 0, ttl: 2.4, col: '#ffd43b', direct: true, ko: true });
+      toast((m.pid === myId ? 'You rolled' : m.name + ' rolled') + ' the legendary Dragon Fruit Torte!', 3200);
+    }, 600);
+  });
 }
 
 function isMyTurn() { return turnState === 'aim' && activeIdx === myDefIdx && myDefIdx >= 0; }
@@ -1863,6 +1893,37 @@ function drawFace(cx, cy, m, i) {
 }
 function grad(y0, y1, c0, c1) { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, c0); g.addColorStop(1, c1); return g; }
 const PASTRY = {
+  dragonfruit(m, i) {
+    const now = performance.now() / 1000, flap = Math.sin(now * 6 + i) * 0.25;
+    for (const s2 of [-1, 1]) {                                                         // little wings
+      ctx.save(); ctx.translate(s2 * 14, -38); ctx.rotate(s2 * (0.5 + flap));
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(s2 * 18, -14, s2 * 20, 4); ctx.quadraticCurveTo(s2 * 12, 0, s2 * 10, 6); ctx.quadraticCurveTo(s2 * 6, 2, 0, 6); ctx.closePath();
+      ctx.fillStyle = grad(-14, 6, '#b2f2bb', '#40c057'); ctx.fill(); outline(1.6); ctx.restore();
+    }
+    blob(0, -32, 18, 16); ctx.fillStyle = grad(-48, -16, '#ff6fb5', '#d6336c'); ctx.fill(); outline();   // dragon fruit body
+    ctx.fillStyle = '#69db7c';                                                                           // green scale tips
+    for (const [sx, sy, a] of [[-14, -42, -0.9], [14, -42, 0.9], [-17, -28, -1.6], [17, -28, 1.6], [0, -48, 0]]) {
+      ctx.save(); ctx.translate(sx, sy); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-3, 2); ctx.quadraticCurveTo(0, -9, 3, 2); ctx.closePath(); ctx.fill(); outline(1.2); ctx.restore();
+    }
+    ctx.fillStyle = '#ffd43b';                                                                           // tiny horns
+    for (const s2 of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s2 * 6, -46); ctx.quadraticCurveTo(s2 * 9, -56, s2 * 12, -55); ctx.quadraticCurveTo(s2 * 9, -50, s2 * 10, -45); ctx.closePath(); ctx.fill(); outline(1.2); }
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; blob(-7, -40, 5, 3.5); ctx.fill();
+    ctx.fillStyle = '#2b1d2e'; for (const [sx, sy] of [[-9, -22], [10, -20], [-3, -18], [6, -44]]) { blob(sx, sy, 0.9, 0.9); ctx.fill(); } // seeds
+    if (m.alive) { ctx.fillStyle = 'rgba(255,170,60,' + (0.35 + 0.25 * Math.sin(now * 9)) + ')'; blob(20, -24, 4 + Math.sin(now * 9) * 1.5, 2.5); ctx.fill(); } // ember puff
+    drawFace(2, -30, m, i);
+  },
+  random(m, i) {                                                                         // mystery gift box (menu only)
+    const now = performance.now() / 1000, wob = Math.sin(now * 3 + i) * 0.06;
+    ctx.save(); ctx.translate(0, -32); ctx.rotate(wob);
+    roundRect(-17, -14, 34, 28, 5); ctx.fillStyle = grad(-14, 14, '#b197fc', '#7048e8'); ctx.fill(); outline();
+    roundRect(-19, -19, 38, 8, 3); ctx.fillStyle = grad(-19, -11, '#d0bfff', '#9775fa'); ctx.fill(); outline(1.8);
+    ctx.fillStyle = '#ffd43b'; ctx.fillRect(-3, -19, 6, 33);                                            // ribbon
+    ctx.beginPath(); ctx.ellipse(-7, -23, 7, 4, -0.5, 0, 6.29); ctx.ellipse(7, -23, 7, 4, 0.5, 0, 6.29); ctx.fill(); outline(1.4);
+    ctx.fillStyle = '#fff'; ctx.font = '900 18px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.strokeText('?', 0, 3); ctx.fillText('?', 0, 3);
+    for (let k = 0; k < 3; k++) { const a = now * 2 + k * 2.1; ctx.fillStyle = '#ffd43b'; blob(Math.cos(a) * 24, -2 + Math.sin(a) * 14, 1.6, 1.6); ctx.fill(); } // sparkles
+    ctx.restore();
+  },
   shortcake(m, i) {
     roundRect(-17, -46, 34, 28, 9); ctx.fillStyle = grad(-46, -18, '#fff0c7', '#f3c983'); ctx.fill(); outline();
     ctx.fillStyle = '#ff9ec6'; ctx.fillRect(-16, -35, 32, 5); ctx.fillStyle = '#e8435a'; ctx.fillRect(-16, -31, 32, 2);   // cream + jam layer
@@ -1946,7 +2007,7 @@ function drawBody(m, i, tilt) {
   ctx.restore();
 }
 /* bot personalities wear something: chef hat, monocle, fuse, grad cap + specs, bib */
-const HEAD = { shortcake: [2, -27, -50], eclair: [4, -26, -44], meringue: [1, -27, -52], fudge: [1, -29, -47] }; // face x, face y, head top
+const HEAD = { dragonfruit: [2, -30, -48], random: [0, -32, -52], shortcake: [2, -27, -50], eclair: [4, -26, -44], meringue: [1, -27, -52], fudge: [1, -29, -47] }; // face x, face y, head top
 function drawAccessory(bot, mobile) {
   const [fx, fy, top] = HEAD[mobile] || HEAD.shortcake;
   const now = performance.now() / 1000;
@@ -2276,7 +2337,7 @@ const SUPABASE_URL = 'https://ukrxoqsvyvlyeblubjeo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
 /* Bump when the match simulation or messages change, so players on an old cached
    copy can't join (and desync) a room with the new version. v2: 1600px world. */
-const NET_ROOM_PREFIX = 'cb-v4:'; // v4: slope tilt changes the real shot angle
+const NET_ROOM_PREFIX = 'cb-v5:'; // v5: secret Dragon Fruit Torte via Random
 /* Multiplayer-only client, loaded lazily: the menu, solo mode, and shop must
    keep working even if the Supabase CDN is unreachable. Resolves to null then. */
 const sbReady = (async () => {
@@ -2494,7 +2555,7 @@ function renderRoster() {
   ps.forEach(p => {
     const you = p.id === myId;
     const tcls = p.team === 'A' ? 'teamA' : 'teamB';
-    html += '<div class="pslot ' + tcls + (you ? ' me' : '') + '"><div class="avatar">' + (MOBILES[p.mobile] ? MOBILES[p.mobile].icon : '🍰') + '</div>' +
+    html += '<div class="pslot ' + tcls + (you ? ' me' : '') + '"><div class="avatar">' + (MOBILES[p.mobile] ? MOBILES[p.mobile].icon : (p.mobile === RANDOM_MOBILE ? '🎲' : '🍰')) + '</div>' +
       '<div class="pname">' + esc(p.name) + (you ? ' (you)' : '') + '</div>' +
       '<div class="ptag">Team ' + p.team + ' · ' + (p.ready ? '✓ ready' : '…') + '</div>' +
       (isNetHost() && you ? '<div class="crown">👑 host</div>' : '') + '</div>';
@@ -2531,7 +2592,7 @@ function hostStartMatch() {
   if (!Net.channel || !isNetHost()) return;
   const ps = Object.values(lobbyState).sort((a, b) => a.joinedAt - b.joinedAt);
   const seed = (Math.random() * 0x7fffffff) | 0;
-  const defs = ps.map(p => ({ pid: p.id, name: p.name, mobile: p.mobile, team: p.team, isBot: false }));
+  const defs = ps.map(p => ({ pid: p.id, name: p.name, mobile: resolveMobile(p.mobile), team: p.team, isBot: false })); // host rolls 'random'
   Net.role = 'host';
   try { Net.channel.send({ type: 'broadcast', event: 'mstart', payload: { seed, defs } }); } catch (e) {}
   beginPlay(seed, defs);
@@ -2774,15 +2835,16 @@ function refreshBotPick() {
   if (bl) bl.textContent = bd.icon + ' ' + bd.name + ' · ' + bd.type + ' — +' + bd.pro.replace(/^\+/, '') + ' / −' + bd.con.replace(/^[−-]/, '');
 }
 function startSolo() {
+  const mine = resolveMobile(myMobile);
   myName = ($('name-input').value || '').trim().slice(0, 14) || 'Player';
   try { localStorage.setItem('cb-name', myName); } catch (e) {}
   Net.role = 'solo'; Net.channel = null;
   const bd = botDefOf(myBot);
   let botMob = bd.mobile;
-  if (botMob === myMobile) botMob = MOB_KEYS[(MOB_KEYS.indexOf(myMobile) + 2) % MOB_KEYS.length];
+  if (botMob === mine) botMob = MOB_KEYS[(MOB_KEYS.indexOf(myMobile) + 2) % MOB_KEYS.length];
   const seed = (Math.random() * 0x7fffffff) | 0;
   const defs = [
-    { pid: myId, name: myName, mobile: myMobile, team: 'A', isBot: false },
+    { pid: myId, name: myName, mobile: mine, team: 'A', isBot: false },
     { pid: 'bot', name: bd.name, mobile: botMob, team: 'B', isBot: true, bot: bd.id },
   ];
   beginPlay(seed, defs);
