@@ -78,6 +78,13 @@
   #tL{left:14px;bottom:26px}#tR{left:102px;bottom:26px}
   #tJ{right:102px;bottom:26px}#tB{right:14px;bottom:26px;background:rgba(255,150,80,.25)}
   table.res{margin:8px auto;border-collapse:collapse;font-size:15px}
+.hr-world{margin:10px auto 0;max-width:340px;text-align:left}
+.hr-world h3{margin:0 0 6px;font-size:15px;color:#ffd166;text-align:center}
+.hr-wl{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.hr-wl li{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;padding:5px 10px;border-radius:8px;background:#ffffff12;font-size:14px}
+.hr-wl li.lb-empty{display:block;background:none;opacity:.7;text-align:center}
+.hr-wl .lb-me{outline:2px solid #ffd166}.hr-wl .lb-rank{opacity:.7}.hr-wl .lb-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hr-wn{margin:6px 0 0;font-size:13px;opacity:.85;text-align:center;min-height:1em}
   table.res td,table.res th{padding:5px 14px;border-bottom:1px solid #ffffff22}
   table.res th{color:#ffd166}
   .dnf{color:#ff8fa3}
@@ -141,6 +148,7 @@
 </div>
 <div id="rotate-hint"><span>🔄 Rotate your phone for the full track</span></div>
 
+<script src="leaderboard.js"></script>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
@@ -873,8 +881,8 @@ function endTrackForMe(){
     const k='t'+S.track;
     if(!S.best[k]||me.finishMs<S.best[k]){S.best[k]=me.finishMs;localStorage.setItem('hr2-best',JSON.stringify(S.best));toast('🏆 New best on '+curTrack().name+'!',2200);}
   }
-  if(S.solo){showTrackResults();}
-  else{showTrackResults();}
+  if(!me.dnf)worldPost(curTrack(),me.finishMs);
+  showTrackResults();
 }
 function allFinished(){
   const roster=Object.values(S.players);
@@ -889,12 +897,38 @@ function showTrackResults(){
   let html=`<h2>${curTrack().name} — results</h2><table class="res"><tr><th>#</th><th>Racer</th><th>Time</th></tr>`;
   rows.forEach((r,i)=>{html+=`<tr${r.you?' style="color:#ffd166"':''}><td>${i+1}</td><td>${esc(r.name)}${r.you?' (you)':''}</td><td class="${r.dnf?'dnf':''}">${r.dnf?'DNF':fmt(r.ms)}</td></tr>`;});
   html+='</table>';
+  html+=`<div class="hr-world"><h3>🌍 World best · ${esc(curTrack().name)}</h3><ol class="hr-wl" id="hr-world-list"><li class="lb-empty">Loading…</li></ol><p class="hr-wn" id="hr-world-note">${esc(worldNote)}</p></div>`;
   if(S.track<TRACKS.length-1)html+=`<p>Next: <b>${TRACKS[S.track+1].name}</b> — boosts carry over! ⚡×${me.boosts}</p>`;
   else html+=`<p>Final track done — tallying the match…</p>`;
   html+=`<br><button class="btn" id="btn-nextmap">${S.track<TRACKS.length-1?'Next Map →':'See Results →'}</button> <button class="btn alt" id="btn-tomenu">Back to Menu</button>`;
   $('results-card').innerHTML=html;$('results').style.display='flex';
   $('btn-nextmap').onclick=()=>advanceTrack();
   $('btn-tomenu').onclick=()=>quitRace();
+  worldShow(curTrack());
+}
+/* ---- world leaderboard (leaderboard.js) ---- */
+let worldNote='';
+const trackSlug=t=>t.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+function worldShow(t){
+  if(!window.ArcadeBoard)return;
+  const slug=trackSlug(t);
+  ArcadeBoard.top('hamster-roll',slug,{limit:5}).then(rows=>{
+    const el=$('hr-world-list');if(!el||el.dataset.slug&&el.dataset.slug!==slug)return;
+    el.dataset.slug=slug;
+    ArcadeBoard.render(el,rows,{format:'ms',emptyText:'No world times yet — be the first!'});
+  });
+}
+function worldPost(t,ms){
+  worldNote='';
+  if(!window.ArcadeBoard)return;
+  if(!myName||/^hamster$/i.test(myName)){worldNote='Type your name on the menu to post world times.';return;}
+  ArcadeBoard.setName(myName);
+  worldNote='Posting your time…';
+  ArcadeBoard.submit('hamster-roll',trackSlug(t),myName,ms,{}).then(res=>{
+    worldNote=res.ok?'Posted to the world board!':res.queued?'📡 Offline — will post next visit.':res.error;
+    const n=$('hr-world-note');if(n)n.textContent=worldNote;
+    if(res.ok&&$('hr-world-list'))worldShow(t);
+  });
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function advanceTrack(){
