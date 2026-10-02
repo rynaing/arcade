@@ -581,6 +581,14 @@ function carveIslands(islands, cx, cy, r) {
 /* ---------- projectiles ---------- */
 /* A shot: {x,y,vx,vy,kind,dmg,r,team,srcIdx,wind,age,curve}
    kinds: shell, twin(2 shells), pierce, twinpierce, beam, boomerang, spread5, cluster6 */
+/* GunBound-style slopes: the vehicle leans with the ground and the cannon leans with it,
+   so a shot's real (world) angle = aim angle relative to the body - body tilt.
+   Computed from terrain only, so host and guests agree exactly. Radians, + = right side lower. */
+function slopeTiltAt(t, x, y) {
+  if (Math.abs(y - surfY(t, x)) >= 6) return 0;                // on an island / in the air: level
+  return Math.max(-0.5, Math.min(0.5, Math.atan2(surfY(t, x + 16) - surfY(t, x - 16), 32)));
+}
+function tiltDegOf(m) { return st ? slopeTiltAt(st.terrain, m.x, m.y) * 180 / Math.PI : 0; }
 function muzzleVel(power) { return 150 + (power / 100) * 640; }
 
 function makeProjectiles(kind, x, y, angDeg, power, dmg, r, team, srcIdx, wind) {
@@ -1340,7 +1348,7 @@ function botFire() {
   botMove(m, () => {
     const s = botAim(st, activeIdx);
     // animate bot "aiming"
-    m.ang = s.ang;
+    m.ang = s.ang + tiltDegOf(m); // display relative to the tilted body; the shot uses the world angle
     setTimeout(() => {
       if (turnState !== 'aim') return;
       fireShot({ x: m.x, y: m.y, ang: s.ang, power: s.power, weapon: s.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: 2 });
@@ -1418,7 +1426,7 @@ window.addEventListener('keyup', e => {
 
 function doFire() {
   const m = activeMobile(); if (!m) return;
-  const shot = { x: m.x, y: m.y, ang: aim.ang, power: Math.max(5, Math.round(aim.power)), weapon: aim.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: turnSecs(), item: armedItem, face: m.face };
+  const shot = { x: m.x, y: m.y, ang: aim.ang - tiltDegOf(m), power: Math.max(5, Math.round(aim.power)), weapon: aim.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: turnSecs(), item: armedItem, face: m.face };
   if (armedItem) { inv[armedItem] = Math.max(0, (inv[armedItem] || 0) - 1); if (!inv[armedItem]) delete inv[armedItem]; saveEcon(); }
   armedItem = null; renderItemBar();
   if (Net.role === 'guest') { Net.sendShot(shot); turnState = 'anim'; stopTimer(); $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden'); }
@@ -1816,6 +1824,11 @@ function drawMobile(m, i) {
   const [tc, tcd] = TEAM[m.team] || TEAM.A;
   ctx.save();
   ctx.translate(x, yb);
+  // lean with the ground: slope of the terrain under the wheels (islands are flat), eased so it doesn't jitter
+  const want = st ? slopeTiltAt(st.terrain, x, yb) : 0;
+  m._tilt = m._tilt == null ? want : m._tilt + (want - m._tilt) * 0.2;
+  const tilt = m._tilt;
+  ctx.rotate(tilt);
   if (!m.alive) ctx.globalAlpha = 0.45;
   // soft shadow + team glow ring
   ctx.fillStyle = 'rgba(40,20,40,.22)'; blob(0, 1, 23, 5); ctx.fill();
@@ -1835,7 +1848,7 @@ function drawMobile(m, i) {
   // piping-bag cannon, mounted on the cart BEHIND the rider so faces stay visible (unflipped: matches aim + trajectory)
   if (m.alive) {
     const a = (m.ang || 45) * Math.PI / 180;
-    ctx.save(); ctx.translate(0, -17); ctx.rotate(-a);
+    ctx.save(); ctx.translate(0, -17); ctx.rotate(-a); // aim is relative to the (tilted) body
     ctx.beginPath(); ctx.moveTo(2, -6); ctx.lineTo(24, -3.2); ctx.lineTo(24, 3.2); ctx.lineTo(2, 6); ctx.quadraticCurveTo(-3, 0, 2, -6); ctx.closePath();
     ctx.fillStyle = grad(-6, 6, '#ffffff', '#e9dcf2'); ctx.fill(); outline(1.8);
     ctx.strokeStyle = tc; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(9, -5); ctx.lineTo(9, 5); ctx.moveTo(16, -4.2); ctx.lineTo(16, 4.2); ctx.stroke();
@@ -1875,19 +1888,20 @@ function drawAim() {
   const m = activeMobile(); if (!m || !m.alive) return;
   // true-angle arc: solid green = full damage, faded = weak angle (-20%)
   const [tlo, thi] = trueRangeOf(m);
+  const td = tiltDegOf(m); // arcs are drawn relative to the leaning body
   ctx.lineWidth = 4;
   const arcs = [[tlo, thi, '#51cf66'], [5, tlo, 'rgba(81,207,102,0.28)'], [thi, 175, 'rgba(81,207,102,0.28)']];
   for (const [a0, a1, col] of arcs) {
     if (a1 <= a0) continue;
     ctx.strokeStyle = col;
-    ctx.beginPath(); ctx.arc(m.x, m.y - 24, 46, -a1 * Math.PI / 180, -a0 * Math.PI / 180); ctx.stroke();
+    ctx.beginPath(); ctx.arc(m.x, m.y - 24, 46, -(a1 - td) * Math.PI / 180, -(a0 - td) * Math.PI / 180); ctx.stroke();
   }
   // current-angle tick
   ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(m.x, m.y - 24, 46, -(aim.ang + 2.5) * Math.PI / 180, -(aim.ang - 2.5) * Math.PI / 180); ctx.stroke();
+  ctx.beginPath(); ctx.arc(m.x, m.y - 24, 46, -(aim.ang - td + 2.5) * Math.PI / 180, -(aim.ang - td - 2.5) * Math.PI / 180); ctx.stroke();
   // dotted trajectory preview (~0.8s)
   const sp = muzzleVel(Math.max(5, aim.power || 40));
-  const a = aim.ang * Math.PI / 180;
+  const a = (aim.ang - td) * Math.PI / 180; // real (world) firing angle
   let x = m.x, y = m.y - 32, vx = Math.cos(a) * sp, vy = -Math.sin(a) * sp;
   ctx.fillStyle = '#ffffffcc';
   for (let s = 0; s < 48; s++) {
@@ -2118,7 +2132,7 @@ const SUPABASE_URL = 'https://ukrxoqsvyvlyeblubjeo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
 /* Bump when the match simulation or messages change, so players on an old cached
    copy can't join (and desync) a room with the new version. v2: 1600px world. */
-const NET_ROOM_PREFIX = 'cb-v3:'; // v3: spawns moved closer
+const NET_ROOM_PREFIX = 'cb-v4:'; // v4: slope tilt changes the real shot angle
 /* Multiplayer-only client, loaded lazily: the menu, solo mode, and shop must
    keep working even if the Supabase CDN is unreachable. Resolves to null then. */
 const sbReady = (async () => {
@@ -2454,7 +2468,8 @@ async function leaveRoom() {
 function isWeakAngle(shot) {
   const m = st.mobiles[shot.srcIdx]; if (!m) return false;
   const [lo, hi] = trueRangeOf(m);
-  return shot.ang < lo || shot.ang > hi;
+  const rel = shot.ang + slopeTiltAt(st.terrain, shot.x, shot.y) * 180 / Math.PI; // angle relative to the leaning body
+  return rel < lo || rel > hi;
 }
 function renderItemBar() {
   const bar = $('itemBar'); if (!bar) return;
