@@ -12,8 +12,8 @@
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
   #game{position:relative;box-shadow:0 18px 60px rgba(0,0,0,.55);border-radius:14px;overflow:hidden}
   canvas{display:block;background:#241b45}
-  .ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
-    background:rgba(20,12,40,.82);backdrop-filter:blur(3px);z-index:20}
+  .ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;justify-content:safe center;flex-direction:column;
+    background:rgba(20,12,40,.82);backdrop-filter:blur(3px);z-index:20;overflow-y:auto}
   .hidden{display:none!important}
   h1.title{font-size:56px;margin:0 0 4px;letter-spacing:3px;font-weight:900;
     background:linear-gradient(180deg,#fff3bf 15%,#ffd166 45%,#ff922b 75%,#e8590c);
@@ -36,6 +36,7 @@
     width:130px;text-align:center;letter-spacing:3px;text-transform:uppercase;outline:none;font-weight:900}
   #menu-err{color:#ff8787;min-height:20px;margin-top:8px;font-size:14px}
   .hintline{color:#9d8fd0;font-size:12.5px;margin-top:10px;max-width:520px;text-align:center;line-height:1.5}
+  #arcade-link{color:#9d8fd0;font-size:13px;margin-top:8px}
   /* ---- lobby ---- */
   #lobby{background:rgba(20,12,40,.9)}
   .lobby-card{width:640px;max-width:94%;max-height:96%;overflow-y:auto;background:#2c2350;border:2px solid #6c5aa8;border-radius:18px;
@@ -92,6 +93,8 @@
   .wbtn.ssready{border-color:#e599f7;box-shadow:0 0 10px #e599f799}
   .wbtn:disabled{opacity:.4}
   #powWrap{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;width:280px;z-index:10;pointer-events:none}
+  #game{container-type:inline-size}
+  @container (max-width:1180px){#powWrap{bottom:66px}} /* too narrow for weapon bar + power bar side by side */
   #powBar{height:14px;background:#241b45;border:2px solid #6c5aa8;border-radius:8px;overflow:hidden}
   #powFill{height:100%;width:0%;background:linear-gradient(90deg,#7bed9f,#ffd166,#ff8787)}
   #powLbl{text-align:center;font-size:12px;font-weight:800;color:#c6d8f2;margin-top:2px}
@@ -215,6 +218,7 @@
     </div>
     <div id="menu-err"></div>
     <p class="hintline"><kbd>←</kbd><kbd>→</kbd> move · <kbd>↑</kbd><kbd>↓</kbd> aim · hold <kbd>Space</kbd> charge, release to fire · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons · move, then shoot, before the 20s timer runs out · fast shots act sooner (delay order) · weather changes the battlefield</p>
+    <a id="arcade-link" href="./index.html">&larr; Ryan Cake Studios</a>
   </div>
 
   <div id="shopOv" class="ov hidden">
@@ -921,7 +925,7 @@ function newMatch(seed, defs) {
 }
 
 function isMyTurn() { return turnState === 'aim' && activeIdx === myDefIdx && myDefIdx >= 0; }
-function activeMobile() { return activeIdx >= 0 ? st.mobiles[activeIdx] : null; }
+function activeMobile() { return st && activeIdx >= 0 ? st.mobiles[activeIdx] : null; }
 
 /* ---------- turn flow ---------- */
 function turnSecs() { return Math.max(0, (performance.now() - turnStartT) / 1000); }
@@ -979,8 +983,8 @@ function onTurnUI() {
   renderItemBar();
 }
 function updateWind() {
-  const w = st.wind, dir = w === 0 ? '·' : (w > 0 ? '→' : '←');
-  $('wind-box').textContent = Math.abs(w) + ' mph wind ' + dir + ' · ' + WEATHER_LABEL[st.wcur || 'calm'] + ' (next: ' + WEATHER_LABEL[st.wnext || 'calm'] + ')';
+  const w = st.wind, dir = w === 0 ? '' : (w > 0 ? ' →' : ' ←');
+  $('wind-box').textContent = Math.abs(w) + ' mph wind' + dir + ' · ' + WEATHER_LABEL[st.wcur || 'calm'] + ' (next: ' + WEATHER_LABEL[st.wnext || 'calm'] + ')';
 }
 function updateWeapons() {
   const m = activeMobile(); if (!m) return;
@@ -1037,7 +1041,7 @@ function fireShot(shot) {
   const m0 = st.mobiles[shot.srcIdx];
   const botD0 = m0 && m0.isBot ? botDefOf(m0.bot) : null;
   shot.weak = isWeakAngle(shot);
-  shot.dmgMult = botD0 ? (botD0.dmgMult || 1) : 1;
+  shot.dmgMult = (botD0 ? (botD0.dmgMult || 1) : 1) * (m0 && m0.pid === myId ? 1 + gearStats().atk : 1); // Sword gear
   shot.sizeScale = (st.sudden ? 1.12 : 1) * (botD0 ? (botD0.blastMult || 1) : 1);
   if (shot.item === 'dual' || shot.item === 'dualplus') { st.dualLeft = 1; st.dualPlus = shot.item === 'dualplus'; }
   const env = { sudden: shot.sudden, wmod: st.wcur === 'dark' ? 0.5 : 1,
@@ -1380,8 +1384,8 @@ function pollAim(dt) {
   if (keys['ArrowUp'] || keys['w'] || keys['W']) d += 1;
   if (keys['ArrowDown'] || keys['s'] || keys['S']) d -= 1;
   if (d) {
-    // angle relative to facing: keep 0..180 with 90 up; flip sense by team side
-    const facing = m.team === 'A' ? 1 : -1;
+    // angle relative to facing: keep 0..180 with 90 up; flip sense by the way the mobile faces
+    const facing = m.face || (m.team === 'A' ? 1 : -1);
     aim.ang = clampAim(aim.ang + d * 55 * dt * facing, m.team);
     m.ang = aim.ang;
     aimAcc += dt;
@@ -2369,7 +2373,7 @@ function refreshBotPick() {
   const bd = botDefOf(myBot);
   document.querySelectorAll('.botbtn').forEach(b => b.classList.toggle('sel', b.dataset.b === bd.id));
   const bl = $('bot-blurb');
-  if (bl) bl.textContent = bd.icon + ' ' + bd.name + ' · ' + bd.type + ' — +' + bd.pro + ' / −' + bd.con;
+  if (bl) bl.textContent = bd.icon + ' ' + bd.name + ' · ' + bd.type + ' — +' + bd.pro.replace(/^\+/, '') + ' / −' + bd.con.replace(/^[−-]/, '');
 }
 function startSolo() {
   myName = ($('name-input').value || '').trim().slice(0, 14) || 'Player';
