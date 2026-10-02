@@ -100,8 +100,8 @@ button.mini:hover{background:#33507e}
 <canvas id="cv" width="950" height="650"></canvas>
 <div class="overlay" id="menuOv"><div class="dialog">
 <h1>🫧 Bubble Brawl</h1>
-<p>Drop <b>water balloons</b> and splash your rivals! A splash <b>stuns</b> you for 6 seconds — get splashed while stunned and you <b>pop</b>. Stunned 3 times on the same tile? You pop too. Last blob standing wins.</p>
-<div class="keys"><kbd>←↑↓→</kbd> or <kbd>WASD</kbd> move &nbsp;·&nbsp; <kbd>Space</kbd> drop balloon<br>Crates drop powerups: 💧 +1 balloon, 🎯 +1 blast range, 👟 speed up (max 13 each)<br>Moves lock in tile-by-tile — plan your route!</div>
+<p>Drop <b>water balloons</b> and splash your rivals! A splash traps you in a <b>bubble</b> for 4 seconds — <b>walk into a trapped rival to pop them!</b> Splashed again while trapped? Pop. Nobody gets you? You break free. Last blob standing wins.</p>
+<div class="keys"><kbd>←↑↓→</kbd> or <kbd>WASD</kbd> move &nbsp;·&nbsp; <kbd>Space</kbd> drop balloon<br>Crates drop powerups: 💧 +1 balloon, 🎯 +1 blast range, 👟 speed up (max 8 · 8 · 6)<br>Glide round corners — the arena nudges you into gaps.</div>
 <input type="text" id="name-input" maxlength="14" placeholder="Your name"><br>
 <button class="big" id="startBtn">▶ Solo vs Bots</button><br>
 <button class="big" id="btn-create" style="background:linear-gradient(180deg,#ffb84d,#e8590c);box-shadow:0 4px 0 #a33d00,0 6px 16px rgba(0,0,0,.4)">Create Room</button>
@@ -137,9 +137,9 @@ button.mini:hover{background:#33507e}
 </div><button id="dropBtn">💧</button></div>
 </div>
 <div class="hud hud-bottom">
-<span class="chip" id="hPips" title="Balloons · Range · Speed (max 13 each)"></span>
+<span class="chip" id="hPips" title="Balloons · Range · Speed (max 8 · 8 · 6)"></span>
 </div>
-<p class="hint">Tip: your own balloons stun you too — always leave yourself an escape route. When the crates run out, wild balloons start raining…</p>
+<p class="hint">Tip: your own balloons trap you too — and a trapped blob is easy pickings. Always leave yourself an escape route. When the crates run out, wild balloons start raining…</p>
 <script src="leaderboard.js?v=2"></script>
 <script type="module">
 const SUPABASE_URL='https://ukrxoqsvyvlyeblubjeo.supabase.co';
@@ -158,7 +158,7 @@ async function joinRoom(code,isHost){
   setErr('');
   const sb=await sbReady;
   if(!sb){setErr('Online play can\u2019t load right now \u2014 check your connection. Solo still works!');return;}
-  const ch=sb.channel('bb:'+code,{config:{presence:{key:myId},broadcast:{ack:false}}});
+  const ch=sb.channel('bb-v2:'+code,{config:{presence:{key:myId},broadcast:{ack:false}}});
   S.channel=ch;S.room=code;S.players={};S.solo=false;
   ch.on('presence',{event:'sync'},renderRoster);
   ch.on('presence',{event:'join'},({newPresences})=>{for(const p of newPresences)if(p.id!==myId){lobbyChat(null,p.name+' joined the room',true);}renderRoster();});
@@ -370,11 +370,15 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 let AC=null;
 function audio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
 function tone(f,d,type,vol,slide){const ac=audio();if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,ac.currentTime);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),ac.currentTime+d);g.gain.setValueAtTime(vol||.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}
-function sfx(n){if(n==='place')tone(300,.12,'sine',.15,200);else if(n==='boom'){tone(120,.35,'sawtooth',.2,-70);tone(700,.25,'sine',.08,-500)}else if(n==='pow')tone(660,.12,'square',.08,330);else if(n==='stun'){tone(500,.2,'sine',.12,300);setTimeout(()=>tone(700,.15,'sine',.1,200),120)}else if(n==='pop'){tone(900,.08,'square',.14,-600);setTimeout(()=>tone(1400,.1,'square',.1,-900),70)}else if(n==='win')[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.22,'triangle',.12),i*130));else if(n==='lose')[400,300,220,150].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sawtooth',.1),i*150))}
+function sfx(n){if(n==='free'){tone(440,.12,'triangle',.1,500);return}if(n==='place')tone(300,.12,'sine',.15,200);else if(n==='boom'){tone(120,.35,'sawtooth',.2,-70);tone(700,.25,'sine',.08,-500)}else if(n==='pow')tone(660,.12,'square',.08,330);else if(n==='stun'){tone(500,.2,'sine',.12,300);setTimeout(()=>tone(700,.15,'sine',.1,200),120)}else if(n==='pop'){tone(900,.08,'square',.14,-600);setTimeout(()=>tone(1400,.1,'square',.1,-900),70)}else if(n==='win')[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.22,'triangle',.12),i*130));else if(n==='lose')[400,300,220,150].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sawtooth',.1),i*150))}
 
 /* ===== constants & state ===== */
 const COLS=19,ROWS=13,CELL=50,W=COLS*CELL,H=ROWS*CELL;
-const MATCH_TIME=300, FUSE=3.0, STUN_TIME=6, KILL_WIN=0.05, RAY_STEP=0.025;
+const MATCH_TIME=300, FUSE=3.0, KILL_WIN=0.05, RAY_STEP=0.025;
+/* Balloono rules: a splash traps you in a bubble; a rival who touches you pops you;
+   otherwise you break free after TRAP_TIME (with a moment of safety). */
+const TRAP_TIME=4, TRAP_GRACE=0.35, FREE_SAFE=1.0, POP_DIST=30;
+const MAX_BOMBS=8, MAX_POWER=8, MAX_SPD=5; // power-up caps (speed shows as MAX_SPD+1 pips)
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 
 let grid=[],bombs=[],flames=[],powerups=[],particles=[];
@@ -455,7 +459,41 @@ function inputDir(){
  if(dy)return[0,dy];
  return null;
 }
-function stepPlayer(p,dt){
+function stepPlayer(p,dt){return p.isBot?stepCell(p,dt):stepFree(p,dt)}
+/* smooth movement along the corridors with corner-sliding (players) */
+function passable(tx,ty){return inB(tx,ty)&&grid[ty][tx]===0&&!bombAt(tx,ty)}
+function stepFree(p,dt){
+ if(!p.alive||p.knocked>0){p.moving=false;return}
+ const d=p.isRemote?p.netDir:inputDir();
+ p.tx2=null;p.ty2=null;
+ if(!d){p.moving=false;return}
+ const[dx,dy]=d,ox=p.x,oy=p.y;
+ let dist=pSpeed(p)*dt;
+ const cx=Math.floor(p.x/CELL),cy=Math.floor(p.y/CELL),ccx=cx*CELL+CELL/2,ccy=cy*CELL+CELL/2;
+ // axis-generic: a = moving axis, b = cross axis
+ const along=dx?'x':'y',cross=dx?'y':'x',dir=dx||dy,cc=dx?ccx:ccy,crossC=dx?ccy:ccx;
+ const ahead=(s)=>dx?passable(cx+dx,cy+s):passable(cx+s,cy+dy);
+ const side=(s)=>dx?passable(cx,cy+s):passable(cx+s,cy);
+ const off=p[cross]-crossC;
+ if(ahead(0)||dir*(cc-p[along])>0){
+  // ease onto the corridor's centre line while advancing
+  if(off){const a=Math.min(Math.abs(off),dist);p[cross]-=Math.sign(off)*a;dist-=a*0.5}
+  let n=p[along]+dir*dist;
+  if(!ahead(0))n=dir>0?Math.min(n,cc):Math.max(n,cc);
+  p[along]=n;
+ }else{
+  // blocked straight ahead: slide toward the neighbouring lane if that corner is open
+  const s=off>CELL*0.06?1:off<-CELL*0.06?-1:0;
+  if(s&&side(s)&&ahead(s))p[cross]+=s*dist;
+  else if(off){const a=Math.min(Math.abs(off),dist);p[cross]-=Math.sign(off)*a} // re-centre
+ }
+ if(dx)p.face=dx;
+ p.cx=Math.floor(p.x/CELL);p.cy=Math.floor(p.y/CELL);
+ p.moving=Math.abs(p.x-ox)+Math.abs(p.y-oy)>0.01;
+ if(p.moving)p.walkPh+=dt*10;
+}
+/* cell-to-cell movement (bots: keeps their path-finding reliable) */
+function stepCell(p,dt){
  if(!p.alive||p.knocked>0){p.moving=false;return}
  if(p.tx2===null){
   const d=p.isBot?p.ai.dir:(p.isRemote?p.netDir:inputDir());
@@ -537,16 +575,12 @@ function flameOwnerAt(tx,ty){
  for(const f of flames)if(f.tx===tx&&f.ty===ty&&now>=f.start&&now<=f.end)return f.owner;
  return -1;
 }
-function stunPlayer(p){
- const tx=Math.floor(p.x/CELL),ty=Math.floor(p.y/CELL);
- const key=SKEY(tx,ty),now=performance.now()/1000;
- const by=flameOwnerAt(tx,ty);
- p.strikes=p.strikes.filter(s=>now-s.t<19);
- if(p.strikes.filter(s=>s.key===key).length>=2){killPlayer(p,by);return}
- p.strikes.push({key,t:now,by});
- p.knocked=STUN_TIME;p.invuln=0.2;p.tx2=null;p.ty2=null;p.queuedDir=null;
+function stunPlayer(p){ // splashed: trapped in a bubble
+ p.knocked=TRAP_TIME;p.invuln=TRAP_GRACE;p.tx2=null;p.ty2=null;p.queuedDir=null;
+ // snap to the cell centre so the bubble sits neatly in the lane
+ p.x=Math.floor(p.x/CELL)*CELL+CELL/2;p.y=Math.floor(p.y/CELL)*CELL+CELL/2;p.cx=Math.floor(p.x/CELL);p.cy=Math.floor(p.y/CELL);
  sfx('stun');
- burst(p.x,p.y,'#bfe9ff',12,120);
+ burst(p.x,p.y,'#bfe9ff',14,130);
 }
 function killPlayer(p,killerId){
  p.alive=false;p.knocked=0;sfx('pop');
@@ -584,11 +618,24 @@ function updateHits(dt){
   const tx=Math.floor(p.x/CELL),ty=Math.floor(p.y/CELL);
   if(p.knocked>0){
    p.knocked-=dt;
-   if(p.invuln<=0&&lethalAt(tx,ty))killPlayer(p,flameOwnerAt(tx,ty));
+   if(p.knocked<=0){ // nobody popped them: the bubble bursts and they're free
+    p.knocked=0;p.invuln=FREE_SAFE;sfx('free');
+    burst(p.x,p.y,'#e3f6ff',16,150);
+    particles.push({x:p.x,y:p.y-24,vx:0,vy:-40,life:1,t:0,color:'#ffffff',text:'Free!',float:true});
+   }else if(p.invuln<=0&&lethalAt(tx,ty))killPlayer(p,flameOwnerAt(tx,ty));
    continue;
   }
   if(p.invuln>0)continue;
   if(lethalAt(tx,ty))stunPlayer(p);
+ }
+ // touch to pop: a free rival walking into a trapped blob pops it
+ for(const t of players){
+  if(!t.alive||t.knocked<=0||t.invuln>0)continue;
+  for(const q of players){
+   if(q===t||!q.alive||q.knocked>0)continue;
+   if(Math.hypot(q.x-t.x,q.y-t.y)<POP_DIST){killPlayer(t,q.id);break}
+  }
+  if(state!=='play')return;
  }
  // powerup pickup
  for(const p of players){
@@ -598,9 +645,9 @@ function updateHits(dt){
    const pu=powerups[i];
    if(pu.tx===tx&&pu.ty===ty){
     const label=pu.type==='bomb'?'+1 Balloon 💧':pu.type==='range'?'+1 Blast 🎯':'Speed up! 👟';
-    if(pu.type==='bomb')p.maxBombs=Math.min(13,p.maxBombs+1);
-    else if(pu.type==='range')p.power=Math.min(13,p.power+1);
-    else p.spd=Math.min(12,p.spd+1);
+    if(pu.type==='bomb')p.maxBombs=Math.min(MAX_BOMBS,p.maxBombs+1);
+    else if(pu.type==='range')p.power=Math.min(MAX_POWER,p.power+1);
+    else p.spd=Math.min(MAX_SPD,p.spd+1);
     powerups.splice(i,1);sfx('pow');
     burst(p.x,p.y,'#ffe27a',8,80);
     particles.push({x:p.x,y:p.y-18,vx:0,vy:-42,life:1.15,t:0,color:'#ffffff',text:label,float:true});
@@ -671,6 +718,12 @@ function botThink(p){
   p.ai.dir=safeDirs.length?safeDirs[(Math.random()*safeDirs.length)|0]:null;
   return;
  }
+ // Balloono: a trapped rival nearby is a free pop — go get it
+ const prey=players.filter(q=>q!==p&&q.alive&&q.knocked>0.5&&Math.abs(Math.floor(q.x/CELL)-cx)+Math.abs(Math.floor(q.y/CELL)-cy)<=7);
+ if(prey.length){
+  const pd=bfsDir(cx,cy,(x,y)=>prey.some(q=>Math.floor(q.x/CELL)===x&&Math.floor(q.y/CELL)===y),p);
+  if(pd&&!danger.has(SKEY(cx+pd[0],cy+pd[1]))){p.ai.dir=pd;return}
+ }
  const puDir=bfsDir(cx,cy,(x,y)=>powerups.some(q=>q.tx===x&&q.ty===y),p);
  let woodAdj=false;
  for(const[dx,dy]of dirs)if(inB(cx+dx,cy+dy)&&grid[cy+dy][cx+dx]===2)woodAdj=true;
@@ -725,7 +778,7 @@ function spawnStall(){
 
 /* ===== match flow & HUD ===== */
 function fmtT(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
-function pips(n){return '●'.repeat(n)+'○'.repeat(13-n)}
+function pips(n,max){return '●'.repeat(n)+'○'.repeat(Math.max(0,max-n))}
 function updateHud(){
  $('hTime').textContent=fmtT(timeLeft);
  $('hScore').textContent=score;
@@ -733,7 +786,7 @@ function updateHud(){
  const al=players.filter(p=>p.alive).length;
  $('hBots').innerHTML=S.netRole==='solo'?('🤖 <b>'+bl+'</b> left'):('🫧 <b>'+al+'</b> left');
  const me=mePlayer();
- if(me)$('hPips').innerHTML='💧<span class="pips">'+pips(me.maxBombs)+'</span> 🎯<span class="pips">'+pips(me.power)+'</span> 👟<span class="pips">'+pips(me.spd+1)+'</span>';
+ if(me)$('hPips').innerHTML='💧<span class="pips">'+pips(me.maxBombs,MAX_BOMBS)+'</span> 🎯<span class="pips">'+pips(me.power,MAX_POWER)+'</span> 👟<span class="pips">'+pips(me.spd+1,MAX_SPD+1)+'</span>';
 }
 function endMatch(result){
  if(state!=='play')return;
@@ -769,11 +822,11 @@ function draw(){
  const now=performance.now()/1000;
  // grass
  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
-  ctx.fillStyle=(x+y)%2?'#43b864':'#39ab5b';
+  ctx.fillStyle=(x+y)%2?'#6fd88a':'#62cf7e';
   ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
   const gh=((x*73+y*151)%10)/10;
   if(gh<0.5){
-   ctx.strokeStyle='rgba(20,90,40,.35)';ctx.lineWidth=2;
+   ctx.strokeStyle='rgba(30,120,60,.28)';ctx.lineWidth=2;
    const gx=x*CELL+7.5+gh*35,gy=y*CELL+12.5+((x*37+y*91)%10)*1.25;
    ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(gx+2.5,gy-9);ctx.moveTo(gx+7.5,gy);ctx.lineTo(gx+10,gy-7.5);ctx.stroke();
   }
@@ -794,24 +847,28 @@ function draw(){
  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
   const v=grid[y][x],px=x*CELL,py=y*CELL;
   if(v===1){
-   ctx.fillStyle='#3a4a63';rr(px+1,py+1,CELL-2,CELL-2,9);ctx.fill();
-   ctx.fillStyle='#4d6284';rr(px+6,py+6,CELL-12,CELL-20,6);ctx.fill();
+   ctx.fillStyle='#5a4fc4';rr(px+1,py+3,CELL-2,CELL-3,10);ctx.fill();       // shadow side
+   ctx.fillStyle='#7b6cf6';rr(px+1,py+1,CELL-2,CELL-7,10);ctx.fill();       // face
+   ctx.fillStyle='rgba(255,255,255,.28)';rr(px+7,py+6,CELL-14,9,5);ctx.fill(); // shine
   }else if(v===2){
-   ctx.fillStyle='#8a5a2e';rr(px+5,py+5,CELL-10,CELL-10,7);ctx.fill();
-   ctx.strokeStyle='#6e441f';ctx.lineWidth=3;
+   ctx.fillStyle='#d48a4a';rr(px+5,py+5,CELL-10,CELL-10,7);ctx.fill();
+   ctx.strokeStyle='#a8622c';ctx.lineWidth=3;
    ctx.beginPath();ctx.moveTo(px+5,py+5);ctx.lineTo(px+CELL-5,py+CELL-5);ctx.moveTo(px+CELL-5,py+5);ctx.lineTo(px+5,py+CELL-5);ctx.stroke();
-   ctx.fillStyle='#a9743d';rr(px+10,py+10,CELL-20,12,5);ctx.fill();
+   ctx.fillStyle='#eaa968';rr(px+10,py+10,CELL-20,12,5);ctx.fill();
   }
  }
  // bombs
  for(const b of bombs){
   const cx=b.tx*CELL+CELL/2,cy=b.ty*CELL+CELL/2;
-  const pulse=1+Math.sin(now*(b.fuse<1?18:8))*.06;
+  const age=FUSE-b.fuse,land=Math.exp(-age*6)*Math.sin(age*26)*.28;   // drop bounce
+  const pulse=1+Math.sin(now*(b.fuse<1?18:8))*(b.fuse<1?.09:.05);
+  const sx=pulse*(1+land),sy=pulse*(1-land);
   const owner=players[b.owner];
+  ctx.fillStyle='rgba(0,0,0,.18)';ctx.beginPath();ctx.ellipse(cx,cy+15,13*sx,4,0,0,7);ctx.fill();
   ctx.fillStyle=owner?owner.color:'#8a93a8';
-  ctx.beginPath();ctx.ellipse(cx,cy-5,16*pulse,19*pulse,0,0,7);ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,.45)';
-  ctx.beginPath();ctx.ellipse(cx-6,cy-12,5*pulse,7.5*pulse,-.4,0,7);ctx.fill();
+  ctx.beginPath();ctx.ellipse(cx,cy-5+(1-sy)*12,16*sx,19*sy,0,0,7);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.5)';
+  ctx.beginPath();ctx.ellipse(cx-6*sx,cy-12,5*sx,7.5*sy,-.4,0,7);ctx.fill();
   ctx.fillStyle=owner?owner.dark:'#5a6376';
   ctx.beginPath();ctx.moveTo(cx-4,cy+14);ctx.lineTo(cx+4,cy+14);ctx.lineTo(cx,cy+20);ctx.closePath();ctx.fill();
   if(b.fuse<1){ctx.fillStyle='#ffd76a';ctx.beginPath();ctx.arc(cx+Math.random()*10-5,cy-25,3,0,7);ctx.fill()}
@@ -822,8 +879,10 @@ function draw(){
   const cx=f.tx*CELL+CELL/2,cy=f.ty*CELL+CELL/2;
   const a=Math.min(1,(f.vis-now)/.2);
   ctx.globalAlpha=a;
-  ctx.fillStyle='#5db9ff';ctx.beginPath();ctx.arc(cx,cy,19,0,7);ctx.fill();
+  const k=(now-f.start)/(f.vis-f.start); // 0..1 over the splash's life
+  ctx.fillStyle='#4fb3ff';ctx.beginPath();ctx.arc(cx,cy,21-k*4,0,7);ctx.fill();
   ctx.fillStyle='#d8f1ff';ctx.beginPath();ctx.arc(cx-5,cy-5,9,0,7);ctx.fill();
+  ctx.strokeStyle='rgba(216,241,255,.8)';ctx.lineWidth=3*(1-k)+0.5;ctx.beginPath();ctx.arc(cx,cy,12+k*20,0,7);ctx.stroke(); // ripple
   ctx.fillStyle='#5db9ff';
   for(let i=0;i<3;i++){const ang=now*9+i*2.1;ctx.beginPath();ctx.arc(cx+Math.cos(ang)*20,cy+Math.sin(ang)*20,5,0,7);ctx.fill()}
   ctx.globalAlpha=1;
@@ -849,9 +908,14 @@ function draw(){
    for(const s of[-1,1]){
     ctx.beginPath();ctx.arc(p.x+s*6+ex,by-4,4.2,0.6,5.7);ctx.stroke();
    }
-   ctx.fillStyle='#fff';ctx.font='bold 16px sans-serif';
-   ctx.fillText(Math.ceil(p.knocked),p.x,by-32);
-   ctx.font='22px serif';ctx.fillText('💫',p.x+17,by-27+Math.sin(now*6)*4);
+   const wob=Math.sin(now*7)*1.5,R=p.r+13;
+   const bg=ctx.createRadialGradient(p.x-8,by-10,4,p.x,by,R);
+   bg.addColorStop(0,'rgba(255,255,255,.55)');bg.addColorStop(.6,'rgba(170,225,255,.22)');bg.addColorStop(1,'rgba(120,200,255,.45)');
+   ctx.fillStyle=bg;ctx.beginPath();ctx.ellipse(p.x,by,R+wob,R-wob,0,0,7);ctx.fill();
+   ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,by,R+wob,R-wob,0,0,7);ctx.stroke();
+   ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,by,R-5,3.6,4.5);ctx.stroke(); // glint
+   // time left in the bubble
+   ctx.strokeStyle='#ffd76a';ctx.lineWidth=3.5;ctx.beginPath();ctx.arc(p.x,by,R+5,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0,p.knocked/TRAP_TIME));ctx.stroke();
   }else{
    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x-6+ex,by-4,5.5,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+6+ex,by-4,5.5,0,7);ctx.fill();
    ctx.fillStyle='#1a2436';ctx.beginPath();ctx.arc(p.x-6+ex*1.6,by-4,2.6,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+6+ex*1.6,by-4,2.6,0,7);ctx.fill();
