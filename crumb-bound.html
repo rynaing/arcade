@@ -93,6 +93,19 @@
   #timer-box.low{color:#ff8787;animation:blink .5s infinite alternate}
   @keyframes blink{to{opacity:.4}}
   #weapBar{position:absolute;left:12px;bottom:12px;display:flex;gap:8px;z-index:10}
+.wbtn .dly{display:block;font-size:10px;opacity:.7;font-weight:700}
+#delayPanel{position:absolute;left:12px;top:52px;width:190px;z-index:9;font-size:11px;pointer-events:none;background:rgba(20,12,40,.55);border:1px solid #6c5aa844;border-radius:10px;padding:6px 8px}
+#delayPanel:empty,#hud.hidden ~ #delayPanel{display:none}
+#delayPanel .dp-h{font-size:9px;letter-spacing:.08em;opacity:.65;margin-bottom:3px}
+#delayPanel .dp-r{display:grid;grid-template-columns:78px 1fr 34px;gap:6px;align-items:center;padding:1px 0;opacity:.8}
+#delayPanel .dp-r.on{opacity:1;font-weight:800}
+#delayPanel .dp-n{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#delayPanel .dp-b{height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
+#delayPanel .dp-b i{display:block;height:100%;background:#ffd166;border-radius:3px}
+#delayPanel .dp-v{text-align:right;opacity:.75;font-variant-numeric:tabular-nums}
+@media (max-width:1000px){#turn-banner .tq{display:none}}
+@media (max-width:760px){#delayPanel{width:150px;top:54px}#delayPanel .dp-r{grid-template-columns:60px 1fr 30px}}
+@media (pointer:coarse){.wbtn{padding:4px 7px;font-size:11px;gap:4px}.wbtn .dly{display:none}.wbtn svg{width:22px;height:14px}}
 #touchPad{display:none;position:absolute;inset:0;z-index:12;pointer-events:none}
 #touchPad .tp{pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   width:58px;height:58px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(20,12,40,.55);color:#fff;font-size:22px;font-family:inherit;font-weight:900}
@@ -210,6 +223,7 @@
     <button class="hudBox" id="music-btn" title="music on/off" style="cursor:pointer">🔊</button>
     <button class="hudBox" id="quit-btn" title="Quit match" aria-label="Quit match">✕</button>
   </div>
+  <div id="delayPanel" aria-label="Turn order by delay"></div>
   <div id="weapBar" class="hidden">
     <button class="wbtn sel" id="w0">1 · Shell</button>
     <button class="wbtn" id="w1">2 · Twin</button>
@@ -309,8 +323,10 @@
 <script type="module">
 /* ================= Crumb Bound core sim (pure logic, no DOM) ================= */
 'use strict';
-const W = 960, H = 540, COLS = 240, COLW = W / COLS;
+const VIEW_W = 960;                // canvas / screen width
+const W = 1600, H = 540, COLS = 400, COLW = W / COLS; // world is wider than the screen; the camera scrolls
 const GRAV = 520;                 // px/s^2
+const SPAWN_A = 0.2, SPAWN_B = 0.8; // team spawn plateaus (fraction of world width)
 const DT = 1 / 120;               // fixed timestep
 const TURN_TIME = 20;
 const SS_NEED = 100;
@@ -472,7 +488,7 @@ function genTerrain(seed) {
   const a1 = 40 + rnd() * 50, a2 = 18 + rnd() * 30, a3 = 4 + rnd() * 8;
   const t = new Float32Array(COLS);
   for (let i = 0; i < COLS; i++) {
-    const x = i / COLS * 6.28;
+    const x = i / COLS * 6.28 * (W / VIEW_W);
     let h = 300
       + a1 * Math.sin(x * 2 + p1)
       + a2 * Math.sin(x * 5 + p2)
@@ -490,7 +506,7 @@ function genTerrain(seed) {
     }
   }
   // flatten spawn plateaus: left quarter (team A) and right quarter (team B)
-  for (const cx of [Math.floor(COLS * 0.14), Math.floor(COLS * 0.86)]) {
+  for (const cx of [Math.floor(COLS * SPAWN_A), Math.floor(COLS * SPAWN_B)]) {
     const base = t[cx];
     for (let i = cx - 6; i <= cx + 6; i++) if (i >= 0 && i < COLS) t[i] = base;
   }
@@ -565,7 +581,7 @@ function carveIslands(islands, cx, cy, r) {
 /* ---------- projectiles ---------- */
 /* A shot: {x,y,vx,vy,kind,dmg,r,team,srcIdx,wind,age,curve}
    kinds: shell, twin(2 shells), pierce, twinpierce, beam, boomerang, spread5, cluster6 */
-function muzzleVel(power) { return 150 + (power / 100) * 520; }
+function muzzleVel(power) { return 150 + (power / 100) * 640; }
 
 function makeProjectiles(kind, x, y, angDeg, power, dmg, r, team, srcIdx, wind) {
   const sp = muzzleVel(power), a = angDeg * Math.PI / 180;
@@ -791,7 +807,7 @@ function simulateShot(st, shot, env) {
 
 /* spawn layout: team A left plateau, team B right plateau */
 function spawnPositions(defs) {
-  const ax = COLS * 0.14 * COLW, bx = COLS * 0.86 * COLW;
+  const ax = COLS * SPAWN_A * COLW, bx = COLS * SPAWN_B * COLW;
   const a = [], b = [];
   defs.forEach((d, i) => (d.team === 'A' ? a : b).push(i));
   const pos = new Array(defs.length);
@@ -1011,16 +1027,27 @@ function startTurn() {
 }
 
 function onTurnUI() {
+  camManual = false; // new turn: camera goes back to following the active mobile
   const m = activeMobile();
   const q = turnQueue.map(i => st.mobiles[i] ? st.mobiles[i].name : '?').join(' ▸ ');
-  $('turn-banner').textContent = (m ? (activeIdx === myDefIdx ? 'YOUR TURN — ' + MOBILES[m.mobile].name : m.name + ' — ' + MOBILES[m.mobile].name) : '—') + (q ? ' · next: ' + q : '');
+  $('turn-banner').innerHTML = esc(m ? (activeIdx === myDefIdx ? 'YOUR TURN — ' + MOBILES[m.mobile].name : m.name + ' — ' + MOBILES[m.mobile].name) : '—') + (q ? '<span class="tq"> · next: ' + esc(q) + '</span>' : '');
   $('turn-banner').style.color = m ? (m.team === 'A' ? '#4dabf7' : '#ff8787') : '#ffd166';
-  updateWind(); updateWeapons();
+  updateWind(); updateWeapons(); renderDelayPanel(); fit();
   $('hud').classList.remove('hidden');
   const mine = isMyTurn();
   $('weapBar').classList.toggle('hidden', !mine);
   $('powWrap').classList.toggle('hidden', !mine);
   renderItemBar();
+}
+/* turn order by delay: lowest delay acts next; bar length = how far behind the leader */
+function renderDelayPanel() {
+  const el = $('delayPanel'); if (!el || !st || !st.delays) return;
+  const rows = st.mobiles.map((m, i) => ({ m, i, d: st.delays[i] || 0 })).filter(r => r.m.alive).sort((a, b) => a.d - b.d || a.i - b.i);
+  if (!rows.length) { el.innerHTML = ''; return; }
+  const min = rows[0].d, span = Math.max(1, rows[rows.length - 1].d - min);
+  el.innerHTML = '<div class="dp-h">TURN ORDER · delay</div>' + rows.map(r =>
+    '<div class="dp-r' + (r.i === activeIdx ? ' on' : '') + '"><span class="dp-n" style="color:' + (r.m.team === 'A' ? '#74c0fc' : '#ff8787') + '">' +
+    (r.i === activeIdx ? '▶ ' : '') + esc(r.m.name) + '</span><span class="dp-b"><i style="width:' + Math.round(8 + 92 * (r.d - min) / span) + '%"></i></span><span class="dp-v">+' + Math.round(r.d - min) + '</span></div>').join('');
 }
 function updateWind() {
   const w = st.wind, dir = w === 0 ? '' : (w > 0 ? ' →' : ' ←');
@@ -1032,7 +1059,7 @@ function updateWeapons() {
   const def = MOBILES[m.mobile];
   for (let i = 0; i < 3; i++) {
     const b = $('w' + i);
-    b.innerHTML = (WPN_ICON[def.w[i].kind] || '') + '<span>' + (i + 1) + ' · ' + def.w[i].n + '</span>';
+    b.innerHTML = (WPN_ICON[def.w[i].kind] || '') + '<span>' + (i + 1) + ' · ' + def.w[i].n + '</span><small class="dly" title="Delay: bigger shots push your next turn later">⏱' + DELAY_COST[i] + '</small>';
     b.classList.toggle('sel', aim.weapon === i);
     b.classList.toggle('ssready', i === 2 && m.ss >= SS_NEED);
     b.disabled = (i === 2 && m.ss < SS_NEED) || !isMyTurn();
@@ -1141,6 +1168,7 @@ function checkWin() {
 
 /* animate a shot from pre-shot state; then apply canonical final */
 function animateShot(pre, finalSnap, shot, thorStrikes, itemStrikes) {
+  camManual = false; camDrag = null; // follow the shot
   let projs = [];
   if (shot) {
     const wdef = MOBILES[shot.mobile].w[shot.weapon];
@@ -1452,6 +1480,35 @@ function burst(x, y, r, kind) {
     const a = Math.random() * 6.28, sp = 60 + Math.random() * (120 + r * 3);
     particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 80, life: 0.5 + Math.random() * 0.5, t: 0, c: cols[(Math.random() * cols.length) | 0], s: 2 + Math.random() * 3 });
   }
+  if (kind === 'beam') return;
+  // chunks of cake terrain thrown out of the crater (spin + bounce off the ground)
+  const dirt = ['#8a5a32', '#a8743f', '#6e4626', '#f3c6d5'];
+  const nChunks = Math.min(FX.chunks, 4 + Math.floor(r / 3));
+  for (let i = 0; i < nChunks; i++) {
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4, sp = 140 + Math.random() * (160 + r * 4);
+    particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1.1 + Math.random() * 0.7, t: 0,
+      c: dirt[(Math.random() * dirt.length) | 0], s: 4 + Math.random() * 5, chunk: true, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 14 });
+  }
+  // lingering smoke puffs
+  for (let i = 0; i < FX.smoke; i++) {
+    particles.push({ x: x + (Math.random() - 0.5) * r, y: y - Math.random() * r * 0.5, vx: (Math.random() - 0.5) * 30, vy: -20 - Math.random() * 30,
+      life: 1.2 + Math.random() * 0.8, t: 0, c: 'rgba(80,70,90,.45)', s: r * 0.5 + Math.random() * r * 0.5, smoke: true });
+  }
+}
+/* K.O.: brief slow motion, big shake and a banner over the destroyed mobile */
+let slowmo = 0;
+function knockout(m) {
+  slowmo = 1.1; shake = Math.max(shake, 14);
+  dmgNums.push({ x: m.x, y: m.y - 92, txt: 'K.O.!', t: 0, ttl: 1.6, col: '#ff6b6b', direct: true, ko: true });
+  burst(m.x, m.y - 10, 34, 'boom');
+}
+/* effect budget: phones and slow devices get fewer particles (see monitorFps) */
+const FX = { chunks: 14, smoke: 5 };
+let fpsAvg = 60;
+function monitorFps(dt) {
+  fpsAvg = fpsAvg * 0.95 + (1 / Math.max(dt, 1e-3)) * 0.05;
+  const low = fpsAvg < 40 || matchMedia('(pointer:coarse)').matches;
+  FX.chunks = low ? 6 : 14; FX.smoke = low ? 2 : 5;
 }
 // show damage the moment it lands: mirror the replay sim's hp onto the live
 // mobiles (hp bars drop mid-animation) + floating damage numbers.
@@ -1460,7 +1517,9 @@ function syncLiveDamage(victims, direct) {
   for (const idx in victims) {
     const s = anim.simM[idx], live = st.mobiles[idx];
     if (!s || !live) continue;
+    const wasAlive = live.alive;
     live.hp = s.hp; live.alive = s.alive; live.x = s.x;
+    if (wasAlive && !live.alive) knockout(live);
     const isDirect = direct != null && Number(idx) === direct;
     dmgNums.push({ x: live.x, y: live.y - 62, txt: (isDirect ? '💥' : '') + '-' + victims[idx], t: 0, ttl: 1.2,
       col: isDirect ? '#ffd166' : (live.alive ? '#ffa94d' : '#ff8787'), direct: isDirect });
@@ -1470,7 +1529,15 @@ function syncLiveDamage(victims, direct) {
 function stepParticles(dt) {
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.t += dt; p.vy += 500 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    p.t += dt;
+    if (p.smoke) { p.vy *= 0.98; p.x += (p.vx + (st ? st.wind : 0) * 2) * dt; p.y += p.vy * dt; }
+    else {
+      p.vy += 500 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.chunk) {
+        p.rot += p.vr * dt;
+        if (st && p.vy > 0 && p.y >= surfY(st.terrain, p.x)) { p.y = surfY(st.terrain, p.x); p.vy *= -0.35; p.vx *= 0.6; p.vr *= 0.5; }
+      }
+    }
     if (p.t > p.life) particles.splice(i, 1);
   }
   for (let i = beams.length - 1; i >= 0; i--) {
@@ -1527,7 +1594,7 @@ let clouds = [];
 function initDeco(seed) {
   const rnd = mulberry32(seed ^ 0x51ab);
   clouds = [];
-  for (let i = 0; i < 7; i++) clouds.push({ x: rnd() * W, y: 30 + rnd() * 130, s: 0.6 + rnd() * 1.1, v: 6 + rnd() * 10 });
+  for (let i = 0; i < 7; i++) clouds.push({ x: rnd() * VIEW_W, y: 30 + rnd() * 130, s: 0.6 + rnd() * 1.1, v: 6 + rnd() * 10 });
 }
 const THEMES = {
   meadow: { sky: ['#6ec1f5', '#b8e6ff', '#ffe3ee'], hill: ['#5da862', '#478a4e'], frost: ['#ff9ec6', '#ffe3ee'], sun: '#fff6c9', cloud: '#ffffffb0' },
@@ -1538,7 +1605,7 @@ function drawSky() {
   const th = THEMES[(st && st.theme) || 'meadow'];
   const g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, th.sky[0]); g.addColorStop(0.55, th.sky[1]); g.addColorStop(1, th.sky[2]);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, H);
   const night = (st && st.theme) === 'night';
   if (night) {
     // twinkling stars
@@ -1546,7 +1613,7 @@ function drawSky() {
     for (let i = 0; i < 90; i++) {
       ctx.globalAlpha = 0.25 + 0.65 * (0.5 + 0.5 * Math.sin(now + i * 1.7));
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(rnd() * W, rnd() * H * 0.5, 2, 2);
+      ctx.fillRect(rnd() * VIEW_W, rnd() * H * 0.5, 2, 2);
     }
     ctx.globalAlpha = 1;
   }
@@ -1569,9 +1636,10 @@ function drawSky() {
   }
   // parallax hills
   for (const [amp, base, col] of [[36, 470, th.hill[0]], [22, 500, th.hill[1]]]) {
+    const px = camX * (amp > 30 ? 0.25 : 0.4); // parallax: far hills drift slower than the battlefield
     ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, H);
-    for (let x = 0; x <= W; x += 8) ctx.lineTo(x, base - Math.abs(Math.sin(x * 0.008 + amp)) * amp);
-    ctx.lineTo(W, H); ctx.fill();
+    for (let x = 0; x <= VIEW_W; x += 8) ctx.lineTo(x, base - Math.abs(Math.sin((x + px) * 0.008 + amp)) * amp);
+    ctx.lineTo(VIEW_W, H); ctx.fill();
   }
 }
 // smoothed surface path: midpoint quadratics, kills the stock-chart zigzag
@@ -1810,9 +1878,12 @@ function drawDmgNums() {
 }
 function drawParticles() {
   for (const p of particles) {
-    ctx.globalAlpha = Math.max(0, 1 - p.t / p.life);
+    const k = p.t / p.life;
     ctx.fillStyle = p.c;
-    ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s);
+    if (p.smoke) { ctx.globalAlpha = Math.max(0, 0.9 * (1 - k)); ctx.beginPath(); ctx.arc(p.x, p.y, p.s * (0.6 + k), 0, 6.29); ctx.fill(); continue; }
+    ctx.globalAlpha = Math.max(0, p.chunk ? Math.min(1, (1 - k) * 2.5) : 1 - k);
+    if (p.chunk) { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.75); ctx.restore(); }
+    else ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s);
   }
   ctx.globalAlpha = 1;
 }
@@ -1827,6 +1898,7 @@ function render(dt) {
   ctx.save();
   if (shake > 0) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
   drawSky();
+  ctx.save(); ctx.translate(-Math.round(camX), 0); // ---- world space ----
   if (st) {
     drawTerrain();
     drawIslands();
@@ -1841,12 +1913,58 @@ function render(dt) {
   drawForceBeam();
   drawTurnArrow();
   drawDmgNums();
+  ctx.restore(); // ---- screen space ----
   // sudden death banner
   if (st && st.sudden && !st.over) {
     ctx.fillStyle = '#ff8787'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'right';
-    ctx.fillText('SUDDEN DEATH', W - 14, 64);
+    ctx.fillText('SUDDEN DEATH', VIEW_W - 14, 64);
   }
+  drawMinimap();
   ctx.restore();
+}
+
+/* ---------- camera ----------
+   Follows the shot in flight, otherwise the active mobile. Dragging the
+   battlefield (mouse or finger) looks around until the next turn or shot. */
+let camX = 0, camManual = false, camDrag = null;
+const camMax = () => Math.max(0, W - VIEW_W);
+function camFocusX() {
+  if (anim && anim.projs.length) {           // lead projectile
+    let lead = null;
+    for (const p of anim.projs) if (!p.boom && (!lead || p.age > lead.age)) lead = p;
+    if (lead) return lead.x;
+  }
+  const m = activeMobile();
+  return m ? m.x : W / 2;
+}
+function updateCamera(dt) {
+  if (!st) { camX = 0; return; }
+  if (camDrag || (camManual && !anim)) return;
+  const target = Math.max(0, Math.min(camMax(), camFocusX() - VIEW_W / 2));
+  camX += (target - camX) * Math.min(1, dt * (anim ? 6 : 3.5));
+}
+function snapCamera() { camManual = false; camX = Math.max(0, Math.min(camMax(), camFocusX() - VIEW_W / 2)); }
+
+/* ---------- minimap (top-centre): whole world, mobiles, current view ---------- */
+const MM_W = 220, MM_H = 34;
+let mmTop = 50; // canvas y just below the HUD boxes (recomputed in fit())
+function drawMinimap() {
+  if (!st || screen !== 'play') return;
+  const x0 = (VIEW_W - MM_W) / 2, y0 = Math.max(50, mmTop), sx = MM_W / W, sy = MM_H / H;
+  ctx.fillStyle = 'rgba(20,12,40,.62)'; roundRect(x0 - 4, y0 - 4, MM_W + 8, MM_H + 8, 8); ctx.fill();
+  ctx.fillStyle = 'rgba(205,160,110,.85)'; ctx.beginPath(); ctx.moveTo(x0, y0 + MM_H);
+  for (let i = 0; i < COLS; i += 4) ctx.lineTo(x0 + (i + 0.5) * COLW * sx, y0 + st.terrain[i] * sy);
+  ctx.lineTo(x0 + MM_W, y0 + MM_H); ctx.closePath(); ctx.fill();
+  if (st.islands) { ctx.fillStyle = 'rgba(205,160,110,.85)'; for (const isl of st.islands) ctx.fillRect(x0 + isl.x * sx, y0 + isl.y * sy, Math.max(2, isl.w * sx), 2); }
+  st.mobiles.forEach((m, i) => {
+    if (!m.alive) return;
+    const blink = i === activeIdx && (performance.now() / 250 | 0) % 2;
+    ctx.fillStyle = m.team === 'A' ? '#74c0fc' : '#ff8787';
+    ctx.beginPath(); ctx.arc(x0 + m.x * sx, y0 + Math.min(H - 4, m.y) * sy, blink ? 4.5 : 3, 0, 6.29); ctx.fill();
+  });
+  if (anim) { ctx.fillStyle = '#ffe066'; for (const p of anim.projs) if (!p.boom && p.y > 0) { ctx.fillRect(x0 + p.x * sx - 1, y0 + p.y * sy - 1, 3, 3); } }
+  ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(x0 + camX * sx, y0 - 2, VIEW_W * sx, MM_H + 4);
 }
 
 /* ---------- main loop ---------- */
@@ -1854,10 +1972,15 @@ let lastT = 0;
 function loop(t) {
   const dt = Math.min(0.05, (t - lastT) / 1000 || 0.016);
   lastT = t;
-  for (const c of clouds) { c.x += c.v * dt; if (c.x > W + 80) c.x = -80; }
+  for (const c of clouds) { c.x += c.v * dt; if (c.x > VIEW_W + 80) c.x = -80; }
+  updateCamera(dt);
+  monitorFps(dt);
+  // slow motion after a K.O. (real time keeps counting down so it always ends)
+  const sdt = slowmo > 0 ? dt * 0.33 : dt;
+  if (slowmo > 0) slowmo = Math.max(0, slowmo - dt);
   if (screen === 'play' && st) {
     pollMove(dt); pollAim(dt);
-    stepAnim(dt); stepParticles(dt);
+    stepAnim(sdt); stepParticles(sdt);
   } else stepParticles(dt);
   render(dt);
   requestAnimationFrame(loop);
@@ -1918,12 +2041,17 @@ function fit() {
   const g = $('game');
   g.style.width = 960 * s + 'px'; g.style.height = 540 * s + 'px';
   cv.style.width = 960 * s + 'px'; cv.style.height = 540 * s + 'px';
+  // HUD boxes are fixed-size DOM; on small screens they cover more of the canvas
+  requestAnimationFrame(() => { const h = $('hud'); if (h && !h.classList.contains('hidden')) mmTop = (h.getBoundingClientRect().bottom - cv.getBoundingClientRect().top + 6) / s; });
 }
 window.addEventListener('resize', fit);
 
 /* ================= Crumb Bound netcode (Supabase Realtime, host-authoritative) ================= */
 const SUPABASE_URL = 'https://ukrxoqsvyvlyeblubjeo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
+/* Bump when the match simulation or messages change, so players on an old cached
+   copy can't join (and desync) a room with the new version. v2: 1600px world. */
+const NET_ROOM_PREFIX = 'cb-v2:';
 /* Multiplayer-only client, loaded lazily: the menu, solo mode, and shop must
    keep working even if the Supabase CDN is unreachable. Resolves to null then. */
 const sbReady = (async () => {
@@ -2001,7 +2129,7 @@ async function joinRoom(code, asHost) {
   setMenuErr('');
   const sb = await sbReady;
   if (!sb) { setMenuErr('Multiplayer is unreachable right now — Solo still works.'); return; }
-  const ch = sb.channel('cb:' + code, { config: { presence: { key: myId }, broadcast: { ack: false } } });
+  const ch = sb.channel(NET_ROOM_PREFIX + code, { config: { presence: { key: myId }, broadcast: { ack: false } } });
   Net.channel = ch; Net.room = code; Net.role = asHost ? 'host' : 'guest';
   lobbyState = {};
 
@@ -2503,6 +2631,20 @@ function wireUI() {
     }
   };
   $('btn-menu2').onclick = leaveRoom;
+  // drag the battlefield to look around (mouse or finger)
+  cv.style.touchAction = 'none';
+  cv.addEventListener('pointerdown', e => {
+    if (screen !== 'play' || !st) return;
+    camDrag = { x: e.clientX, cam: camX, k: cv.width / cv.getBoundingClientRect().width };
+    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!camDrag) return;
+    camX = Math.max(0, Math.min(camMax(), camDrag.cam - (e.clientX - camDrag.x) * camDrag.k));
+    camManual = true;
+  });
+  const endDrag = () => { camDrag = null; };
+  cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
   // touch pad: press/release map to the keyboard keys the game already understands
   document.querySelectorAll('#touchPad .tp').forEach(b => {
     const k = b.dataset.k, send = type => window.dispatchEvent(new KeyboardEvent(type, { key: k }));
