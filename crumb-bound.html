@@ -1348,6 +1348,7 @@ function botFire() {
   botMove(m, () => {
     const s = botAim(st, activeIdx);
     // animate bot "aiming"
+    m.face = s.ang > 90 ? -1 : 1; // turn to face the shot
     m.ang = s.ang + tiltDegOf(m); // display relative to the tilted body; the shot uses the world angle
     setTimeout(() => {
       if (turnState !== 'aim') return;
@@ -1440,15 +1441,19 @@ function pollMove(dt) {
   let dx = 0;
   if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx -= 1;
   if (keys['ArrowRight'] || keys['d'] || keys['D']) dx += 1;
-  if (!dx || moveLeft <= 0) return;
+  if (!dx) return;
+  // left / right always turns you to look that way (the barrel mirrors), even with no movement left
+  const nf = dx > 0 ? 1 : -1;
+  if (nf !== (m.face || 1)) {
+    m.ang = 180 - m.ang; aim.ang = m.ang; m.face = nf;
+    Net.sendMove({ x: m.x, idx: activeIdx, face: m.face, ang: m.ang });
+  }
+  if (moveLeft <= 0) return;
   const step = dx * 130 * dt;
   const nx = Math.max(10, Math.min(W - 10, m.x + step));
   // slope check: can't climb cliffs
   if (Math.abs(surfY(st.terrain, nx) - surfY(st.terrain, m.x)) > climbOf(m)) return;
   const used = Math.min(moveLeft, Math.abs(step));
-  const nf = dx > 0 ? 1 : -1;
-  if (nf !== (m.face || 1)) { m.ang = 180 - m.ang; aim.ang = m.ang; } // turned around: barrel follows last-faced direction
-  m.face = nf;
   m.x = nx; m.y = groundAt(st.terrain, st.islands, nx, m.y); moveLeft -= used;
   moveAcc += dt;
   if (moveAcc > 0.12) { moveAcc = 0; Net.sendMove({ x: m.x, idx: activeIdx, face: m.face, ang: m.ang }); }
