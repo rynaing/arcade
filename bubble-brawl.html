@@ -565,14 +565,17 @@ function updateBombs(dt){
 }
 
 /* ===== stun / pop ===== */
+/* A splash is deadly for KILL_WIN seconds. Check whether that window overlapped ANY
+   time since the previous hit check, so a long frame on a slow phone can't skip it. */
+let hitSince=0;
 function lethalAt(tx,ty){
- const now=performance.now()/1000;
- for(const f of flames)if(f.tx===tx&&f.ty===ty&&now>=f.start&&now<=f.end)return true;
+ const now=performance.now()/1000,since=Math.min(hitSince||now,now);
+ for(const f of flames)if(f.tx===tx&&f.ty===ty&&f.start<=now&&f.end>=since)return true;
  return false;
 }
 function flameOwnerAt(tx,ty){
- const now=performance.now()/1000;
- for(const f of flames)if(f.tx===tx&&f.ty===ty&&now>=f.start&&now<=f.end)return f.owner;
+ const now=performance.now()/1000,since=Math.min(hitSince||now,now);
+ for(const f of flames)if(f.tx===tx&&f.ty===ty&&f.start<=now&&f.end>=since)return f.owner;
  return -1;
 }
 function stunPlayer(p){ // splashed: trapped in a bubble
@@ -628,6 +631,7 @@ function updateHits(dt){
   if(p.invuln>0)continue;
   if(lethalAt(tx,ty))stunPlayer(p);
  }
+ hitSince=performance.now()/1000; // next pass checks from here
  // touch to pop: a free rival walking into a trapped blob pops it
  for(const t of players){
   if(!t.alive||t.knocked<=0||t.invuln>0)continue;
