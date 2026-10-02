@@ -126,10 +126,28 @@
     });
   }
 
+  // Win-count boards (vs bots): post one win if the player won and has a real
+  // name, then show the top 5. `placeholder` names (e.g. 'Player') don't post.
+  function winBoard(o) {
+    var note = function (t) { if (o.note) { o.note.textContent = t || ''; o.note.hidden = !t; } };
+    var AB = window.ArcadeBoard; // public object, so callers (and tests) can wrap it
+    var show = function () { return AB.top(o.game, 'wins', { limit: 5 }).then(function (rows) { AB.render(o.list, rows, { format: 'wins', emptyText: 'No wins yet — be the first!' }); }); };
+    note('');
+    var n = cleanName(o.name);
+    if (!o.won) return show();
+    if (!n || (o.placeholder && o.placeholder.test(n))) { note('Type your name on the menu to count your wins worldwide.'); return show(); }
+    AB.setName(n);
+    return AB.submit(o.game, 'wins', n, 1, {}).then(function (res) {
+      note(res.ok ? '🌍 +1 world win!' : res.queued ? '📡 Offline — your win will count next visit.' : res.error);
+      return show();
+    });
+  }
+
   window.ArcadeBoard = {
     submit: submit,
     top: top,
     render: render,
+    winBoard: winBoard,
     format: fmt,
     clientId: clientId,
     name: function () { return cleanName(lsGet(LS_NAME, '')); },

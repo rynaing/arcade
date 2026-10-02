@@ -72,6 +72,13 @@ button.mini:hover{background:#33507e}
 #race-chat-msgs{font-size:12px;color:#fff;text-shadow:1px 1px 0 #000}
 #race-chat-msgs div{background:rgba(10,14,30,.65);border-radius:8px;padding:3px 8px;margin:3px 0;display:inline-block;clear:both;float:left;max-width:100%}
 #race-chat-in{display:none;width:100%;font-size:13px;padding:6px 8px;border-radius:8px;border:2px solid #4a5a8a;background:#1a2340ee;color:#fff;margin-top:4px;font-family:inherit}
+.wins-lb{margin:12px auto 4px;max-width:320px;width:100%;text-align:left}
+.wins-lb h3{margin:0 0 6px;font-size:15px;text-align:center}
+.wins-lb ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.wins-lb li{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,.1);font-size:14px}
+.wins-lb li.lb-empty{display:block;background:none;opacity:.75;text-align:center}
+.wins-lb .lb-me{outline:2px solid #ffd166}.wins-lb .lb-rank{opacity:.7}.wins-lb .lb-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wins-lb .lb-score{font-weight:800}
+.wins-lb p{margin:6px 0 0;font-size:13px;text-align:center;font-weight:700}
 </style>
 </head>
 <body>
@@ -110,6 +117,7 @@ button.mini:hover{background:#33507e}
 <div class="overlay hidden" id="endOv"><div class="dialog">
 <h2 id="eTitle">🏆 You win!</h2>
 <p id="eText"></p>
+<div class="wins-lb" id="wl" hidden><h3>&#127757; Most wins vs bots</h3><ol id="wl-list"></ol><p id="wl-note" hidden></p></div>
 <button class="big" id="againBtn">Play again</button>
 </div></div>
 <div id="race-chat"><div id="race-chat-msgs"></div><input id="race-chat-in" maxlength="120" placeholder="chat… (Enter to send)"></div>
@@ -123,6 +131,7 @@ button.mini:hover{background:#33507e}
 <span class="chip" id="hPips" title="Balloons · Range · Speed (max 13 each)"></span>
 </div>
 <p class="hint">Tip: your own balloons stun you too — always leave yourself an escape route. When the crates run out, wild balloons start raining…</p>
+<script src="leaderboard.js"></script>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const SUPABASE_URL='https://ukrxoqsvyvlyeblubjeo.supabase.co';
@@ -734,6 +743,9 @@ function endMatch(result){
   sfx('lose');
  }
  $('endOv').classList.remove('hidden');
+ // world win board: solo vs bots only
+ $('wl').hidden=!S.solo;
+ if(S.solo&&window.ArcadeBoard)ArcadeBoard.winBoard({game:'bubble-brawl',won:result==='win',name:myName||$('name-input').value,placeholder:/^player$/i,list:$('wl-list'),note:$('wl-note')});
  updateHud();
 }
 

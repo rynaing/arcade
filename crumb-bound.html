@@ -159,6 +159,13 @@
     border-radius:9px;padding:6px 10px;cursor:pointer}
   .equiprow{grid-column:1/-1;font-size:13px;color:#cdbcf2;background:#1b1430;border:1px solid #4a3f7a;
     border-radius:10px;padding:8px 12px}
+.wins-lb{margin:12px auto 4px;max-width:320px;width:100%;text-align:left}
+.wins-lb h3{margin:0 0 6px;font-size:15px;text-align:center}
+.wins-lb ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.wins-lb li{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,.1);font-size:14px}
+.wins-lb li.lb-empty{display:block;background:none;opacity:.75;text-align:center}
+.wins-lb .lb-me{outline:2px solid #ffd166}.wins-lb .lb-rank{opacity:.7}.wins-lb .lb-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wins-lb .lb-score{font-weight:800}
+.wins-lb p{margin:6px 0 0;font-size:13px;text-align:center;font-weight:700}
 </style>
 </head>
 <body>
@@ -261,11 +268,13 @@
   <div id="endOv" class="ov hidden">
     <h1 id="end-title">—</h1>
     <div id="end-sub"></div>
+    <div class="wins-lb" id="wl" hidden><h3>&#127757; Most wins vs bots</h3><ol id="wl-list"></ol><p id="wl-note" hidden></p></div>
     <div class="btnRow"><button class="big" id="btn-again" style="background:linear-gradient(180deg,#7bed9f,#2f9e5f);box-shadow:0 4px 0 #1d6b3f">Rematch</button>
     <button class="big" id="btn-menu2" style="background:linear-gradient(180deg,#b197fc,#7048e8);box-shadow:0 4px 0 #4527a0">Menu</button></div>
   </div>
 </div>
 </div>
+<script src="leaderboard.js"></script>
 <script type="module">
 /* ================= Crumb Bound core sim (pure logic, no DOM) ================= */
 'use strict';
@@ -1864,6 +1873,9 @@ function endMatch() {
   gg += Math.round(myMatchDmg / 25);
   gg = Math.round(gg * (1 + gearStats().gold));
   if (meM) { gold += gg; if (won) wins++; saveEcon(); }
+  // world win board: bot matches only (online wins aren't verifiable here)
+  $('wl').hidden = Net.role !== 'solo';
+  if (Net.role === 'solo' && window.ArcadeBoard) ArcadeBoard.winBoard({ game: 'crumb-bound', won: !!won, name: myName, placeholder: /^player$/i, list: $('wl-list'), note: $('wl-note') });
   $('end-sub').textContent = sub + '  +' + gg + ' 🪙';
   $('endOv').classList.remove('hidden');
   Net.sendEnd({ winner: w });
