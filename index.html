@@ -66,8 +66,6 @@
   .b-solo{background:#dff3e6;color:#237a44}
   .b-party{background:#e7e0fb;color:#5740a8}
   .b-new{background:var(--pink);color:#fff}
-  /* TEST ONLY - remove before prod */
-  .upd{display:block;font-size:.75rem;color:var(--muted);margin-top:6px}
   .play{flex:0 0 auto;background:var(--pink-deep);color:#fff;font-weight:800;
         font-size:.95rem;padding:11px 22px;border-radius:999px;
         box-shadow:0 4px 12px rgba(224,84,139,.4)}
@@ -119,7 +117,7 @@
     <main class="games">
       <div class="section-label">Start playing</div>
 
-  <a class="card" data-tags="party new" href="./hamster-roll.html">
+  <a class="card" data-tags="solo party new" href="./hamster-roll.html">
     <div class="art" style="background:linear-gradient(135deg,#ffe9b8,#ffb43c)">
       <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
         <circle cx="50" cy="50" r="34" fill="#cfe8ff" opacity=".45" stroke="#ffffff" stroke-width="4"/>
@@ -133,12 +131,12 @@
     <div class="info">
       <h2>Hamster Roll</h2>
       <p>2D hamster-ball racing &mdash; make a room, chat, and race your friends across 4 tracks.</p>
-      <div class="badges"><span class="badge b-party">Party</span><span class="badge b-new">New</span></div>
+      <div class="badges"><span class="badge b-solo">Solo</span><span class="badge b-party">Party</span><span class="badge b-new">New</span></div>
     </div>
     <span class="play">Play</span>
   </a>
 
-  <a class="card" data-tags="solo new" href="./bubble-brawl.html">
+  <a class="card" data-tags="solo party new" href="./bubble-brawl.html">
     <div class="art" style="background:linear-gradient(135deg,#bfe9ff,#5db9ff)">
       <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
         <ellipse cx="46" cy="40" rx="24" ry="28" fill="#2b7fd4"/>
@@ -151,12 +149,12 @@
     <div class="info">
       <h2>Bubble Brawl</h2>
       <p>Water-balloon arena battler &mdash; trap three rival blobs in bubbles and pop them.</p>
-      <div class="badges"><span class="badge b-solo">Solo</span><span class="badge b-new">New</span></div>
+      <div class="badges"><span class="badge b-solo">Solo</span><span class="badge b-party">Party</span><span class="badge b-new">New</span></div>
     </div>
     <span class="play">Play</span>
   </a>
 
-  <a class="card" data-tags="party new" href="./crumb-bound.html">
+  <a class="card" data-tags="solo party new" href="./crumb-bound.html">
     <div class="art" style="background:linear-gradient(135deg,#ffd166,#e8590c)">
       <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
         <path d="M8 78 Q50 58 92 78 L92 92 L8 92 Z" fill="#8a5a33"/>
@@ -172,26 +170,8 @@
     <div class="info">
       <h2>Crumb Bound</h2>
       <p>Turn-based artillery duel &mdash; aim your pastry mobile, ride the wind, and crumble the other team in 1v1 or 2v2.</p>
-      <div class="badges"><span class="badge b-party">Party</span><span class="badge b-new">New</span></div>
+      <div class="badges"><span class="badge b-solo">Solo</span><span class="badge b-party">Party</span><span class="badge b-new">New</span></div>
     </div>
-    <span class="play">Play</span>
-  </a>
-
-  <a class="card" data-tags="solo new" href="./word-crumb.html">
-    <div class="art" style="background:linear-gradient(135deg,#ffe9c4,#f2b95e)">
-      <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-        <ellipse cx="50" cy="62" rx="34" ry="22" fill="#e8a94f"/>
-        <path d="M18 58c2-16 16-28 32-28s30 12 32 28c-10 6-22 9-32 9s-22-3-32-9z" fill="#f7cf8a"/>
-        <path d="M36 40l8 6M50 36l8 6M64 40l8 6" stroke="#c97f2e" stroke-width="4" stroke-linecap="round"/>
-        <rect x="30" y="70" width="40" height="8" rx="4" fill="#c97f2e" opacity=".5"/>
-      </svg>
-    </div>
-    <div class="info">
-      <h2>Word Crumb</h2>
-      <p>One timed puzzle a day &mdash; wordplay on weekdays, code-breaking on weekends.</p>
-      <div class="badges"><span class="badge b-solo">Solo</span><span class="badge b-new">New</span></div>
-    </div>
-    <!-- TEST ONLY - remove before prod --><span class="upd" data-ts="2026-09-27T02:45:00Z"></span>
     <span class="play">Play</span>
   </a>
 
@@ -208,7 +188,6 @@
       <p>Defend the cake from waves of grumbly critters in this tower-defense adventure.</p>
       <div class="badges"><span class="badge b-solo">Solo</span><span class="badge b-new">New</span></div>
     </div>
-    <!-- TEST ONLY - remove before prod --><span class="upd" data-ts="2026-09-26T12:47:04Z"></span>
     <span class="play">Play</span>
   </a>
 
@@ -223,7 +202,6 @@
       <p>Unscramble the letters before time runs out.</p>
       <div class="badges"><span class="badge b-party">Party</span></div>
     </div>
-    <!-- TEST ONLY - remove before prod --><span class="upd" data-ts="2026-09-25T07:38:16Z"></span>
     <span class="play">Play</span>
   </a>
 
@@ -239,7 +217,6 @@
       <p>Vote on silly questions about your friends and family.</p>
       <div class="badges"><span class="badge b-party">Party</span></div>
     </div>
-    <!-- TEST ONLY - remove before prod --><span class="upd" data-ts="2026-09-24T13:38:05Z"></span>
     <span class="play">Play</span>
   </a>
   <a class="card" data-tags="party new" href="https://rynaing.github.io/game-night/">
@@ -253,7 +230,6 @@
       <p>Race to solve each problem &mdash; fastest correct answer scores the most.</p>
       <div class="badges"><span class="badge b-party">Party</span><span class="badge b-new">New</span></div>
     </div>
-    <!-- TEST ONLY - remove before prod --><span class="upd" data-ts="2026-09-26T02:55:33Z"></span>
     <span class="play">Play</span>
   </a>
   <a class="card" data-tags="party new" href="https://rynaing.github.io/game-night/">
@@ -269,7 +245,6 @@
       <p>Estimate wild quantities &mdash; closest guess without going over wins.</p>
       <div class="badges"><span class="badge b-party">Party</span><span class="badge b-new">New</span></div>
     </div>
-    <!-- TEST ONLY - remove before prod --><span class="upd" data-ts="2026-09-26T02:57:26Z"></span>
     <span class="play">Play</span>
   </a>
 
@@ -291,30 +266,6 @@
         c.style.display=(f==='all'||tags.indexOf(f)>-1)?'':'none';
       });
     });
-  });
-})();
-</script>
-<script>
-(function(){
-  function rel(ts){
-    var s=Math.max(0,Math.floor((Date.now()-new Date(ts).getTime())/1000));
-    if(s<60) return "just now";
-    var m=Math.floor(s/60); if(m<60) return m+"m ago";
-    var h=Math.floor(m/60); if(h<24) return h+"h ago";
-    var d=Math.floor(h/24); return d+"d ago";
-  }
-  function paint(el,ts){ el.textContent="updated "+rel(ts); }
-  document.querySelectorAll('.card').forEach(function(card){
-    var badge=card.querySelector('.upd'); if(!badge) return;
-    var href=card.getAttribute('href')||'';
-    paint(badge,badge.getAttribute('data-ts'));
-    if(href.indexOf('./')===0){
-      fetch('https://api.github.com/repos/rynaing/arcade/commits?path='+encodeURIComponent(href.slice(2))+'&per_page=1')
-        .then(function(r){ return r.ok?r.json():null; })
-        .then(function(list){
-          if(list&&list[0]&&list[0].commit&&list[0].commit.author){ paint(badge,list[0].commit.author.date); }
-        }).catch(function(){});
-    }
   });
 })();
 </script>
