@@ -85,6 +85,17 @@ header h1 .crumb{color:var(--pink-deep)}
 .stat b{font-size:1.5rem;display:block}
 .stat span{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .dist{margin:10px 0;text-align:left}
+.wlb{margin:4px 0 6px;text-align:left}
+.wlb-list{list-style:none;margin:6px 0;padding:0;display:grid;gap:4px;max-height:210px;overflow:auto}
+.wlb-list li{display:grid;grid-template-columns:26px minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.04);font-size:.9rem}
+.wlb-list li.lb-empty{display:block;background:none;opacity:.7}
+.wlb-list .lb-me{outline:2px solid var(--pink-deep)}
+.wlb-list .lb-rank{font-weight:800;opacity:.6}.wlb-list .lb-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.wlb-list .lb-score{font-weight:800}.wlb-list .lb-extra{opacity:.6;font-size:.8rem}
+.wlb-post{display:flex;gap:8px;margin:8px 0 0}
+.wlb-post input{flex:1;min-width:0;border:2px solid rgba(0,0,0,.15);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px}
+.wlb-btn{border:0;border-radius:12px;background:var(--pink-deep);color:#fff;padding:10px 14px;font:inherit;font-weight:800;cursor:pointer;min-height:44px}
+.wlb-note{margin:6px 0 0;font-weight:700;font-size:.9rem}
 .dist-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:.85rem;font-weight:800}
 .dist-row .n{width:14px}
 .dist-row .bar{background:#e8e0d0;border-radius:4px;padding:2px 8px;min-width:26px;text-align:right;color:var(--ink)}
@@ -132,6 +143,15 @@ footer{padding:8px;color:var(--muted);font-size:.75rem;text-align:center}
     </div>
     <h2 style="font-size:1.05rem;margin-top:6px">Guess distribution</h2>
     <div class="dist" id="dist"></div>
+    <div class="wlb">
+      <h2 style="font-size:1.05rem;margin-top:6px">&#127757; Today&rsquo;s fastest</h2>
+      <ol class="wlb-list" id="todayBoard"></ol>
+      <form id="lbPost" class="wlb-post" hidden>
+        <input id="lbName" maxlength="16" autocomplete="nickname" placeholder="Your name" aria-label="Your name for the leaderboard">
+        <button type="submit" class="wlb-btn">Post my time</button>
+      </form>
+      <p class="wlb-note" id="lbNote" hidden></p>
+    </div>
     <div id="endSection" class="hidden">
       <p id="endMsg"></p>
       <p>Next crumb in <span id="countdown">--</span></p>
@@ -420,6 +440,50 @@ if(S.status==='playing'&&S.deadline){
   if(Date.now()>S.deadline){ endGame(false); }
   else runClock();
 }
+</script>
+<script src="leaderboard.js"></script>
+<script>
+/* World leaderboard: one board per puzzle day, ranked by solve time (see leaderboard.js). */
+(function(){
+  if(!window.ArcadeBoard) return;
+  const d=dateFor(today);
+  const BOARD=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const note=t=>{ $('lbNote').textContent=t||''; $('lbNote').hidden=!t; };
+  function refresh(){
+    return ArcadeBoard.top('word-crumb',BOARD,{limit:20}).then(rows=>{
+      ArcadeBoard.render($('todayBoard'),rows,{format:'seconds',emptyText:'No solves posted yet today — be the first!',
+        extra:r=>r.detail&&r.detail.guesses?r.detail.guesses+'/'+GUESSES:''});
+      return rows;
+    });
+  }
+  function post(name){
+    name=ArcadeBoard.setName(name);
+    if(!name){ note('Enter a name first.'); return; }
+    $('lbPost').hidden=true; note('Posting…');
+    ArcadeBoard.submit('word-crumb',BOARD,name,S.used,{guesses:S.guesses.length,type:TYPE}).then(res=>{
+      if(res.ok||/already/i.test(res.error||'')||res.queued){ S.posted=true; save(); }
+      if(res.ok) refresh().then(rows=>{
+        const me=(rows||[]).find(r=>String(r.name).toLowerCase()===name.toLowerCase());
+        note(me?'\u{1F30D} You’re #'+me.rank+' today!':'\u{1F30D} Posted!');
+      });
+      else if(res.queued) note('\u{1F4E1} Offline — your time will post next visit.');
+      else { note(res.error); if(!S.posted) $('lbPost').hidden=false; }
+    });
+  }
+  const _showStats=showStats;
+  showStats=function(){
+    _showStats();
+    refresh();
+    const canPost=S.status==='won'&&!S.posted&&S.used!=null;
+    $('lbPost').hidden=true; note('');
+    if(canPost){
+      const saved=ArcadeBoard.name();
+      if(saved) post(saved);
+      else { $('lbPost').hidden=false; $('lbName').value=''; note('Post your time to today’s world board?'); }
+    }
+  };
+  $('lbPost').addEventListener('submit',e=>{ e.preventDefault(); post($('lbName').value); });
+})();
 </script>
 </body>
 </html>
