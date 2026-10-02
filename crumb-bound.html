@@ -326,7 +326,7 @@
 const VIEW_W = 960;                // canvas / screen width
 const W = 1600, H = 540, COLS = 400, COLW = W / COLS; // world is wider than the screen; the camera scrolls
 const GRAV = 520;                 // px/s^2
-const SPAWN_A = 0.2, SPAWN_B = 0.8; // team spawn plateaus (fraction of world width)
+const SPAWN_A = 0.28, SPAWN_B = 0.72; // team spawn plateaus (fraction of world width): ~700px apart, comfortably in range
 const DT = 1 / 120;               // fixed timestep
 const TURN_TIME = 20;
 const SS_NEED = 100;
@@ -1027,7 +1027,7 @@ function startTurn() {
 }
 
 function onTurnUI() {
-  camManual = false; // new turn: camera goes back to following the active mobile
+  camManual = false; camHoldX = null; // new turn: glide from the impact straight to the next mobile
   const m = activeMobile();
   const q = turnQueue.map(i => st.mobiles[i] ? st.mobiles[i].name : '?').join(' ▸ ');
   $('turn-banner').innerHTML = esc(m ? (activeIdx === myDefIdx ? 'YOUR TURN — ' + MOBILES[m.mobile].name : m.name + ' — ' + MOBILES[m.mobile].name) : '—') + (q ? '<span class="tq"> · next: ' + esc(q) + '</span>' : '');
@@ -1927,13 +1927,15 @@ function render(dt) {
    Follows the shot in flight, otherwise the active mobile. Dragging the
    battlefield (mouse or finger) looks around until the next turn or shot. */
 let camX = 0, camManual = false, camDrag = null;
+let camHoldX = null; // after a shot lands, linger on the impact until the next turn begins
 const camMax = () => Math.max(0, W - VIEW_W);
 function camFocusX() {
   if (anim && anim.projs.length) {           // lead projectile
     let lead = null;
     for (const p of anim.projs) if (!p.boom && (!lead || p.age > lead.age)) lead = p;
-    if (lead) return lead.x;
+    if (lead) { camHoldX = lead.x; return lead.x; }
   }
+  if (camHoldX != null) return camHoldX;
   const m = activeMobile();
   return m ? m.x : W / 2;
 }
@@ -2051,7 +2053,7 @@ const SUPABASE_URL = 'https://ukrxoqsvyvlyeblubjeo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
 /* Bump when the match simulation or messages change, so players on an old cached
    copy can't join (and desync) a room with the new version. v2: 1600px world. */
-const NET_ROOM_PREFIX = 'cb-v2:';
+const NET_ROOM_PREFIX = 'cb-v3:'; // v3: spawns moved closer
 /* Multiplayer-only client, loaded lazily: the menu, solo mode, and shop must
    keep working even if the Supabase CDN is unreachable. Resolves to null then. */
 const sbReady = (async () => {
