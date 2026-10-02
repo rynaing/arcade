@@ -66,6 +66,10 @@
   .b-solo{background:#dff3e6;color:#237a44}
   .b-party{background:#e7e0fb;color:#5740a8}
   .b-new{background:var(--pink);color:#fff}
+  .joincode{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .joincode label{font-weight:800;color:var(--muted);font-size:.9rem}
+  .joincode input{width:96px;padding:9px 12px;border-radius:999px;border:2px solid #f1d3e2;font:inherit;font-weight:800;letter-spacing:.2em;text-transform:uppercase;text-align:center;background:#fff}
+  .joincode button{border:0;border-radius:999px;padding:10px 18px;background:var(--pink-deep);color:#fff;font:inherit;font-weight:800;cursor:pointer}
   .play{flex:0 0 auto;background:var(--pink-deep);color:#fff;font-weight:800;
         font-size:.95rem;padding:11px 22px;border-radius:999px;
         box-shadow:0 4px 12px rgba(224,84,139,.4)}
@@ -104,6 +108,11 @@
     </svg>
     <h1>Ryan Cake Studios <span class="arcade">Arcade</span></h1>
     <p class="tagline">by Ryan Naing</p>
+    <form class="joincode" id="joincode" action="https://rynaing.github.io/game-night/" method="get">
+      <label for="joinroom">Got a room code?</label>
+      <input id="joinroom" name="room" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" pattern="[A-Za-z0-9]{4}" required>
+      <button type="submit">Join</button>
+    </form>
   </header>
 
   <div class="layout">
@@ -113,6 +122,7 @@
       <button class="fbtn" data-filter="solo">Solo</button>
       <button class="fbtn" data-filter="party">Party</button>
       <button class="fbtn" data-filter="new">New</button>
+      <button class="fbtn" data-filter="gamenight">Game Night</button>
     </aside>
     <main class="games">
       <div class="section-label">Start playing</div>
@@ -191,7 +201,19 @@
     <span class="play">Play</span>
   </a>
 
-  <a class="card" data-tags="party" href="https://rynaing.github.io/game-night/">
+  <a class="card" data-tags="party gamenight" href="https://rynaing.github.io/game-night/?game=trivia">
+    <div class="art" style="background:linear-gradient(135deg,#ffe0e9,#ff9fbf)">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#c2255c"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="#fff"/></svg>
+    </div>
+    <div class="info">
+      <h2>Trivia</h2>
+      <p>Questions on the big screen &mdash; buzz in from your phone. Fastest right answer scores most.</p>
+      <div class="badges"><span class="badge b-party">Party</span></div>
+    </div>
+    <span class="play">Play</span>
+  </a>
+
+  <a class="card" data-tags="party gamenight" href="https://rynaing.github.io/game-night/?game=anagram">
     <div class="art" style="background:linear-gradient(135deg,#d6e9ff,#8fb8f5)">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M4 7h16M4 12h16M4 17h10" stroke="#2b4d9e" stroke-width="2.6" stroke-linecap="round"/>
@@ -205,7 +227,7 @@
     <span class="play">Play</span>
   </a>
 
-  <a class="card" data-tags="party" href="https://rynaing.github.io/game-night/">
+  <a class="card" data-tags="party gamenight" href="https://rynaing.github.io/game-night/?game=mostlikely">
     <div class="art" style="background:linear-gradient(135deg,#f3d9ff,#c99df5)">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="8" cy="8" r="4" fill="#6a3fb5"/>
@@ -219,7 +241,7 @@
     </div>
     <span class="play">Play</span>
   </a>
-  <a class="card" data-tags="party new" href="https://rynaing.github.io/game-night/">
+  <a class="card" data-tags="party new gamenight" href="https://rynaing.github.io/game-night/?game=mathsprint">
     <div class="art" style="background:linear-gradient(135deg,#ffe9a8,#f5b84c)">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#7a4d00"/>
@@ -232,7 +254,7 @@
     </div>
     <span class="play">Play</span>
   </a>
-  <a class="card" data-tags="party new" href="https://rynaing.github.io/game-night/">
+  <a class="card" data-tags="party new gamenight" href="https://rynaing.github.io/game-night/?game=guesstimate">
     <div class="art" style="background:linear-gradient(135deg,#bfe8ff,#5cb8f5)">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="12" cy="12" r="9" stroke="#0b4d7a" stroke-width="2"/>
@@ -244,6 +266,28 @@
       <h2>Guesstimate</h2>
       <p>Estimate wild quantities &mdash; closest guess without going over wins.</p>
       <div class="badges"><span class="badge b-party">Party</span><span class="badge b-new">New</span></div>
+    </div>
+    <span class="play">Play</span>
+  </a>
+  <a class="card" data-tags="party gamenight" href="https://rynaing.github.io/game-night/?game=commonthreads">
+    <div class="art" style="background:linear-gradient(135deg,#e3fafc,#7fd8e6)">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2" fill="#0b7285"/><rect x="13" y="3" width="8" height="8" rx="2" fill="#0b7285" opacity=".55"/><rect x="3" y="13" width="8" height="8" rx="2" fill="#0b7285" opacity=".55"/><rect x="13" y="13" width="8" height="8" rx="2" fill="#0b7285"/></svg>
+    </div>
+    <div class="info">
+      <h2>Common Threads</h2>
+      <p>Find the 4 hidden groups among 16 words &mdash; race your friends.</p>
+      <div class="badges"><span class="badge b-party">Party</span></div>
+    </div>
+    <span class="play">Play</span>
+  </a>
+  <a class="card" data-tags="solo gamenight" href="https://rynaing.github.io/game-night/?game=commonthreads&amp;solo=1">
+    <div class="art" style="background:linear-gradient(135deg,#e3fafc,#b5ead7)">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2" fill="#2b8a3e"/><rect x="13" y="3" width="8" height="8" rx="2" fill="#2b8a3e" opacity=".55"/><rect x="3" y="13" width="8" height="8" rx="2" fill="#2b8a3e" opacity=".55"/><rect x="13" y="13" width="8" height="8" rx="2" fill="#2b8a3e"/></svg>
+    </div>
+    <div class="info">
+      <h2>Common Threads Solo</h2>
+      <p>The same 16-word puzzle, just you &mdash; four mistakes and you&rsquo;re out.</p>
+      <div class="badges"><span class="badge b-solo">Solo</span></div>
     </div>
     <span class="play">Play</span>
   </a>
@@ -267,6 +311,12 @@
       });
     });
   });
+  // deep link: #game-night (where party games send you back to), #solo, #party, #new
+  var want=(location.hash||'').replace('#','').replace('-','');
+  btns.forEach(function(b){ if(want&&b.getAttribute('data-filter')===want) b.click(); });
+  // join box: room codes are 4 letters/numbers, upper-case
+  var jf=document.getElementById('joincode');
+  if(jf) jf.addEventListener('submit',function(){ var i=document.getElementById('joinroom'); i.value=i.value.trim().toUpperCase(); });
 })();
 </script>
 </body>
