@@ -1,9 +1,9 @@
-# Mossbell Arcade
+# Ryan Cake Studios Arcade
 
 A kid-friendly hub of free party and solo games — no sign-up, no ads, just pick a game and play.
 
 **Games**
-- **Mossbell Grove** — a cozy tower-defense adventure: defend the mushroom forest from grumbly critters (solo, hosted here)
+- **Ryan's Cake TD** — a tower-defense adventure (solo, hosted here)
 - **Trivia** — questions on the big screen, buzz in from your phone (party)
 - **Common Threads** — find the 4 secret word groups hiding among 16 words (party + solo)
 - **Anagrams** — unscramble the letters before time runs out (party)
