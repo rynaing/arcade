@@ -6,7 +6,7 @@
 <title>Bubble Brawl · Ryan Cake Studios</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%}
+html{height:100%}
 body{background:#101828 radial-gradient(1200px 700px at 50% -10%,#1d3a5f 0%,#101828 60%);color:#eef4ff;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100%;padding:10px 10px 64px;overflow-x:hidden}
 a.home{color:#9fc1ff;text-decoration:none;font-size:13px;margin-bottom:6px;opacity:.85}
 a.home:hover{opacity:1;text-decoration:underline}
@@ -29,6 +29,7 @@ button.big{background:linear-gradient(180deg,#4fc3ff,#2b7fd4);border:none;color:
 button.big:active{transform:translateY(3px);box-shadow:0 1px 0 #1a4f86}
 #touch{position:absolute;inset:auto 0 0 0;display:none;justify-content:space-between;align-items:flex-end;padding:0 10px 10px;z-index:4;pointer-events:none}
 #touch.on{display:flex}
+@media (max-width:600px){#touch{position:static;padding:10px 0 0}}
 .tpad{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,54px);gap:4px;pointer-events:auto}
 .tbtn{background:rgba(30,55,95,.72);border:1px solid #3c5f92;color:#cfe6ff;font-size:22px;border-radius:12px;touch-action:none;user-select:none}
 .tbtn:active{background:rgba(70,120,190,.85)}
@@ -320,7 +321,7 @@ function onGuestMend(pl){
 }
 const $=id=>document.getElementById(id);
 /* ===== Button wiring ===== */
-$('btn-create').onclick=()=>joinRoom(Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join(''),true);
+$('btn-create').onclick=()=>joinRoom(Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join(''),true);
 $('btn-join').onclick=()=>{const r=$('join-row');r.style.display=r.style.display==='none'?'block':'none';};
 $('btn-go').onclick=()=>joinRoom($('code-input').value,false);
 $('btn-copy').onclick=copyInvite;
@@ -410,7 +411,7 @@ function resetMatch(){
  buildGrid();bombs=[];flames=[];powerups=[];particles=[];
  makePlayers();timeLeft=MATCH_TIME;score=0;kills=0;S.netRole='solo';S.solo=true;
  stallTimer=-1;stallSpawnT=0;shake=0;
- $('menuOv').classList.add('hidden');$('endOv').classList.add('hidden');
+ $('menuOv').classList.add('hidden');$('menuOv').style.display='';$('endOv').classList.add('hidden');
  state='play';updateHud();
 }
 
@@ -847,6 +848,7 @@ function draw(){
 /* ===== input ===== */
 const keys={};
 addEventListener('keydown',e=>{
+ if(e.target&&e.target.tagName==='INPUT')return;
  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();
  if(e.repeat)return;
  const k=e.key.toLowerCase();keys[k]=true;
@@ -890,7 +892,7 @@ function loop(t){
     if(woodCount===0){
      if(stallTimer<0)stallTimer=60;
      else{
-      stallTimer-=dt;
+      stallTimer=Math.max(0,stallTimer-dt);
       if(stallTimer<=0){
        stallSpawnT-=dt;
        if(stallSpawnT<=0){stallSpawnT=2;spawnStall()}
