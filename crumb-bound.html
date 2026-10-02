@@ -85,6 +85,22 @@
   #timer-box.low{color:#ff8787;animation:blink .5s infinite alternate}
   @keyframes blink{to{opacity:.4}}
   #weapBar{position:absolute;left:12px;bottom:12px;display:flex;gap:8px;z-index:10}
+#touchPad{display:none;position:absolute;inset:0;z-index:12;pointer-events:none}
+#touchPad .tp{pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+  width:58px;height:58px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(20,12,40,.55);color:#fff;font-size:22px;font-family:inherit;font-weight:900}
+#touchPad .tp.on{background:rgba(255,209,102,.55)}
+#touchPad .tp-move{position:absolute;left:12px;bottom:70px;display:flex;gap:10px}
+#touchPad .tp-act{position:absolute;right:12px;bottom:12px;display:flex;align-items:flex-end;gap:10px}
+#touchPad .tp-aim{display:flex;flex-direction:column;gap:8px}
+#touchPad .tp-fire{width:84px;height:84px;font-size:17px;background:rgba(232,80,80,.7)}
+#rotateHint{display:none;position:fixed;left:0;right:0;top:0;z-index:50;justify-content:center;padding:8px;background:#ffd166;color:#241b45;font-weight:800;font-size:13px}
+.k-touch{display:none}
+@media (pointer:coarse){
+  .k-key{display:none}.k-touch{display:inline}
+  #touchPad:not(.hidden){display:block}
+  #gchat{display:none !important} /* no room for chat over the controls on touch screens */
+}
+@media (pointer:coarse) and (orientation:portrait){#rotateHint{display:flex}}
   .wbtn{font-family:inherit;background:rgba(20,12,40,.78);border:2px solid #4a3f7a;color:#fff;border-radius:10px;
     padding:8px 12px;font-size:13px;font-weight:800;cursor:pointer;pointer-events:auto;
     display:inline-flex;align-items:center;gap:7px}
@@ -172,6 +188,12 @@
 <div id="wrap">
 <div id="game">
   <canvas id="cv" width="960" height="540"></canvas>
+  <!-- touch controls (phones/tablets only; they send the same keys as the keyboard) -->
+  <div id="touchPad" class="hidden" aria-hidden="true">
+    <div class="tp-move"><button class="tp" data-k="ArrowLeft">&#9664;</button><button class="tp" data-k="ArrowRight">&#9654;</button></div>
+    <div class="tp-act"><div class="tp-aim"><button class="tp" data-k="ArrowUp">&#9650;</button><button class="tp" data-k="ArrowDown">&#9660;</button></div><button class="tp tp-fire" data-k=" ">FIRE</button></div>
+  </div>
+  <div id="rotateHint">&#8635; Turn your phone sideways for the full battlefield</div>
 
   <div id="hud" class="hidden">
     <div class="hudBox" id="turn-banner">—</div>
@@ -188,7 +210,7 @@
   <div id="itemBar" class="hidden"></div>
   <div id="powWrap" class="hidden">
     <div id="powBar"><div id="powFill"></div></div>
-    <div id="powLbl">hold <kbd>Space</kbd> to charge, release to fire</div>
+    <div id="powLbl">hold <kbd class="k-key">Space</kbd><kbd class="k-touch">FIRE</kbd> to charge, release to fire</div>
   </div>
   <div id="gchat" class="hidden">
     <div id="gchat-tabs"><button id="tab-team" class="sel">Team</button><button id="tab-all">All</button></div>
@@ -1852,7 +1874,8 @@ function showScreen(s) {
   $('lobby').classList.toggle('hidden', s !== 'lobby');
   const inPlay = s === 'play';
   $('hud').classList.toggle('hidden', !inPlay);
-  $('gchat').classList.toggle('hidden', !inPlay);
+  $('gchat').classList.toggle('hidden', !inPlay || Net.role === 'solo');
+  $('touchPad').classList.toggle('hidden', !inPlay);
   if (!inPlay) { $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden'); }
 }
 function endMatch() {
@@ -2472,6 +2495,14 @@ function wireUI() {
     }
   };
   $('btn-menu2').onclick = leaveRoom;
+  // touch pad: press/release map to the keyboard keys the game already understands
+  document.querySelectorAll('#touchPad .tp').forEach(b => {
+    const k = b.dataset.k, send = type => window.dispatchEvent(new KeyboardEvent(type, { key: k }));
+    const up = e => { if (!b.classList.contains('on')) return; b.classList.remove('on'); send('keyup'); };
+    b.addEventListener('pointerdown', e => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (_) {} b.classList.add('on'); send('keydown'); });
+    b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  });
   $('quit-btn').onclick = () => { if (confirm(Net.role === 'solo' ? 'Quit this match?' : 'Leave this online match?')) leaveRoom(); };
   // ?room=CODE invite support
   const q = new URLSearchParams(location.search).get('room');
