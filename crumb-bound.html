@@ -203,9 +203,51 @@
 .wins-lb li.lb-empty{display:block;background:none;opacity:.75;text-align:center}
 .wins-lb .lb-me{outline:2px solid #ffd166}.wins-lb .lb-rank{opacity:.7}.wins-lb .lb-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wins-lb .lb-score{font-weight:800}
 .wins-lb p{margin:6px 0 0;font-size:13px;text-align:center;font-weight:700}
+/* ---------- intro / menu ---------- */
+#menuOv{position:fixed;inset:0;z-index:30;overflow-y:auto;background:radial-gradient(120% 90% at 50% 0%,rgba(255,170,200,.55),rgba(140,90,200,.55) 55%,rgba(40,24,72,.88));justify-content:flex-start;padding:18px 12px}
+.menu-wrap{width:100%;max-width:920px;margin:auto;display:flex;flex-direction:column;align-items:center;gap:10px}
+.hero{display:flex;align-items:flex-end;justify-content:center;gap:4px}
+.hero-thumb{width:84px;height:84px}
+.hero-mid{padding:0 8px;text-align:center}
+#menuOv .title{margin:0;font-size:58px;letter-spacing:.06em;color:#fff6e8;-webkit-text-stroke:2px #8a4a6a;text-shadow:0 3px 0 #ff8fb8,0 6px 0 #b0567e,0 10px 18px rgba(60,20,60,.5)}
+#menuOv .sub{margin:2px 0 0;color:#ffe9f4;font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.topbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
+.topbar #name-input{width:170px}
+.sec{margin:8px 0 2px;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.sec-sub{text-transform:none;letter-spacing:0;font-weight:600;opacity:.75;font-size:13px}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%}
+.cards.bots{grid-template-columns:repeat(5,minmax(0,1fr))}
+.vcard,.bcard{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 10px 12px;border-radius:16px;
+  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,240,248,.93));color:#4a2c45;box-shadow:0 4px 0 rgba(120,60,110,.35),0 8px 18px rgba(40,10,40,.25);border:2px solid transparent;transition:transform .12s}
+.vcard:hover,.bcard:hover{transform:translateY(-2px)}
+.vcard:focus-visible,.bcard:focus-visible{outline:3px solid #ffd43b;outline-offset:2px}
+.vcard.sel{border-color:#ff6b9a;box-shadow:0 4px 0 #e64980,0 8px 22px rgba(230,73,128,.45)}
+.hero-thumb,.card-thumb{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0}
+.card-thumb{width:96px;height:92px;background:radial-gradient(closest-side,rgba(255,182,213,.75),rgba(255,182,213,0))!important}
+.vcard.vmobbtn,.vcard.vmobbtn.sel,.bcard.botbtn,.bcard.botbtn.sel{background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,240,248,.94));color:#4a2c45;font-size:inherit;min-width:0;min-height:0}
+.vcard.vmobbtn.sel{border-color:#ff6b9a;box-shadow:0 4px 0 #e64980,0 8px 22px rgba(230,73,128,.45)}
+.card-name{font-weight:900;font-size:17px}
+.card-role{font-size:12px;font-weight:800;color:#c2255c;text-transform:uppercase;letter-spacing:.06em}
+.stats{width:100%;display:grid;grid-template-columns:auto 1fr;gap:3px 6px;font-size:11px;font-weight:700;align-items:center;margin-top:2px}
+.stats i{display:block;height:6px;border-radius:3px;background:#f1dbe8;overflow:hidden}
+.stats i b{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#ff8fb8,#e64980)}
+.shots{font-size:11px;line-height:1.35;text-align:center;color:#6b4a66}
+.shots b{color:#9c36b5}
+.procon{font-size:11.5px;line-height:1.35;text-align:center}
+.procon .p{color:#2b8a3e;font-weight:700}.procon .c{color:#c92a2a;font-weight:700}
+.bcard .card-thumb{width:84px;height:80px}
+.bcard .card-name{font-size:14px}
+.joinRow{display:inline-flex;gap:6px;align-items:center}
+.joinRow #room-input{width:92px}
+body.in-menu #rotateHint{display:none!important}
+@media (max-width:760px){
+  #menuOv .title{font-size:38px}.hero-thumb{width:56px;height:56px}.hero-thumb[data-hero=eclair],.hero-thumb[data-hero=meringue]{display:none}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}.cards.bots{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card-thumb{width:80px;height:76px}
+}
 </style>
 </head>
-<body>
+<body class="in-menu">
 <div id="wrap">
 <div id="game">
   <canvas id="cv" width="960" height="540"></canvas>
@@ -241,36 +283,48 @@
   </div>
 
   <div id="menuOv" class="ov">
-    <h1 class="title">CRUMB BOUND</h1>
-    <p class="sub">turn-based artillery · 1v1 &amp; 2v2 · destructible terrain · a ryan cake studios joint</p>
-    <div class="nameRow"><input id="name-input" maxlength="14" placeholder="your name"></div>
-    <div class="econrow"><span class="pill" id="gold-pill">🪙 500</span><span class="pill" id="rank-pill">🏅 Chick</span><button class="mini" id="btn-shop">🛒 Shop</button></div>
-    <div class="btnRow">
-      <button class="big" id="btn-create">Create Room</button>
-      <button class="big" id="btn-solo">Vs Bot</button>
+    <div class="menu-wrap">
+      <div class="hero">
+        <canvas class="hero-thumb" data-hero="shortcake"></canvas><canvas class="hero-thumb" data-hero="eclair"></canvas>
+        <div class="hero-mid">
+          <h1 class="title">CRUMB BOUND</h1>
+          <p class="sub">turn-based pastry artillery · solo vs bots, 1v1 &amp; 2v2 online</p>
+        </div>
+        <canvas class="hero-thumb" data-hero="meringue"></canvas><canvas class="hero-thumb" data-hero="fudge"></canvas>
+      </div>
+      <div class="topbar">
+        <input id="name-input" maxlength="14" placeholder="your name">
+        <span class="pill" id="gold-pill">🪙 500</span><span class="pill" id="rank-pill">🏅 Chick</span>
+        <button class="mini" id="btn-shop">Shop</button>
+      </div>
+      <h2 class="sec">Choose your vehicle</h2>
+      <div class="cards" id="veh-pick">
+        <button class="vcard vmobbtn" data-m="shortcake"></button>
+        <button class="vcard vmobbtn" data-m="eclair"></button>
+        <button class="vcard vmobbtn" data-m="meringue"></button>
+        <button class="vcard vmobbtn" data-m="fudge"></button>
+      </div>
+      <div class="hintline hidden" id="veh-blurb"></div>
+      <div class="btnRow">
+        <button class="big" id="btn-solo">Play vs Bot</button>
+        <button class="big" id="btn-create">Create Room</button>
+        <span class="joinRow"><input id="room-input" maxlength="4" placeholder="CODE"><button class="big" id="btn-joinb">Join</button></span>
+      </div>
+      <div id="menu-err"></div>
+      <div class="hidden" id="bot-pick">
+        <h2 class="sec">Pick your opponent <span class="sec-sub">— tap to fight</span></h2>
+        <div class="cards bots">
+          <button class="bcard botbtn" data-b="baby"></button>
+          <button class="bcard botbtn" data-b="baker"></button>
+          <button class="bcard botbtn" data-b="prof"></button>
+          <button class="bcard botbtn" data-b="cannon"></button>
+          <button class="bcard botbtn" data-b="deadeye"></button>
+        </div>
+      </div>
+      <div class="hintline hidden" id="bot-blurb"></div>
+      <p class="hintline"><kbd class="k-key">←</kbd><kbd class="k-key">→</kbd> move &amp; turn · <kbd class="k-key">↑</kbd><kbd class="k-key">↓</kbd> aim · hold <kbd class="k-key">Space</kbd><kbd class="k-touch">FIRE</kbd> to charge, release to fire · <kbd class="k-key">1</kbd><kbd class="k-key">2</kbd><kbd class="k-key">3</kbd> weapons · lighter shots act sooner · slopes tilt your cannon · weather changes the battlefield</p>
+      <a id="arcade-link" href="./index.html">&larr; Ryan Cake Studios</a>
     </div>
-    <div class="pickRow hidden" id="veh-pick"><span class="lbl">Vehicle:</span>
-      <button class="vmobbtn" data-m="shortcake">🍰</button>
-      <button class="vmobbtn" data-m="eclair">🥖</button>
-      <button class="vmobbtn" data-m="meringue">🍦</button>
-      <button class="vmobbtn" data-m="fudge">🍫</button>
-    </div>
-    <div class="hintline hidden" id="veh-blurb"></div>
-    <div class="pickRow hidden" id="bot-pick"><span class="lbl">Bot:</span>
-      <button class="botbtn" data-b="baker">🤖 Bot Baker</button>
-      <button class="botbtn" data-b="deadeye">🎯 Deadeye Dot</button>
-      <button class="botbtn" data-b="cannon">💥 Loose Cannon</button>
-      <button class="botbtn" data-b="prof">🎓 Professor Proof</button>
-      <button class="botbtn" data-b="baby">🍼 Baby Batter</button>
-    </div>
-    <div class="hintline hidden" id="bot-blurb"></div>
-    <div class="joinRow">
-      <input id="room-input" maxlength="4" placeholder="CODE">
-      <button class="big" id="btn-joinb">Join</button>
-    </div>
-    <div id="menu-err"></div>
-    <p class="hintline"><kbd>←</kbd><kbd>→</kbd> move · <kbd>↑</kbd><kbd>↓</kbd> aim · hold <kbd>Space</kbd> charge, release to fire · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons · move, then shoot, before the 20s timer runs out · fast shots act sooner (delay order) · weather changes the battlefield</p>
-    <a id="arcade-link" href="./index.html">&larr; Ryan Cake Studios</a>
   </div>
 
   <div id="shopOv" class="ov hidden">
@@ -922,7 +976,7 @@ function applySnapState(st, s) {
 
 /* ================= Crumb Bound game layer (DOM + rendering + turn flow) ================= */
 const cv = document.getElementById('cv');
-const ctx = cv.getContext('2d');
+let ctx = cv.getContext('2d'); // swapped temporarily by drawThumb() so menus reuse the battle art
 const $ = id => document.getElementById(id);
 
 let myId = 'p' + Math.random().toString(36).slice(2, 9);
@@ -948,6 +1002,35 @@ let pendingTurn = null;   // turn broadcast received mid-animation (guests)
 let chatScope = 'team';
 let myTeam = 'A', myMobile = (() => { try { const v = localStorage.getItem('cb-mobile'); return v && MOBILES[v] ? v : 'shortcake'; } catch (e) { return 'shortcake'; } })();
 function saveMobile() { try { localStorage.setItem('cb-mobile', myMobile); } catch (e) {} }
+/* menu cards: drawn portraits, stats and plain-language descriptions */
+const ROLE_TXT = { shortcake: 'All-rounder', eclair: 'Sniper', meringue: 'Skirmisher', fudge: 'Bruiser' };
+function statRows(d) {
+  const rows = [['Health', d.hp / 130], ['Power', d.w[0].dmg / 50], ['Blast', d.w[0].r / 34], ['Speed', d.move / 125], ['Aim range', (d.ta[1] - d.ta[0]) / 130]];
+  return rows.map(([n, v]) => '<span>' + n + '</span><i><b style="width:' + Math.round(Math.max(.12, Math.min(1, v)) * 100) + '%"></b></i>').join('');
+}
+function buildMenuCards() {
+  document.querySelectorAll('.vcard').forEach(b => {
+    const d = MOBILES[b.dataset.m];
+    b.innerHTML = '<canvas class="card-thumb"></canvas><span class="card-name">' + d.name + '</span><span class="card-role">' + ROLE_TXT[b.dataset.m] + '</span>' +
+      '<span class="stats">' + statRows(d) + '</span>' +
+      '<span class="shots">' + d.w[0].n + ' · ' + d.w[1].n + ' · <b>★ ' + d.w[2].n + '</b></span>' +
+      '<span class="procon"><span class="p">+ ' + d.pro + '</span><br><span class="c">− ' + d.con + '</span></span>';
+    b.setAttribute('aria-label', d.name + ', ' + ROLE_TXT[b.dataset.m] + '. ' + d.pro + '; ' + d.con);
+  });
+  document.querySelectorAll('.bcard').forEach(b => {
+    const bd = botDefOf(b.dataset.b);
+    b.innerHTML = '<canvas class="card-thumb"></canvas><span class="card-name">' + bd.name + '</span><span class="card-role">' + bd.type + '</span>' +
+      '<span class="shots">rides a ' + MOBILES[bd.mobile].name + '</span>' +
+      '<span class="procon"><span class="p">+ ' + bd.pro.replace(/^\+/, '') + '</span><br><span class="c">− ' + bd.con.replace(/^[−-]/, '') + '</span></span>';
+    b.setAttribute('aria-label', 'Fight ' + bd.name + ', ' + bd.type);
+  });
+}
+function drawMenuThumbs() {
+  document.querySelectorAll('.hero-thumb').forEach((c, i) => drawThumb(c, c.dataset.hero, i % 2 ? 'B' : 'A', null, i));
+  document.querySelectorAll('.vcard').forEach((b, i) => { const c = b.querySelector('canvas'); if (c) drawThumb(c, b.dataset.m, 'A', null, i + 4); });
+  if (!$('bot-pick').classList.contains('hidden'))
+    document.querySelectorAll('.bcard').forEach((b, i) => { const c = b.querySelector('canvas'), bd = botDefOf(b.dataset.b); if (c) drawThumb(c, bd.mobile, 'B', bd.id, i + 8); });
+}
 function refreshMobilePick() {
   const m = MOBILES[myMobile];
   document.querySelectorAll('.vmobbtn').forEach(b => b.classList.toggle('sel', b.dataset.m === myMobile));
@@ -1823,17 +1906,10 @@ const PASTRY = {
     drawFace(1, -29, m, i);
   },
 };
-function drawMobile(m, i) {
-  const x = m.x, yb = m.y; // yb = feet
+/* cart + cannon + rider (+ bot accessory), drawn at the feet origin. Shared by battle and menu thumbnails. */
+function drawBody(m, i, tilt) {
   const now = performance.now() / 1000;
   const [tc, tcd] = TEAM[m.team] || TEAM.A;
-  ctx.save();
-  ctx.translate(x, yb);
-  // lean with the ground: slope of the terrain under the wheels (islands are flat), eased so it doesn't jitter
-  const want = st ? slopeTiltAt(st.terrain, x, yb) : 0;
-  m._tilt = m._tilt == null ? want : m._tilt + (want - m._tilt) * 0.2;
-  const tilt = m._tilt;
-  ctx.rotate(tilt);
   if (!m.alive) ctx.globalAlpha = 0.45;
   // soft shadow + team glow ring
   ctx.fillStyle = 'rgba(40,20,40,.22)'; blob(0, 1, 23, 5); ctx.fill();
@@ -1866,7 +1942,69 @@ function drawMobile(m, i) {
   const bob = m.alive ? Math.sin(now * 3 + i * 1.3) * 1.2 : 0;
   ctx.save(); ctx.translate(0, bob + 1); ctx.scale(m.face || 1, 1);
   (PASTRY[m.mobile] || PASTRY.shortcake)(m, i);
+  if (m.isBot && m.bot) drawAccessory(m.bot, m.mobile);
   ctx.restore();
+}
+/* bot personalities wear something: chef hat, monocle, fuse, grad cap + specs, bib */
+const HEAD = { shortcake: [2, -27, -50], eclair: [4, -26, -44], meringue: [1, -27, -52], fudge: [1, -29, -47] }; // face x, face y, head top
+function drawAccessory(bot, mobile) {
+  const [fx, fy, top] = HEAD[mobile] || HEAD.shortcake;
+  const now = performance.now() / 1000;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (bot === 'baker') {            // chef's hat, jaunty
+    ctx.save(); ctx.translate(-7, top - 2); ctx.rotate(-0.25);
+    roundRect(-9, -6, 18, 7, 2); ctx.fillStyle = '#fff'; ctx.fill(); outline(1.6);
+    ctx.beginPath(); ctx.arc(-6, -9, 5.5, 0, 6.29); ctx.arc(0, -12, 6.5, 0, 6.29); ctx.arc(6, -9, 5.5, 0, 6.29); ctx.fillStyle = '#fff'; ctx.fill(); outline(1.6);
+    ctx.restore();
+  } else if (bot === 'deadeye') {   // gold monocle + chain
+    ctx.strokeStyle = '#f2c94c'; ctx.lineWidth = 2; blob(fx + 6.5, fy, 6.2, 6.6); ctx.stroke();
+    ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(fx + 11, fy + 5); ctx.quadraticCurveTo(fx + 16, fy + 14, fx + 12, fy + 18); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; blob(fx + 4.5, fy - 2.5, 2, 1.4); ctx.fill();
+  } else if (bot === 'cannon') {    // lit fuse on top
+    ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(3, top + 2); ctx.quadraticCurveTo(6, top - 8, 11, top - 11); ctx.stroke();
+    const f = 0.6 + Math.sin(now * 20) * 0.4;
+    ctx.fillStyle = '#ffd43b'; ctx.beginPath();
+    for (let k = 0; k < 10; k++) { const r = (k % 2 ? 2 : 5) * (0.8 + f * 0.4), t = k * Math.PI / 5; ctx.lineTo(12 + Math.cos(t) * r, top - 12 + Math.sin(t) * r); }
+    ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ff6b3d'; blob(12, top - 12, 1.8, 1.8); ctx.fill();
+  } else if (bot === 'prof') {      // mortarboard + round specs
+    ctx.save(); ctx.translate(0, top - 1);
+    ctx.fillStyle = '#2b2440'; ctx.beginPath(); ctx.moveTo(-14, -2); ctx.lineTo(0, -8); ctx.lineTo(14, -2); ctx.lineTo(0, 4); ctx.closePath(); ctx.fill(); outline(1.4);
+    roundRect(-6, 0, 12, 5, 1.5); ctx.fill();
+    ctx.strokeStyle = '#ffd43b'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(10, 1); ctx.lineTo(10, 8); ctx.stroke();
+    ctx.restore();
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.5; for (const s2 of [-1, 1]) { blob(fx + s2 * 6.5, fy, 5.6, 5.6); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(fx - 1, fy); ctx.lineTo(fx + 1, fy); ctx.stroke();
+  } else if (bot === 'baby') {      // bib + a little curl of hair
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(fx, fy + 11, 7, 0, Math.PI); ctx.closePath(); ctx.fill(); outline(1.4);
+    ctx.strokeStyle = '#ff9ec6'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(fx, fy + 11, 5, 0.2, Math.PI - 0.2); ctx.stroke();
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(fx, top + 1); ctx.bezierCurveTo(fx - 1, top - 7, fx + 7, top - 7, fx + 4, top - 2); ctx.stroke();
+  }
+}
+/* menu thumbnails: draw a character into a small canvas with the same art as the battle */
+function drawThumb(canvas, mobile, team, bot, i) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1), w = canvas.clientWidth || 84, h = canvas.clientHeight || 84;
+  if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+  const c = canvas.getContext('2d'), saved = ctx;
+  if (!canvas._m) canvas._m = { mobile, team, bot, isBot: !!bot, alive: true, hp: 999, face: 1, ang: 38, x: 0 };
+  const m = canvas._m; m.mobile = mobile; m.bot = bot; m.isBot = !!bot;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, canvas.width, canvas.height);
+  const k = (h / 82) * dpr;
+  c.setTransform(k, 0, 0, k, (w / 2 - 2) * dpr, h * 0.9 * dpr);
+  ctx = c;
+  try { drawBody(m, i, 0); } finally { ctx = saved; }
+}
+function drawMobile(m, i) {
+  const x = m.x, yb = m.y; // yb = feet
+  const now = performance.now() / 1000;
+  const [tc, tcd] = TEAM[m.team] || TEAM.A;
+  ctx.save();
+  ctx.translate(x, yb);
+  // lean with the ground: slope of the terrain under the wheels (islands are flat), eased so it doesn't jitter
+  const want = st ? slopeTiltAt(st.terrain, x, yb) : 0;
+  m._tilt = m._tilt == null ? want : m._tilt + (want - m._tilt) * 0.2;
+  const tilt = m._tilt;
+  ctx.rotate(tilt);
+  drawBody(m, i, tilt);
   ctx.restore();
   // name tag + rounded hp / special bars
   ctx.save();
@@ -2061,6 +2199,7 @@ function loop(t) {
   for (const c of clouds) { c.x += c.v * dt; if (c.x > VIEW_W + 80) c.x = -80; }
   updateCamera(dt);
   monitorFps(dt);
+  if (screen === 'menu' && !$('menuOv').classList.contains('hidden')) drawMenuThumbs();
   // slow motion after a K.O. (real time keeps counting down so it always ends)
   const sdt = slowmo > 0 ? dt * 0.33 : dt;
   if (slowmo > 0) slowmo = Math.max(0, slowmo - dt);
@@ -2082,11 +2221,11 @@ function toast(t, ms) {
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function showScreen(s) {
   screen = s;
+  document.body.classList.toggle('in-menu', s !== 'play');
   $('menuOv').classList.toggle('hidden', s !== 'menu');
   if (s === 'menu') {
-    $('bot-pick').classList.add('hidden'); $('bot-blurb').classList.add('hidden');
-    $('veh-pick').classList.add('hidden'); $('veh-blurb').classList.add('hidden');
-    $('btn-solo').textContent = 'Vs Bot'; refreshEconPills();
+    $('bot-pick').classList.add('hidden');
+    $('btn-solo').textContent = 'Play vs Bot'; refreshEconPills();
   }
   $('lobby').classList.toggle('hidden', s !== 'lobby');
   const inPlay = s === 'play';
@@ -2662,12 +2801,10 @@ function wireUI() {
   $('btn-joinb').onclick = () => joinRoom($('room-input').value, false);
   $('room-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom($('room-input').value, false); });
   $('btn-solo').onclick = () => {
-    if ($('bot-pick').classList.contains('hidden')) {
-      $('bot-pick').classList.remove('hidden'); $('bot-blurb').classList.remove('hidden');
-      $('veh-pick').classList.remove('hidden'); $('veh-blurb').classList.remove('hidden');
-      refreshMobilePick();
-      $('btn-solo').textContent = 'Pick a vehicle, then tap an opponent to fight ↓';
-    }
+    $('bot-pick').classList.remove('hidden');
+    refreshMobilePick();
+    $('btn-solo').textContent = 'Choose your opponent ↓';
+    $('bot-pick').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
   document.querySelectorAll('.vmobbtn').forEach(b => b.onclick = () => { myMobile = b.dataset.m; saveMobile(); refreshMobilePick(); });
   $('btn-shop').onclick = openShop;
@@ -2747,6 +2884,7 @@ function wireUI() {
 }
 
 /* ---------- boot ---------- */
+buildMenuCards();
 wireUI();
 fit();
 initDeco((Math.random() * 0x7fffffff) | 0);
