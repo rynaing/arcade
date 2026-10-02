@@ -54,6 +54,7 @@
   #hurry span{background:#d90429;color:#fff;font-weight:900;font-size:22px;padding:6px 26px;border-radius:14px;border:3px solid #fff;box-shadow:0 0 24px rgba(217,4,41,.8);animation:hpulse .5s infinite alternate}
   @keyframes hpulse{from{transform:scale(1)}to{transform:scale(1.12)}}
   #h-quit:hover{background:#7a2e2e}
+  @media(max-width:1120px){#minimap{top:62px}} /* below the HUD so it can't cover the coins chip / ✕ quit button */
   @media(max-width:700px){#minimap{width:150px;height:30px}}
   .pchip{background:#22305c;border-radius:12px;padding:6px 12px;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px}
   .dot{width:14px;height:14px;border-radius:50%;display:inline-block;border:2px solid #fff3}
@@ -69,9 +70,10 @@
   #touch{position:fixed;inset:0;z-index:8;pointer-events:none;display:none;touch-action:none}
   .tbtn{position:absolute;pointer-events:auto;touch-action:none;-webkit-touch-callout:none;width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,.16);border:3px solid rgba(255,255,255,.45);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;font-weight:900}
   .tbtn.on{background:rgba(255,209,102,.4)}
-  #rotate-hint{position:fixed;top:0;left:0;right:0;z-index:9;display:none;justify-content:center;pointer-events:none;padding-top:64px}
+  #rotate-hint{position:fixed;top:0;left:0;right:0;z-index:9;display:none;justify-content:center;pointer-events:none;padding-top:100px}
   #rotate-hint span{background:rgba(10,14,30,.88);border:2px solid #ffd166;border-radius:14px;color:#fff;font-size:14px;font-weight:bold;padding:8px 16px}
   @media (max-height:500px){#hud-inner{padding:5px 12px;font-size:13px;gap:6px}#hud-inner .t{font-size:16px;min-width:72px}#minimap{width:150px;height:30px}}
+  @media (max-width:500px){#hud-inner{padding:5px 8px;font-size:12px;gap:5px}#hud-inner .t{font-size:15px;min-width:58px}#h-track{max-width:110px;overflow:hidden;text-overflow:ellipsis}} /* portrait phones: keep the ✕ quit button on screen */
   @media (pointer:coarse){#race-chat{bottom:112px}}
   #tL{left:14px;bottom:26px}#tR{left:102px;bottom:26px}
   #tJ{right:102px;bottom:26px}#tB{right:14px;bottom:26px;background:rgba(255,150,80,.25)}
@@ -198,6 +200,7 @@ const keys={};
 let jumpQueued=false;
 addEventListener('keydown',e=>{
   if(e.repeat)return;
+  if(e.target&&e.target.tagName==='INPUT')return; // typing a name/room code: don't eat spaces or queue jumps
   const k=e.key.toLowerCase();
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)||k===' ')e.preventDefault();
   keys[k]=true;
@@ -351,6 +354,11 @@ function stepPlayer(p,dt,t){
     for(const s of t.solids){
       const push=circleRect(p.x,p.y,R,s);
       if(push&&Math.abs(push[0])>0.001){
+        if(push[1]<-0.001){ // top corner (e.g. hill→ledge seam): slide over it like a slope instead of a dead stop
+          p.x+=push[0];p.y+=push[1];const L=Math.hypot(push[0],push[1]),nx=push[0]/L,ny=push[1]/L,vn=p.vx*nx+p.vy*ny;
+          if(vn<0){p.vx-=vn*nx;p.vy-=vn*ny;}
+          continue;
+        }
         p.x+=push[0];
         if(Math.abs(p.vx)>260&&p===me)sfx.bump();
         p.vx=0;
@@ -764,7 +772,7 @@ function buildMinimap(){
   for(const y of ys){if(y!=null){if(y<mn)mn=y;if(y>mx)mx=y;}}
   if(!(mx>mn)){mn=0;mx=600;}
   if(mx-mn<150){const mid=(mx+mn)/2;mn=mid-75;mx=mid+75;}
-  const X=x=>pad+(x/maxX)*(W-2*pad),Y=y=>6+(1-(y-mn)/(mx-mn))*(H-12);
+  const X=x=>pad+(x/maxX)*(W-2*pad),Y=y=>6+((y-mn)/(mx-mn))*(H-12);
   c.strokeStyle='rgba(255,255,255,.8)';c.lineWidth=2;c.lineJoin='round';c.beginPath();
   let pen=false;
   for(let i=0;i<=n;i++){
@@ -883,7 +891,7 @@ function showTrackResults(){
   html+='</table>';
   if(S.track<TRACKS.length-1)html+=`<p>Next: <b>${TRACKS[S.track+1].name}</b> — boosts carry over! ⚡×${me.boosts}</p>`;
   else html+=`<p>Final track done — tallying the match…</p>`;
-  html+=`<br><button class="btn" id="btn-nextmap">Next Map →</button> <button class="btn alt" id="btn-tomenu">Back to Menu</button>`;
+  html+=`<br><button class="btn" id="btn-nextmap">${S.track<TRACKS.length-1?'Next Map →':'See Results →'}</button> <button class="btn alt" id="btn-tomenu">Back to Menu</button>`;
   $('results-card').innerHTML=html;$('results').style.display='flex';
   $('btn-nextmap').onclick=()=>advanceTrack();
   $('btn-tomenu').onclick=()=>quitRace();
@@ -1008,7 +1016,7 @@ function setErr(t){$('menu-err').textContent=t;}
 
 /* ================= UI wiring ================= */
 $('btn-practice').onclick=()=>{myName=($('name-input').value||'').trim().slice(0,14)||'Hamster';localStorage.setItem('hr-name',myName);S.screen='race';startMatch(true);};
-$('btn-create').onclick=()=>joinRoom(Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join(''),true);
+$('btn-create').onclick=()=>joinRoom(Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join(''),true);
 $('btn-join').onclick=()=>{$('join-row').style.display='block';$('code-input').focus();};
 $('btn-go').onclick=()=>joinRoom($('code-input').value,false);
 $('btn-leave').onclick=async()=>{await leaveRoom();location.reload();};
@@ -1027,7 +1035,7 @@ function loop(now){
     const r=S.race;
     if(r.phase==='count'){
       r.countT-=dt;
-      const n=Math.ceil(r.countT);
+      const n=Math.min(3,Math.ceil(r.countT)); // countT starts at 3.2: hold "3" a beat instead of flashing "4"
       $('count-n').textContent=n>0?n:'GO!';
       if(n!==r._lastN){r._lastN=n;if(n>0)sfx.count();else sfx.go();}
       if(r.countT<=0){r.phase='race';$('count').style.display='none';}
