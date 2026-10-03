@@ -1150,7 +1150,7 @@ function startTurn() {
     queue: turnQueue });
   onTurnUI();
   startTimer();
-  if (m.isBot) setTimeout(botFire, 1400);
+  if (m.isBot) flowTimeout(botFire, 1400);
 }
 
 function onTurnUI() {
@@ -1194,15 +1194,34 @@ function updateWeapons() {
   }
 }
 
+/* turn-flow timeouts (bot think time, hand-off to the next turn...). Chained page timers get throttled to ~1/min in
+   long-hidden tabs, so these also run from the worker ticker (see startBgTicker); due items run exactly once. */
+const flowQ = [];
+function flowTimeout(fn, ms) {
+  flowQ.push({ at: performance.now() + ms, fn });
+  setTimeout(runFlow, ms + 5);
+}
+function runFlow() {
+  const now = performance.now();
+  for (let i = 0; i < flowQ.length; i++) {
+    if (flowQ[i].at <= now) { const f = flowQ.splice(i--, 1)[0].fn; try { f(); } catch (e) { console.error(e); } }
+  }
+}
+let timerLast = 0;
+/* counts real elapsed time (not ticks): hidden tabs throttle setInterval to ~1 Hz, so a tick-count clock would crawl */
+function tickTimer() {
+  if (!timerId) return;
+  const now = performance.now();
+  timeLeft -= Math.min(5, (now - timerLast) / 1000); timerLast = now;
+  const tb = $('timer-box');
+  tb.textContent = Math.max(0, Math.ceil(timeLeft));
+  tb.classList.toggle('low', timeLeft <= 10);
+  if (timeLeft <= 0) { stopTimer(); onTimeout(); }
+}
 function startTimer() {
   stopTimer();
-  timerId = setInterval(() => {
-    timeLeft -= 0.25;
-    const tb = $('timer-box');
-    tb.textContent = Math.ceil(timeLeft);
-    tb.classList.toggle('low', timeLeft <= 10);
-    if (timeLeft <= 0) { stopTimer(); onTimeout(); }
-  }, 250);
+  timerLast = performance.now();
+  timerId = setInterval(tickTimer, 250);
 }
 function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
 
@@ -1224,7 +1243,7 @@ function passTurn() {
   Net.sendSnap({ shot: null, final: snap, thor: [] });
   applySnapState(st, snap);
   if (m) toast(m.name + ' ran out of time — turn passes', 1500);
-  setTimeout(() => onShotDone(), 700);
+  flowTimeout(() => onShotDone(), 700);
 }
 
 /* host/solo: resolve a shot, animate, broadcast */
@@ -1407,7 +1426,7 @@ function onShotDone() {
   if (st.over) return endMatch();
   if (pendingTurn) { const p = pendingTurn; pendingTurn = null; onRemoteTurn(p); return; }
   if (Net.role === 'host' || Net.role === 'solo') {
-    setTimeout(() => { if (!st.over) startTurn(); }, 900);
+    flowTimeout(() => { if (!st.over) startTurn(); }, 900);
   }
   // guests wait for host's 'turn' broadcast
 }
@@ -1433,7 +1452,7 @@ function botFire() {
     // animate bot "aiming"
     m.face = s.ang > 90 ? -1 : 1; // turn to face the shot
     m.ang = s.ang + tiltDegOf(m); // display relative to the tilted body; the shot uses the world angle
-    setTimeout(() => {
+    flowTimeout(() => {
       if (turnState !== 'aim') return;
       fireShot({ x: m.x, y: m.y, ang: s.ang, power: s.power, weapon: s.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: 2 });
     }, 700);
@@ -1479,7 +1498,7 @@ function botMove(m, done) {
     if (nfs !== (m.face || 1)) m.ang = 180 - m.ang; // turned around: barrel follows last-faced direction
     m.face = nfs;
     moveLeft = Math.max(0, moveLeft - Math.abs(s));
-    setTimeout(step, 40);
+    flowTimeout(step, 40);
   };
   step();
 }
@@ -2240,6 +2259,15 @@ function drawMinimap() {
 
 /* ---------- main loop ---------- */
 let lastT = 0;
+/* The match simulation (everything except drawing). Runs from the animation frame normally, and from a
+   background ticker when the tab is hidden: browsers pause animation frames for hidden tabs, which used
+   to freeze the match (for every online player if the host looked away). */
+function simStep(dt, sdt) {
+  if (screen === 'play' && st) {
+    pollMove(dt); pollAim(dt);
+    stepAnim(sdt); stepParticles(sdt);
+  } else stepParticles(dt);
+}
 function loop(t) {
   const dt = Math.min(0.05, (t - lastT) / 1000 || 0.016);
   lastT = t;
@@ -2250,12 +2278,27 @@ function loop(t) {
   // slow motion after a K.O. (real time keeps counting down so it always ends)
   const sdt = slowmo > 0 ? dt * 0.33 : dt;
   if (slowmo > 0) slowmo = Math.max(0, slowmo - dt);
-  if (screen === 'play' && st) {
-    pollMove(dt); pollAim(dt);
-    stepAnim(sdt); stepParticles(sdt);
-  } else stepParticles(dt);
+  simStep(dt, sdt);
+  runFlow();
   render(dt);
   requestAnimationFrame(loop);
+}
+/* background ticker: a Worker's timer isn't throttled like page timers, so it keeps the match going while hidden.
+   Visible: it only resets its clock (animation frames drive the game, no double stepping). */
+let bgLast = performance.now(), bgWorker = null;
+function startBgTicker() {
+  if (bgWorker) return;
+  try {
+    bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},50)'], { type: 'text/javascript' })));
+    bgWorker.onmessage = () => {
+      const now = performance.now();
+      if (!document.hidden) { bgLast = now; return; }
+      let dt = Math.min(1.5, (now - bgLast) / 1000); bgLast = now;
+      slowmo = 0; shake = 0; // visual only: never stretch hidden time
+      while (dt > 0.0001) { const d = Math.min(0.05, dt); simStep(d, d); dt -= d; }
+      tickTimer(); runFlow();
+    };
+  } catch (e) { bgWorker = null; }
 }
 
 /* ---------- misc UI ---------- */
@@ -2526,7 +2569,7 @@ function migrateHost() {
   if (st.over) return endMatch();
   // resume: start a fresh turn
   turnState = 'idle'; anim = null;
-  setTimeout(() => { if (!st.over && screen === 'play') startTurn(); }, 1500);
+  flowTimeout(() => { if (!st.over && screen === 'play') startTurn(); }, 1500);
   renderRoster();
 }
 
@@ -2938,6 +2981,7 @@ buildMenuCards();
 wireUI();
 fit();
 initDeco((Math.random() * 0x7fffffff) | 0);
+startBgTicker();
 requestAnimationFrame(loop);
 
 </script>
