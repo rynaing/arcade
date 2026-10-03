@@ -1112,10 +1112,10 @@ $('race-chat-in').addEventListener('keydown',e=>{e.stopPropagation();if(e.key===
 
 /* ================= main loop ================= */
 let last=performance.now(),posT=0;
-function loop(now){
-  if(window.ArcadeAudio)ArcadeAudio.music(S.screen==='race'?'race':'menu');
-  try{
-  const dt=Math.min(.033,(now-last)/1000);last=now;
+/* Simulation + netcode (no drawing). Runs from the animation frame normally, and from a Worker ticker
+   while the tab is hidden (browsers pause rAF for hidden tabs, which froze the racer and, online, made
+   them look stopped to everyone else). */
+function simStep(dt){
   if(S.screen==='race'&&S.race){
     const r=S.race;
     if(r.phase==='count'){
@@ -1142,7 +1142,15 @@ function loop(now){
       r.waitT-=dt;if(r.waitT<=0&&!r.advanced){r.advanced=true;$('results').style.display='none';advanceTrack();}
     }
     for(const id in S.remotes){const rm=S.remotes[id];const ek=Math.min(1,14*dt);rm.rx+=(rm.x-rm.rx)*ek;rm.ry+=(rm.y-rm.ry)*ek;}
-    draw(r.t,now);drawMinimap();
+  }
+}
+function loop(now){
+  if(window.ArcadeAudio)ArcadeAudio.music(S.screen==='race'?'race':'menu');
+  try{
+  const dt=Math.min(.033,(now-last)/1000);last=now;lastFrameAt=performance.now();
+  if(S.screen==='race'&&S.race){
+    simStep(dt);
+    draw(S.race.t,now);drawMinimap();
   }else{
     drawMenuScene(now);
   }
@@ -1153,6 +1161,21 @@ function loop(now){
   }
   requestAnimationFrame(loop);
 }
+/* background ticker: a Worker's timer isn't throttled like page timers, so it keeps the race going while hidden */
+let bgLast=0,bgWorker=null,lastFrameAt=0;
+function startBgTicker(){
+  if(bgWorker)return;
+  try{
+    bgWorker=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},50)'],{type:'text/javascript'})));
+    bgWorker.onmessage=()=>{
+      const now=performance.now();
+      if(!document.hidden||now-lastFrameAt<150){bgLast=now;return;}   // frames are running (visible, or a 'hidden' tab that still gets rAF): they drive the game, never double-step
+      let dt=Math.min(1.5,(now-bgLast)/1000);bgLast=now;
+      try{while(dt>0.0001){const st=Math.min(.05,dt);simStep(st);dt-=st;}}catch(err){console.error(err);}
+    };
+  }catch(e){bgWorker=null;}
+}
+startBgTicker();
 requestAnimationFrame(loop);
 // auto-fill room code from ?room= invite link
 try{
