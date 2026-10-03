@@ -12,12 +12,14 @@
 <meta property="og:url" content="https://rynaing.github.io/arcade/crumb-bound.html">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E💥%3C/text%3E%3C/svg%3E">
+<script src="arcade-art.js?v=1" defer></script>
+<script src="arcade-ui.js?v=1" data-title="Crumb Bound" data-home="./index.html" data-layout="overlay"></script>
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;height:100%;background:#1b1430;overflow:hidden;
     font-family:"Trebuchet MS","Comic Sans MS",system-ui,sans-serif;color:#fff;
     user-select:none;-webkit-user-select:none;touch-action:none}
-  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  #wrap{position:fixed;inset:var(--arc-bar,32px) 0 0 0;display:flex;align-items:center;justify-content:center}
   #game{position:relative;box-shadow:0 18px 60px rgba(0,0,0,.55);border-radius:14px;overflow:hidden}
   canvas{display:block;background:#241b45}
   .ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;justify-content:safe center;flex-direction:column;
@@ -204,7 +206,7 @@
 .wins-lb .lb-me{outline:2px solid #ffd166}.wins-lb .lb-rank{opacity:.7}.wins-lb .lb-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wins-lb .lb-score{font-weight:800}
 .wins-lb p{margin:6px 0 0;font-size:13px;text-align:center;font-weight:700}
 /* ---------- intro / menu ---------- */
-#menuOv{position:fixed;inset:0;z-index:30;overflow-y:auto;background:radial-gradient(120% 90% at 50% 0%,rgba(255,170,200,.55),rgba(140,90,200,.55) 55%,rgba(40,24,72,.88));justify-content:flex-start;padding:18px 12px}
+#menuOv{position:fixed;inset:var(--arc-bar,32px) 0 0 0;z-index:30;overflow-y:auto;background:radial-gradient(120% 90% at 50% 0%,rgba(255,170,200,.55),rgba(140,90,200,.55) 55%,rgba(40,24,72,.88));justify-content:flex-start;padding:18px 12px}
 .menu-wrap{width:100%;max-width:920px;margin:auto;display:flex;flex-direction:column;align-items:center;gap:10px}
 .hero{display:flex;align-items:flex-end;justify-content:center;gap:4px}
 .hero-thumb{width:84px;height:84px}
@@ -245,6 +247,11 @@ body.in-menu #rotateHint{display:none!important}
   .cards{grid-template-columns:repeat(2,minmax(0,1fr))}.cards.bots{grid-template-columns:repeat(2,minmax(0,1fr))}
   .card-thumb{width:80px;height:76px}
 }
+#menuOv input{background:#fff;color:var(--arc-ink);border:3px solid #ffd1e2;border-radius:999px;font-family:var(--arc-font);font-weight:800;outline:none}
+#menuOv input:focus{border-color:var(--arc-pink)}
+#menuOv input::placeholder{color:#b9a6b8}
+#menuOv .arc-presents{font-weight:800;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#ffe3ef;margin:0 0 2px;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+#rotateHint{top:var(--arc-bar,32px)}
 </style>
 </head>
 <body class="in-menu">
@@ -262,7 +269,6 @@ body.in-menu #rotateHint{display:none!important}
     <div class="hudBox" id="turn-banner">—</div>
     <div class="hudBox" id="wind-box">wind —</div>
     <div class="hudBox" id="timer-box">30</div>
-    <button class="hudBox" id="music-btn" title="Sound on/off" style="cursor:pointer">🔊</button>
     <button class="hudBox" id="quit-btn" title="Quit match" aria-label="Quit match">✕</button>
   </div>
   <div id="delayPanel" aria-label="Turn order by delay"></div>
@@ -287,6 +293,7 @@ body.in-menu #rotateHint{display:none!important}
       <div class="hero">
         <canvas class="hero-thumb" data-hero="shortcake"></canvas><canvas class="hero-thumb" data-hero="eclair"></canvas>
         <div class="hero-mid">
+          <div class="arc-presents">Ryan Cake Studios presents</div>
           <h1 class="title">CRUMB BOUND</h1>
           <p class="sub">turn-based pastry artillery · solo vs bots, 1v1 &amp; 2v2 online</p>
         </div>
@@ -324,7 +331,6 @@ body.in-menu #rotateHint{display:none!important}
       </div>
       <div class="hintline hidden" id="bot-blurb"></div>
       <p class="hintline"><kbd class="k-key">←</kbd><kbd class="k-key">→</kbd> move &amp; turn · <kbd class="k-key">↑</kbd><kbd class="k-key">↓</kbd> aim · hold <kbd class="k-key">Space</kbd><kbd class="k-touch">FIRE</kbd> to charge, release to fire · <kbd class="k-key">1</kbd><kbd class="k-key">2</kbd><kbd class="k-key">3</kbd> weapons · lighter shots act sooner · slopes tilt your cannon · weather changes the battlefield</p>
-      <a id="arcade-link" href="./index.html">&larr; Ryan Cake Studios</a>
     </div>
   </div>
 
@@ -1207,7 +1213,7 @@ function runFlow() {
     if (flowQ[i].at <= now) { const f = flowQ.splice(i--, 1)[0].fn; try { f(); } catch (e) { console.error(e); } }
   }
 }
-let timerLast = 0;
+let timerLast = 0, lastFrameAt = 0;
 /* counts real elapsed time (not ticks): hidden tabs throttle setInterval to ~1 Hz, so a tick-count clock would crawl */
 function tickTimer() {
   if (!timerId) return;
@@ -2270,7 +2276,7 @@ function simStep(dt, sdt) {
 }
 function loop(t) {
   const dt = Math.min(0.05, (t - lastT) / 1000 || 0.016);
-  lastT = t;
+  lastT = t; lastFrameAt = performance.now();
   for (const c of clouds) { c.x += c.v * dt; if (c.x > VIEW_W + 80) c.x = -80; }
   updateCamera(dt);
   monitorFps(dt);
@@ -2292,7 +2298,7 @@ function startBgTicker() {
     bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},50)'], { type: 'text/javascript' })));
     bgWorker.onmessage = () => {
       const now = performance.now();
-      if (!document.hidden) { bgLast = now; return; }
+      if (!document.hidden || now - lastFrameAt < 150) { bgLast = now; return; } // frames are running: they drive the game — never double-step
       let dt = Math.min(1.5, (now - bgLast) / 1000); bgLast = now;
       slowmo = 0; shake = 0; // visual only: never stretch hidden time
       while (dt > 0.0001) { const d = Math.min(0.05, dt); simStep(d, d); dt -= d; }
@@ -2353,7 +2359,8 @@ function endMatch() {
   Net.sendEnd({ winner: w });
 }
 function fit() {
-  const aw = window.innerWidth, ah = window.innerHeight;
+  const bar = (window.ArcadeUI && ArcadeUI.barHeight()) || 32;
+  const aw = window.innerWidth, ah = window.innerHeight - bar;
   const s = Math.min(aw / 960, ah / 540);
   const g = $('game');
   g.style.width = 960 * s + 'px'; g.style.height = 540 * s + 'px';
@@ -2886,7 +2893,6 @@ function startSolo() {
 
 /* ---------- wiring ---------- */
 function wireUI() {
-  if (window.ArcadeAudio) ArcadeAudio.bindButton($('music-btn')); // shared arcade mute (remembered across games)
   $('btn-create').onclick = () => {
     const code = Array.from({ length: 4 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[(Math.random() * 31) | 0]).join('');
     joinRoom(code, true);
