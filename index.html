@@ -66,6 +66,19 @@
   .b-solo{background:#dff3e6;color:#237a44}
   .b-party{background:#e7e0fb;color:#5740a8}
   .b-new{background:var(--pink);color:#fff}
+  .champs{max-width:980px;margin:18px auto 0;padding:0 16px}
+  .champs h2{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin:0 4px 10px}
+  .champ-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .champ{display:flex;flex-direction:column;gap:2px;min-width:0;padding:12px 14px;border-radius:18px;background:var(--card);
+        box-shadow:0 6px 18px rgba(61,52,72,.08);text-decoration:none;color:var(--ink);border:2px solid transparent;transition:transform .12s}
+  .champ[hidden]{display:none}
+  .champ:hover{transform:translateY(-2px);border-color:#ffd1e2}
+  .champ:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+  .c-game{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--pink-deep)}
+  .c-name{font-weight:800;font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .c-name::before{content:"👑 "}
+  .c-stat{font-size:.85rem;color:var(--muted)}
+  @media (max-width:700px){.champ-row{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px}.champ{flex:0 0 72%;scroll-snap-align:start}}
   .joincode{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;flex-wrap:wrap}
   .joincode label{font-weight:800;color:var(--muted);font-size:.9rem}
   .joincode input{width:96px;padding:9px 12px;border-radius:999px;border:2px solid #f1d3e2;font:inherit;font-weight:800;letter-spacing:.2em;text-transform:uppercase;text-align:center;background:#fff}
@@ -114,6 +127,16 @@
       <button type="submit">Join</button>
     </form>
   </header>
+
+  <section class="champs" id="champs" hidden aria-labelledby="champsTitle">
+    <h2 id="champsTitle">🌍 Current champions</h2>
+    <div class="champ-row">
+      <a class="champ" data-game="cake-td" data-board="classic" data-fmt="points" href="./ryans-cake-td.html" hidden><span class="c-game">Ryan&rsquo;s Cake TD</span><span class="c-name"></span><span class="c-stat"></span></a>
+      <a class="champ" data-game="crumb-bound" data-board="wins" data-fmt="wins" href="./crumb-bound.html" hidden><span class="c-game">Crumb Bound</span><span class="c-name"></span><span class="c-stat"></span></a>
+      <a class="champ" data-game="bubble-brawl" data-board="wins" data-fmt="wins" href="./bubble-brawl.html" hidden><span class="c-game">Bubble Brawl</span><span class="c-name"></span><span class="c-stat"></span></a>
+      <a class="champ" data-game="hamster-roll" data-board="meadow-dash" data-fmt="ms" href="./hamster-roll.html" hidden><span class="c-game">Hamster Roll</span><span class="c-name"></span><span class="c-stat"></span></a>
+    </div>
+  </section>
 
   <div class="layout">
     <aside class="filters" aria-label="Filter games">
@@ -317,6 +340,40 @@
   // join box: room codes are 4 letters/numbers, upper-case
   var jf=document.getElementById('joincode');
   if(jf) jf.addEventListener('submit',function(){ var i=document.getElementById('joinroom'); i.value=i.value.trim().toUpperCase(); });
+})();
+</script>
+<script src="leaderboard.js?v=2"></script>
+<script>
+/* Live #1 per game from the global leaderboard (read-only). Names are user input → textContent only. */
+(function(){
+  var strip=document.getElementById('champs'); if(!strip||!window.ArcadeBoard) return;
+  var KEY='arcade-champs', TTL=60000, TRACKS={'meadow-dash':'Meadow Dash','pogo-cliffs':'Pogo Cliffs','gusher-gulch':'Gusher Gulch','sky-steps':'Sky Steps'};
+  function cached(){ try{ var c=JSON.parse(sessionStorage.getItem(KEY)||'null'); return c&&Date.now()-c.t<TTL?c.d:null; }catch(e){ return null; } }
+  function save(d){ try{ sessionStorage.setItem(KEY,JSON.stringify({t:Date.now(),d:d})); }catch(e){} }
+  function best(game,boards){
+    return Promise.all(boards.map(function(b){ return ArcadeBoard.top(game,b,{limit:1}).then(function(rows){ return rows&&rows[0]?{board:b,row:rows[0]}:null; }); }))
+      .then(function(list){ list=list.filter(Boolean); if(!list.length) return null;
+        // time boards: lowest wins; everything else: highest
+        list.sort(function(a,b){ return game==='hamster-roll'?a.row.score-b.row.score:b.row.score-a.row.score; }); return list[0]; });
+  }
+  function paint(data){
+    var any=false;
+    strip.querySelectorAll('.champ').forEach(function(tile){
+      var d=data[tile.dataset.game]; if(!d){ tile.hidden=true; return; }
+      var r=d.row, fmt=tile.dataset.fmt, stat=ArcadeBoard.format(r.score,fmt);
+      if(fmt==='points'&&r.detail&&r.detail.waves!=null) stat+=' · wave '+r.detail.waves;
+      if(fmt==='ms') stat+=' · '+(TRACKS[d.board]||d.board);
+      tile.querySelector('.c-name').textContent=r.name;
+      tile.querySelector('.c-stat').textContent=stat;
+      tile.setAttribute('aria-label',tile.querySelector('.c-game').textContent+' champion '+r.name+', '+stat);
+      tile.hidden=false; any=true;
+    });
+    strip.hidden=!any;
+  }
+  var c=cached(); if(c){ paint(c); return; }
+  var tiles=[].slice.call(strip.querySelectorAll('.champ')), data={};
+  Promise.all(tiles.map(function(t){ return best(t.dataset.game,t.dataset.board.split(',')).then(function(r){ if(r) data[t.dataset.game]=r; }); }))
+    .then(function(){ paint(data); if(Object.keys(data).length) save(data); });
 })();
 </script>
 </body>
