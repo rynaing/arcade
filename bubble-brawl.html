@@ -188,7 +188,8 @@ async function joinRoom(code,isHost){
     ch.subscribe(st=>{if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(true);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'){done=true;clearTimeout(to);res(false);}});});
   if(!ok){setErr('Could not connect. Check your connection and retry.');return;}
   const existing=Object.values(ch.presenceState()).flat();
-  const myColor=PALETTE[existing.length%PALETTE.length];
+  const usedNow=new Set(existing.map(e=>e.color)); // first colour nobody in the room has
+  const myColor=PALETTE.find(c=>!usedNow.has(c))||PALETTE[existing.length%PALETTE.length];
   await ch.track({id:myId,name:myName,color:myColor,joinedAt:Date.now()});
   await new Promise(r=>setTimeout(r,600));
   $('menuOv').style.display='none';$('lobby').style.display='flex';S.screen='lobby';
@@ -221,7 +222,7 @@ function renderRoster(){
     const p=ps[i];
     if(p){
       const you=p.id===myId;
-      html+='<div class="pslot filled"><div class="avatar">🫧</div><div class="pdot" style="background:'+p.color+'"></div><div class="pname">'+esc(p.name)+(you?' (you)':'')+'</div>'+(isHost()&&you?'<div class="crown">👑 host</div>':'')+'</div>';
+      html+='<div class="pslot filled"><div class="avatar">🫧</div><div class="pdot" style="background:'+safeColor(p.color)+'"></div><div class="pname">'+esc(p.name)+(you?' (you)':'')+'</div>'+(isHost()&&you?'<div class="crown">👑 host</div>':'')+'</div>';
     }else{
       html+='<div class="pslot empty" data-invite="1"><div class="plus">＋</div><div class="invite">INVITE</div></div>';
     }
@@ -262,11 +263,11 @@ function hostStartMatch(){
   const ps=Object.values(S.channel.presenceState()).flat().sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,4);
   if(!ps.length)return;
   const spots=[[1,1],[COLS-2,1],[1,ROWS-2],[COLS-2,ROWS-2]].sort(()=>Math.random()-0.5);
-  const used=new Set(ps.map(p=>p.color));
   const darkFor=c=>{const i=PALETTE.indexOf(c);return i>=0?PALETTE_D[i]:'#5a6376';};
-  const defs=ps.map((p,i)=>({pid:p.id,name:p.name,color:p.color,dark:darkFor(p.color),isBot:false,isRemote:p.id!==myId,cx:spots[i][0],cy:spots[i][1]}));
-  const botPool=BOTS.filter(b=>!used.has(b.color));
-  for(let i=ps.length;i<4;i++){const b=botPool[(i-ps.length)%botPool.length];defs.push({pid:'',name:b.name,color:b.color,dark:b.dark,isBot:true,isRemote:false,cx:spots[i][0],cy:spots[i][1]});}
+  const nBots=4-ps.length;
+  const cols=assignColors(ps.map(p=>p.color).concat(BOTS.slice(0,nBots).map(b=>b.color))); // humans first, then bots
+  const defs=ps.map((p,i)=>({pid:p.id,name:p.name,color:cols[i],dark:darkFor(cols[i]),isBot:false,isRemote:p.id!==myId,cx:spots[i][0],cy:spots[i][1]}));
+  for(let i=0;i<nBots;i++){const b=BOTS[i%BOTS.length],c=cols[ps.length+i];defs.push({pid:'',name:b.name,color:c,dark:darkFor(c),isBot:true,isRemote:false,cx:spots[ps.length+i][0],cy:spots[ps.length+i][1]});}
   buildGrid();
   makePlayers(defs);
   timeLeft=MATCH_TIME;score=0;kills=0;stallTimer=-1;stallSpawnT=0;shake=0;snapT=0;
@@ -363,8 +364,16 @@ try{
 const myId='b'+Math.random().toString(36).slice(2,10);
 let myName=localStorage.getItem('bb-name')||'';
 const S={screen:'menu',room:null,channel:null,players:{},solo:true,netRole:'solo'};
-const PALETTE=['#ff7b8a','#4aa8ff','#51d88a','#b07fe8','#ffd76a','#ff9d5c','#7bed9f','#54a0ff'];
-const PALETTE_D=['#d44a5c','#2b6fd4','#2f9e5f','#7d4fc0','#c9a13b','#c96a2e','#3fae62','#c04a4a'];
+/* 8 clearly different blob colours (no near-duplicate blues/greens). Everyone in a match gets a unique one. */
+const PALETTE=['#ff7b8a','#4aa8ff','#51d88a','#b07fe8','#ffd76a','#ff9d5c','#2ed8d0','#e8e8f0'];
+const PALETTE_D=['#d44a5c','#2b6fd4','#2f9e5f','#7d4fc0','#c9a13b','#c96a2e','#1a9a94','#9a9ab0'];
+const safeColor=c=>PALETTE.includes(c)?c:'#8a93a8';          // presence data is untrusted: palette colours only
+/* unique colours for a roster: keep each player's pick when it's valid and not taken, else the next free one */
+function assignColors(wanted){
+  const taken=new Set(),out=[];
+  for(const w of wanted){ if(PALETTE.includes(w)&&!taken.has(w)){taken.add(w);out.push(w);} else out.push(null); }
+  return out.map(c=>{ if(c)return c; const f=PALETTE.find(x=>!taken.has(x))||PALETTE[0]; taken.add(f); return f; });
+}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 "use strict";
 /* ===== audio (tiny synth) ===== */
@@ -824,6 +833,87 @@ function endMatch(result){
 
 /* ===== rendering ===== */
 function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+/* ===== cute blobs: outlines, shading, big shiny eyes, blush, hats ===== */
+const INK='#3b2a4a';
+function ink(w){ctx.strokeStyle=INK;ctx.lineWidth=w||1.8;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke()}
+function ell(x,y,rx,ry,rot){ctx.beginPath();ctx.ellipse(x,y,rx,ry,rot||0,0,6.29)}
+/* one hat per colour slot, so every player in a match has their own look (and it matches on every screen).
+   Each takes the head-centre x and the head-top y. */
+const HATS=[
+ /* bow */(x,t)=>{ctx.save();ctx.translate(x+9,t+4);ctx.rotate(.35);ctx.fillStyle='#ff4f7b';
+  ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(-9,-9,-10,0);ctx.quadraticCurveTo(-9,9,0,0);ctx.fill();ink(1.5);
+  ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(9,-9,10,0);ctx.quadraticCurveTo(9,9,0,0);ctx.fill();ink(1.5);
+  ell(0,0,3,3);ctx.fillStyle='#ff9bb5';ctx.fill();ink(1.3);ctx.restore()},
+ /* beanie */(x,t)=>{ctx.beginPath();ctx.moveTo(x-13,t+8);ctx.quadraticCurveTo(x-13,t-10,x,t-10);ctx.quadraticCurveTo(x+13,t-10,x+13,t+8);ctx.closePath();ctx.fillStyle='#3d7be8';ctx.fill();ink();
+  rr(x-14,t+3,28,7,3.5);ctx.fillStyle='#a8c8ff';ctx.fill();ink(1.6);ell(x,t-12,4.6,4.6);ctx.fillStyle='#fff';ctx.fill();ink(1.5)},
+ /* sprout */(x,t)=>{ctx.strokeStyle='#4a9a3a';ctx.lineWidth=2.4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x,t+3);ctx.quadraticCurveTo(x+1,t-5,x,t-9);ctx.stroke();
+  for(const s of[-1,1]){ell(x+s*6,t-11,6.5,3.6,s*-.5);ctx.fillStyle=s<0?'#5fcf55':'#79e06a';ctx.fill();ink(1.5)}},
+ /* wizard */(x,t)=>{ell(x,t+3,15,4.2);ctx.fillStyle='#5a34a8';ctx.fill();ink(1.6);
+  ctx.beginPath();ctx.moveTo(x-10,t+3);ctx.quadraticCurveTo(x-6,t-12,x+5,t-27);ctx.quadraticCurveTo(x+7,t-10,x+10,t+3);ctx.closePath();ctx.fillStyle='#7b4fd0';ctx.fill();ink();
+  ctx.fillStyle='#ffd23f';ctx.beginPath();for(let k=0;k<10;k++){const r=k%2?1.7:4,a=k*Math.PI/5-Math.PI/2;ctx.lineTo(x-1+Math.cos(a)*r,t-9+Math.sin(a)*r)}ctx.closePath();ctx.fill();ink(1)},
+ /* crown */(x,t)=>{ctx.beginPath();ctx.moveTo(x-11,t+4);ctx.lineTo(x-11,t-9);ctx.lineTo(x-5.5,t-3);ctx.lineTo(x,t-12);ctx.lineTo(x+5.5,t-3);ctx.lineTo(x+11,t-9);ctx.lineTo(x+11,t+4);ctx.closePath();ctx.fillStyle='#ffd23f';ctx.fill();ink();
+  ell(x,t-1,2.3,2.3);ctx.fillStyle='#ff4f6e';ctx.fill();ink(1);for(const s of[-1,1]){ell(x+s*7,t,1.6,1.6);ctx.fillStyle='#6fe0ff';ctx.fill()}},
+ /* party */(x,t)=>{ctx.beginPath();ctx.moveTo(x-9,t+4);ctx.lineTo(x+1,t-21);ctx.lineTo(x+9,t+4);ctx.closePath();ctx.fillStyle='#ff9d5c';ctx.fill();ink();
+  ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-5,t-3);ctx.lineTo(x+6,t-6);ctx.moveTo(x-2,t-11);ctx.lineTo(x+3.5,t-12.5);ctx.stroke();
+  ell(x+1,t-22,3.6,3.6);ctx.fillStyle='#ffe066';ctx.fill();ink(1.4)},
+ /* cap */(x,t)=>{ctx.beginPath();ctx.moveTo(x-12,t+6);ctx.quadraticCurveTo(x-12,t-9,x,t-9);ctx.quadraticCurveTo(x+12,t-9,x+12,t+6);ctx.closePath();ctx.fillStyle='#1fb5ad';ctx.fill();ink();
+  ell(x+11,t+5,10,3.2,.08);ctx.fillStyle='#168f89';ctx.fill();ink(1.5);ell(x,t-9,2.2,2.2);ctx.fillStyle='#fff';ctx.fill();ink(1.2)},
+ /* chef */(x,t)=>{for(const[dx,dy,r]of[[-7,-3,7],[7,-3,7],[0,-8,8.5]]){ell(x+dx,t+dy,r,r);ctx.fillStyle='#fff';ctx.fill();ink(1.6)}
+  rr(x-10,t,20,7,3);ctx.fillStyle='#f4f4fb';ctx.fill();ink(1.6)},
+];
+function drawBlob(p,now){
+ const blink=p.invuln>0&&Math.floor(now*10)%2===0;
+ if(blink)ctx.globalAlpha=.35;
+ const idle=Math.sin(now*3+p.id*1.7),hop=p.moving?Math.abs(Math.sin(p.walkPh))*3:0;
+ const x=p.x,y=p.y,by=y-hop+idle*.6,r=p.r;
+ // soft shadow (shrinks while hopping) + little feet
+ ctx.fillStyle='rgba(40,20,50,.22)';ell(x,y+16,14-hop*.8,5-hop*.3);ctx.fill();
+ const step=p.moving?Math.sin(p.walkPh)*4:0;
+ for(const s of[-1,1]){ell(x+s*8,y+14+(s>0?-step:step),6,4.6);ctx.fillStyle=p.dark;ctx.fill();ink(1.5)}
+ // body, squashed a touch as it hops / breathes
+ const sq=p.moving?1+Math.cos(p.walkPh*2)*.05:1+idle*.025;
+ ctx.save();ctx.translate(x,y+15);ctx.scale(sq,1/sq);ctx.translate(-x,-(y+15));
+ ctx.beginPath();ctx.arc(x,by,r,0,6.29);ctx.fillStyle=p.dark;ctx.fill();               // rim shade
+ ctx.beginPath();ctx.arc(x-1.5,by-2,r-2,0,6.29);ctx.fillStyle=p.color;ctx.fill();      // body
+ ctx.fillStyle='rgba(255,255,255,.42)';ell(x-6,by-8,5,3.2,-.6);ctx.fill();             // shine
+ ctx.beginPath();ctx.arc(x,by,r,0,6.29);ink(2);                                         // outline
+ // face: big shiny eyes (blink), blush, cat smile; chevron eyes + frown when trapped
+ const ex=p.face*1.8,trapped=p.knocked>0,blinking=!trapped&&((now+p.id*1.3)%4)<.13;
+ for(const s of[-1,1]){
+  const cx=x+s*6.2+ex*.6;
+  if(trapped){ctx.beginPath();ctx.moveTo(x+s*9,by-5);ctx.lineTo(x+s*4,by-2);ctx.lineTo(x+s*9,by+1);ink(2.2)}
+  else if(blinking){ctx.beginPath();ctx.arc(cx,by-2,3.6,.15*Math.PI,.85*Math.PI);ink(2)}
+  else{
+   ell(cx,by-2,4.6,5.4);ctx.fillStyle='#fff';ctx.fill();ink(1.2);
+   ell(cx+ex*.7,by-1,3,3.9);ctx.fillStyle='#2b1d2e';ctx.fill();
+   ctx.fillStyle='#fff';ell(cx+ex*.7+1,by-3,1.3,1.5);ctx.fill();ell(cx+ex*.7-1,by+1,.7,.7);ctx.fill();
+  }
+ }
+ ctx.fillStyle='rgba(255,110,140,.5)';ell(x-11,by+4.5,3,2);ctx.fill();ell(x+11,by+4.5,3,2);ctx.fill();
+ if(trapped){ctx.beginPath();ctx.arc(x,by+9,2.6,Math.PI*1.1,Math.PI*1.9);ink(1.8);ctx.fillStyle='#8fd8ff';ctx.beginPath();ctx.moveTo(x+11,by);ctx.quadraticCurveTo(x+14,by+5,x+11,by+7);ctx.quadraticCurveTo(x+8,by+5,x+11,by);ctx.fill()}
+ else{ctx.beginPath();ctx.arc(x-1.5,by+5.5,2,.1*Math.PI,.9*Math.PI);ctx.moveTo(x+3.5,by+5.9);ctx.arc(x+1.5,by+5.5,2,.1*Math.PI,.9*Math.PI);ink(1.7)}
+ // this player's hat (colour slot → hat), swaying with the walk
+ const hi=Math.max(0,PALETTE.indexOf(p.color))%HATS.length,ht=by-r+1;
+ ctx.save();ctx.translate(x,ht);ctx.rotate(idle*.03+(p.moving?Math.sin(p.walkPh)*.06:0));ctx.translate(-x,-ht);
+ HATS[hi](x+ex*.4,ht);ctx.restore();
+ ctx.restore();
+ if(trapped){
+   const wob=Math.sin(now*7)*1.5,R=p.r+13;
+   const bg=ctx.createRadialGradient(p.x-8,by-10,4,p.x,by,R);
+   bg.addColorStop(0,'rgba(255,255,255,.55)');bg.addColorStop(.6,'rgba(170,225,255,.22)');bg.addColorStop(1,'rgba(120,200,255,.45)');
+   ctx.fillStyle=bg;ctx.beginPath();ctx.ellipse(p.x,by,R+wob,R-wob,0,0,7);ctx.fill();
+   ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,by,R+wob,R-wob,0,0,7);ctx.stroke();
+   ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,by,R-5,3.6,4.5);ctx.stroke(); // glint
+   // time left in the bubble
+   ctx.strokeStyle='#ffd76a';ctx.lineWidth=3.5;ctx.beginPath();ctx.arc(p.x,by,R+5,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0,p.knocked/TRAP_TIME));ctx.stroke();
+ }
+ // name tag under the feet (so hats never collide with it) + a marker over you
+ ctx.font='bold 11px sans-serif';const nm=p.name,tw=ctx.measureText(nm).width+12;
+ ctx.fillStyle='rgba(30,16,44,.62)';rr(x-tw/2,y+21,tw,14,7);ctx.fill();
+ ctx.fillStyle=p.isBot?'rgba(255,255,255,.8)':'#fff';ctx.fillText(nm,x,y+28.5);
+ if(p===mePlayer()){const mb=Math.sin(now*6)*2;ctx.fillStyle='#ffd23f';ctx.beginPath();ctx.moveTo(x,by-44+mb);ctx.lineTo(x-6,by-52+mb);ctx.lineTo(x+6,by-52+mb);ctx.closePath();ctx.fill();ink(1.4)}
+ ctx.globalAlpha=1;
+}
 function draw(){
  ctx.save();
  if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.88;if(shake<.3)shake=0}
@@ -896,41 +986,7 @@ function draw(){
   ctx.globalAlpha=1;
  }
  // players
- for(const p of players){
-  if(!p.alive)continue;
-  const blink=p.invuln>0&&Math.floor(now*10)%2===0;
-  if(blink)ctx.globalAlpha=.35;
-  const bob=p.moving?Math.sin(p.walkPh)*2.5:0;
-  const by=p.y+bob;
-  ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(p.x,p.y+16,14,5,0,0,7);ctx.fill();
-  ctx.fillStyle=p.dark;
-  const step=p.moving?Math.sin(p.walkPh)*4:0;
-  ctx.beginPath();ctx.ellipse(p.x-9,p.y+14+step,6,5,0,0,7);ctx.fill();
-  ctx.beginPath();ctx.ellipse(p.x+9,p.y+14-step,6,5,0,0,7);ctx.fill();
-  ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,by,p.r,0,7);ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,.3)';ctx.beginPath();ctx.arc(p.x-6,by-7,6,0,7);ctx.fill();
-  const ex=p.face*4;
-  if(p.knocked>0){
-   // dizzy eyes
-   ctx.strokeStyle='#1a2436';ctx.lineWidth=2;
-   for(const s of[-1,1]){
-    ctx.beginPath();ctx.arc(p.x+s*6+ex,by-4,4.2,0.6,5.7);ctx.stroke();
-   }
-   const wob=Math.sin(now*7)*1.5,R=p.r+13;
-   const bg=ctx.createRadialGradient(p.x-8,by-10,4,p.x,by,R);
-   bg.addColorStop(0,'rgba(255,255,255,.55)');bg.addColorStop(.6,'rgba(170,225,255,.22)');bg.addColorStop(1,'rgba(120,200,255,.45)');
-   ctx.fillStyle=bg;ctx.beginPath();ctx.ellipse(p.x,by,R+wob,R-wob,0,0,7);ctx.fill();
-   ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,by,R+wob,R-wob,0,0,7);ctx.stroke();
-   ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,by,R-5,3.6,4.5);ctx.stroke(); // glint
-   // time left in the bubble
-   ctx.strokeStyle='#ffd76a';ctx.lineWidth=3.5;ctx.beginPath();ctx.arc(p.x,by,R+5,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0,p.knocked/TRAP_TIME));ctx.stroke();
-  }else{
-   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x-6+ex,by-4,5.5,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+6+ex,by-4,5.5,0,7);ctx.fill();
-   ctx.fillStyle='#1a2436';ctx.beginPath();ctx.arc(p.x-6+ex*1.6,by-4,2.6,0,7);ctx.fill();ctx.beginPath();ctx.arc(p.x+6+ex*1.6,by-4,2.6,0,7);ctx.fill();
-  }
-  ctx.fillStyle=p.isBot?'rgba(255,255,255,.75)':'#fff';ctx.font='bold 12px sans-serif';ctx.fillText(p.name,p.x,by-25)
-  ctx.globalAlpha=1;
- }
+ for(const p of players){ if(!p.alive)continue; drawBlob(p,now); }
  // particles
  for(const pt of particles){
   ctx.globalAlpha=1-pt.t/pt.life;ctx.fillStyle=pt.color;
@@ -968,10 +1024,10 @@ if('ontouchstart'in window)$('touch').classList.add('on');
 
 /* ===== main loop ===== */
 let hudT=0,snapT=0;
-function loop(t){
- if(window.ArcadeAudio)ArcadeAudio.music(state==='play'?'brawl':'menu');
- requestAnimationFrame(loop);
- const dt=Math.min(.05,(t-last)/1000||.016);last=t;
+/* The match simulation (everything except drawing). Runs from the animation frame normally, and from a
+   background ticker when the tab is hidden — browsers pause animation frames for hidden tabs, which used
+   to freeze the whole match (for everyone, if the host looked away). */
+function simStep(dt){
  if(state==='play'){
   if(S.netRole==='guest'){
    sendDirIfChanged();
@@ -1001,7 +1057,27 @@ function loop(t){
    }
   }
  }
+}
+function loop(t){
+ if(window.ArcadeAudio)ArcadeAudio.music(state==='play'?'brawl':'menu');
+ requestAnimationFrame(loop);
+ const dt=Math.min(.05,(t-last)/1000||.016);last=t;
+ simStep(dt);
  draw();
+}
+/* background ticker: a Worker's timer isn't throttled like page timers, so it keeps the match going while hidden */
+let bgLast=0,bgWorker=null;
+function startBgTicker(){
+ if(bgWorker)return;
+ try{
+  bgWorker=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},50)'],{type:'text/javascript'})));
+  bgWorker.onmessage=()=>{
+   const now=performance.now();
+   if(!document.hidden){bgLast=now;return;}                 // visible: animation frames drive the game
+   let dt=Math.min(1.5,(now-bgLast)/1000);bgLast=now;
+   while(dt>0.0001){const st=Math.min(.05,dt);simStep(st);dt-=st;}
+  };
+ }catch(e){bgWorker=null;}
 }
 $('startBtn').addEventListener('click',()=>{audio();myName=($('name-input').value||'').trim().slice(0,14);try{localStorage.setItem('bb-name',myName);}catch(e){}resetMatch()});
 $('againBtn').addEventListener('click',()=>{
@@ -1018,6 +1094,7 @@ $('endMenuBtn').addEventListener('click',async()=>{
 });
 if(window.ArcadeAudio)ArcadeAudio.bindButton($('hSound'));
 buildGrid();makePlayers();updateHud();
+startBgTicker();
 requestAnimationFrame(loop);
 </script>
 </body>
