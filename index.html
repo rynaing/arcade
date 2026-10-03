@@ -79,6 +79,8 @@
   .c-name::before{content:"👑 "}
   .c-stat{font-size:.85rem;color:var(--muted)}
   @media (max-width:700px){.champ-row{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px}.champ{flex:0 0 72%;scroll-snap-align:start}}
+  .hub-cast{margin:8px auto 0;max-width:640px}
+  @media (max-width:560px){.hub-cast canvas:nth-child(n+6){display:none}}
   .joincode{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;flex-wrap:wrap}
   .joincode label{font-weight:800;color:var(--muted);font-size:.9rem}
   .joincode input{width:96px;padding:9px 12px;border-radius:999px;border:2px solid #f1d3e2;font:inherit;font-weight:800;letter-spacing:.2em;text-transform:uppercase;text-align:center;background:#fff}
@@ -102,6 +104,8 @@
     .art{flex-basis:54px;width:54px;height:54px}
   }
 </style>
+<script src="arcade-art.js?v=1" defer></script>
+<script src="arcade-ui.js?v=1" data-bar="off"></script>
 </head>
 <body>
 <div class="wrap">
@@ -121,6 +125,7 @@
     </svg>
     <h1>Ryan Cake Studios <span class="arcade">Arcade</span></h1>
     <p class="tagline">by Ryan Naing</p>
+    <div class="hub-cast" data-arc-cast="shortcake,blob0,blob1,hamster,blob4,eclair,blob3,blob6,fudge" data-size="62" aria-hidden="true"></div>
     <form class="joincode" id="joincode" action="https://rynaing.github.io/game-night/" method="get">
       <label for="joinroom">Got a room code?</label>
       <input id="joinroom" name="room" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" pattern="[A-Za-z0-9]{4}" required>
