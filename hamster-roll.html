@@ -12,6 +12,8 @@
 <meta property="og:url" content="https://rynaing.github.io/arcade/hamster-roll.html">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🐹%3C/text%3E%3C/svg%3E">
+<script src="arcade-art.js?v=1" defer></script>
+<script src="arcade-ui.js?v=1" data-title="Hamster Roll" data-home="./index.html" data-layout="overlay"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#0b1020;font-family:'Trebuchet MS','Comic Sans MS',system-ui,sans-serif;user-select:none;-webkit-user-select:none}
@@ -114,6 +116,42 @@
   .dnf{color:#ff8fa3}
   .hintline{font-size:12px;color:#8b93b8;margin-top:10px}
   kbd{background:#22305c;border-radius:6px;padding:2px 8px;border:1px solid #4a5a8a;font-family:inherit}
+/* ===== Ryan Cake Studios look (shared kit: arcade-ui.js) ===== */
+.card{background:linear-gradient(180deg,#fffdf8,#fff1f7);border:3px solid #fff;color:var(--arc-ink);font-family:var(--arc-font);box-shadow:0 6px 0 rgba(120,60,110,.30),0 14px 30px rgba(40,10,40,.35)}
+.card h1{color:#fff6e8;-webkit-text-stroke:2px #8a4a6a;paint-order:stroke fill;text-shadow:0 3px 0 #ff8fb8,0 6px 0 #b0567e,0 10px 18px rgba(60,20,60,.4);letter-spacing:.04em;text-transform:uppercase}
+.card h2{color:var(--arc-pink-deep)}
+.card p{color:#6b5a72}.card b{color:var(--arc-pink-deep)}
+.card input[type=text]{background:#fff;color:var(--arc-ink);border:3px solid #ffd1e2;border-radius:999px;font-family:var(--arc-font);font-weight:800;outline:none}
+.card input[type=text]:focus{border-color:var(--arc-pink)}
+.btn{font-family:var(--arc-font);font-weight:900;color:#fff;background:linear-gradient(180deg,#ff8fb8,var(--arc-pink-deep));border-radius:999px;box-shadow:0 5px 0 var(--arc-pink-dark),0 8px 16px rgba(60,10,40,.28);text-shadow:0 1px 0 rgba(0,0,0,.2)}
+.btn:active{box-shadow:0 1px 0 var(--arc-pink-dark)}
+.btn.alt{background:linear-gradient(180deg,#c9b6ff,var(--arc-lav-deep));box-shadow:0 5px 0 #53399e,0 8px 16px rgba(30,10,70,.28);color:#fff}
+.btn.alt:active{box-shadow:0 1px 0 #53399e}
+.err{color:#d6336c;font-weight:700}
+.hintline{color:#8a7f95}
+kbd{background:#fff;color:var(--arc-plum);border:2px solid #ffd1e2;border-bottom-width:3px;border-radius:7px}
+.lobby-title{color:#fff6e8;-webkit-text-stroke:2px #8a4a6a;paint-order:stroke fill;text-shadow:0 3px 0 #ff8fb8,0 6px 0 #b0567e;letter-spacing:.04em}
+.lobby-title span{color:#ffe9a8}.lobby-room{color:#6b5a72}.lobby-room #room-code{color:var(--arc-pink-deep)}
+.pslot,.pchip,.shop-bal,.shop-tile{background:#fff;border-color:#ffd1e2;color:var(--arc-plum)}
+.pslot.filled,.shop-tile.eq{border-color:var(--arc-pink);background:#fff0f6}
+.pslot .pname,.shop-tile .nm{color:var(--arc-plum)}
+.pslot.empty .invite,.shop-bal,.shop-msg{color:var(--arc-pink-deep)}.pslot.empty .plus{color:#c9a8b8}
+#chat-box{background:#fff;border:2px solid #ffd1e2}#chat-box div{color:var(--arc-ink)}#chat-box .sys{color:#8a7f95}
+#chat-in,#race-chat-in{background:#fff;color:var(--arc-ink);border:2px solid #ffd1e2;border-radius:999px}
+.shop-tab{background:#fff;color:var(--arc-plum);border-color:#ffd1e2;border-radius:999px;font-family:var(--arc-font)}
+.shop-tab.on{color:#fff;background:linear-gradient(180deg,#ff8fb8,var(--arc-pink-deep));border-color:var(--arc-pink-deep)}
+table.res td,table.res th{border-bottom:1px solid #ffd1e2;color:var(--arc-ink)}table.res th{color:var(--arc-pink-deep)}
+.dnf{color:#d6336c}
+.hr-world h3{color:var(--arc-pink-deep)}.hr-wl li{background:#fff0f6;color:var(--arc-plum)}.hr-wl .lb-me{outline:2px solid var(--arc-pink)}
+/* HUD + minimap: pink-framed, and below the studio bar */
+#hud{padding-top:calc(var(--arc-bar) + 8px)}
+#hud-inner{background:rgba(58,26,64,.84);border-color:var(--arc-pink)}#hud-inner .t{color:#ffe9a8}
+#minimap{top:calc(var(--arc-bar) + 10px);border-color:var(--arc-pink);background:rgba(58,26,64,.84)}
+@media(max-width:1120px){#minimap{top:calc(var(--arc-bar) + 62px)}}
+#hurry{top:calc(var(--arc-bar) + 64px)}
+#rotate-hint{padding-top:calc(var(--arc-bar) + 100px)}
+#dbg{top:calc(var(--arc-bar) + 10px)!important}
+.arc-presents{font-weight:800;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--arc-pink-deep);margin:0 0 2px}
 </style>
 </head>
 <body>
@@ -123,7 +161,7 @@
   <span class="chip" id="h-track">Track 1/4</span>
   <span class="t" id="h-time">0:45.0</span>
   <span class="chip" id="h-boost">⚡×0</span>
-  <span class="chip" id="h-coins">🪙0</span><span class="chip" id="h-sound" role="button" tabindex="0" title="Sound on/off" style="cursor:pointer">🔊</span><span class="chip" id="h-quit" title="Quit race">✕</span>
+  <span class="chip" id="h-coins">🪙0</span><span class="chip" id="h-quit" title="Quit race">✕</span>
 </div></div>
 
 <canvas id="minimap" width="240" height="48"></canvas>
@@ -134,7 +172,9 @@
 
 <div class="ov" id="menu">
   <div class="card">
-    <h1>🐹 Hamster Roll</h1>
+    <div class="arc-cast-slot" data-arc-cast="hamster,blob1,shortcake,blob4,blob6" data-size="56"></div>
+<div class="arc-presents">Ryan Cake Studios presents</div>
+<h1>🐹 Hamster Roll</h1>
     <p>A 2D ball-racing bash! Roll, <b>double-jump</b>, <b>triple-jump</b> and <b>wall-jump</b> your hamster through 4 tracks before the clock runs out. Grab ⚡ boosts — they carry over between tracks, and firing one mid-jump launches you sky-high.</p>
     <input type="text" id="name-input" maxlength="14" placeholder="Your name"><br>
     <button class="btn" id="btn-practice">🐹 Practice Solo</button><br>
@@ -147,7 +187,6 @@
     </div>
     <div class="err" id="menu-err"></div>
     <p class="hintline"><kbd>←</kbd><kbd>→</kbd> roll · <kbd>↑</kbd>/<kbd>Space</kbd> jump (again mid-air = double, again = triple) · <kbd>Shift</kbd>/<kbd>X</kbd> boost · jump against a wall to wall-jump</p>
-    <a class="arcade-link" href="./index.html">&larr; Ryan Cake Studios</a>
   </div>
 </div>
 
@@ -1281,7 +1320,6 @@ $('btn-join').onclick=()=>{$('join-row').style.display='block';$('code-input').f
 $('btn-go').onclick=()=>joinRoom($('code-input').value,false);
 $('btn-leave').onclick=async()=>{await leaveRoom();location.reload();};
 $('h-quit').onclick=quitRace;
-if(window.ArcadeAudio)ArcadeAudio.bindButton($('h-sound'));
 $('btn-start').onclick=()=>{if(S.channel)S.channel.send({type:'broadcast',event:'start',payload:{}});startMatch(false);};
 $('chat-send').onclick=()=>{const i=$('chat-in');const t=i.value.trim();if(t){sendChat(t);lobbyChat(myName,t);}i.value='';};
 $('chat-in').addEventListener('keydown',e=>{if(e.key==='Enter')$('chat-send').click();e.stopPropagation();});
