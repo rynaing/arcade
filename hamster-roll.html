@@ -666,16 +666,29 @@ const clouds=[];for(let i=0;i<8;i++)clouds.push({x:Math.random()*4000,y:40+Math.
 function draw(t,now){
   ctx.clearRect(0,0,VW,VH);
   // sky
-  const g=ctx.createLinearGradient(0,0,0,VH);g.addColorStop(0,'#7ec8f7');g.addColorStop(.7,'#bfe8ff');g.addColorStop(1,'#e8f9e0');
+  const g=ctx.createLinearGradient(0,0,0,VH);if(t.name==='Sky Steps'){g.addColorStop(0,'#4c9be8');g.addColorStop(.7,'#9fd4ff');g.addColorStop(1,'#e6f5ff');}else{g.addColorStop(0,'#7ec8f7');g.addColorStop(.7,'#bfe8ff');g.addColorStop(1,'#e8f9e0');}
   ctx.fillStyle=g;ctx.fillRect(0,0,VW,VH);
   // sun
   ctx.fillStyle='#fff6c9';ctx.beginPath();ctx.arc(830-cam.x*.02,90,42,0,7);ctx.fill();
   // clouds
   ctx.fillStyle='rgba(255,255,255,.85)';
   for(const c of clouds){const x=((c.x+now/1000*c.v)%4400)-200-cam.x*.15;cloud(x,c.y,34*c.s);}
-  // hills
-  ctx.fillStyle='#9fdc9a';
-  for(let i=0;i<6;i++){const x=i*900-cam.x*.3%5400;ctx.beginPath();ctx.ellipse(((i*900-cam.x*.3)%5400+5400)%5400-400,620,520,260,0,0,7);ctx.fill();}
+  // hills (Sky Steps swaps them for a sea of clouds so the hamster looks like it is up in the sky)
+  if(t.name==='Sky Steps'){
+    for(let layer=0;layer<3;layer++){
+      const par=.18+layer*.17, base=VH-70+layer*38, rad=70+layer*26;
+      ctx.fillStyle=['rgba(255,255,255,.55)','rgba(255,255,255,.8)','#ffffff'][layer];
+      for(let i=-1;i<VW/(rad*1.1)+2;i++){
+        const step=rad*1.1, off=((cam.x*par)%step+step)%step, x=i*step-off;
+        const bob=Math.sin(now/1500+i*1.7+layer)*5;
+        ctx.beginPath();ctx.arc(x,base+bob,rad*.8,0,7);ctx.arc(x+rad*.7,base+18+bob,rad*.6,0,7);ctx.arc(x-rad*.7,base+18+bob,rad*.6,0,7);ctx.fill();
+      }
+      ctx.fillRect(0,base+rad*.3,VW,VH);
+    }
+  } else {
+    ctx.fillStyle='#9fdc9a';
+    for(let i=0;i<6;i++){const x=i*900-cam.x*.3%5400;ctx.beginPath();ctx.ellipse(((i*900-cam.x*.3)%5400+5400)%5400-400,620,520,260,0,0,7);ctx.fill();}
+  }
   function cloud(x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.arc(x+r*1.1,y+6,r*.75,0,7);ctx.arc(x-r*1.1,y+6,r*.75,0,7);ctx.fill();}
   ctx.save();ctx.translate(-Math.round(cam.x),-Math.round(cam.y));
   // solids (crumbling platforms get their own cracked/shake/ghost render below)
