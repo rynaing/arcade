@@ -44,6 +44,13 @@
   .logo{width:84px;height:84px;margin:0 auto 10px;filter:drop-shadow(0 6px 10px rgba(224,84,139,.25))}
   h1{font-size:2.4rem;letter-spacing:-1px;color:#4a3a5e}
   h1 .arcade{color:var(--pink-deep)}
+  .intro{max-width:560px;margin:12px auto 0}
+  .intro p{margin:0}
+  .intro-lead{font-weight:800;font-size:1.05rem;color:var(--ink)}
+  .intro-sub{margin-top:4px!important;color:var(--muted);font-size:.92rem;line-height:1.5}
+  .intro-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:10px!important}
+  .intro-chips span,.intro-chips a{font-size:.75rem;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--card);border:1px solid #f1e3ea;color:var(--muted);text-decoration:none}
+  .intro-chips a{color:var(--pink-deep);border-color:var(--pink)}
   .tagline{color:var(--muted);font-size:1.02rem;margin-top:6px}
   .pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
   .pill{font-size:.78rem;font-weight:700;background:#fff;border:2px solid #f0e4d4;
@@ -127,6 +134,11 @@
     </svg>
     <h1>Ryan Cake Studios <span class="arcade">Arcade</span></h1>
     <p class="tagline">by Ryan Naing</p>
+    <div class="intro">
+      <p class="intro-lead">Free browser games for all ages, made by a one-person studio.</p>
+      <p class="intro-sub">Race hamster balls, trap rivals in water-balloon bubbles, duel with pastry tanks or defend a cake from the Gloom, solo against bots or online with friends.</p>
+      <p class="intro-chips"><span>No downloads</span><span>No sign-up</span><a href="how-to-play.html">How to play →</a></p>
+    </div>
     <div class="hub-cast" data-arc-cast="shortcake,blob0,blob1,hamster,blob4,eclair,blob3,blob6,fudge" data-size="62" aria-hidden="true"></div>
     <form class="joincode" id="joincode" action="https://rynaing.github.io/game-night/" method="get">
       <label for="joinroom">Got a room code?</label>
