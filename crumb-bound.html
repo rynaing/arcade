@@ -164,6 +164,12 @@
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,.4)}
   .itembtn .cnt{position:absolute;top:-7px;right:-7px;background:#7048e8;border-radius:50%;font-size:11px;
     font-weight:900;min-width:20px;height:20px;line-height:20px;text-align:center;padding:0 4px}
+  .itembtn .inm{display:block;font-size:10px;font-weight:800;line-height:1.1;margin-top:2px;letter-spacing:.02em;white-space:nowrap}
+  /* touch: the d-pad sits at the bottom-left where the item bar lives, so park the items top-right under the HUD */
+  @media (pointer:coarse){
+    #itemBar{left:auto;right:12px;bottom:auto;top:58px;flex-direction:column;flex-wrap:wrap-reverse;align-content:flex-start;gap:6px;max-height:150px}
+    .itembtn{padding:4px 8px;font-size:15px}.itembtn .inm{font-size:9px}
+  }
   .itembtn.armed{border-color:#ffd166;box-shadow:0 0 14px #ffd166aa;transform:translateY(-3px)}
   /* ---- power bar sheen ---- */
   #powFill{background:linear-gradient(90deg,#51cf66,#ffd166 55%,#ff6b6b);position:relative;overflow:hidden}
@@ -2723,7 +2729,7 @@ function renderItemBar() {
     const n = inv[id] || 0; if (n <= 0) continue;
     const b = document.createElement('button');
     b.className = 'itembtn' + (armedItem === id ? ' armed' : '');
-    b.innerHTML = it.icon + '<span class="cnt">' + n + '</span>';
+    b.innerHTML = it.icon + '<span class="inm">' + it.n + '</span><span class="cnt">' + n + '</span>';
     b.title = it.n + ' — ' + it.desc;
     b.onclick = () => useItem(id);
     bar.appendChild(b);
