@@ -119,7 +119,7 @@
    * Add ?adtest=1 to a page URL to see AdSense test ads.
    */
   var CF_ANALYTICS_TOKEN = '89d2ba8dbecd428bac5bca26479cf03d';
-  var ADSENSE_CLIENT = '';
+  var ADSENSE_CLIENT = 'ca-pub-5048455596508415';
   var NON_PERSONALIZED = true;
   var AD_GAP_MS = 120000;   // at most one ad break every 2 minutes
   var lastAd = 0;
@@ -133,7 +133,10 @@
     addScript('https://static.cloudflareinsights.com/beacon.min.js', { 'data-cf-beacon': JSON.stringify({ token: CF_ANALYTICS_TOKEN }) });
   if (ADSENSE_CLIENT) {
     var test = /[?&]adtest=1\b/.test(location.search);
-    addScript('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT,
+    // pages also carry Google's tag in <head> (so AdSense can verify the site); load it here only if missing
+    var tag = document.querySelector('script[src*="adsbygoogle.js"]');
+    if (tag && test) tag.setAttribute('data-adbreak-test', 'on');
+    if (!tag) addScript('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT,
       test ? { crossorigin: 'anonymous', 'data-adbreak-test': 'on' } : { crossorigin: 'anonymous' });
     window.adsbygoogle = window.adsbygoogle || [];
     if (NON_PERSONALIZED) window.adsbygoogle.requestNonPersonalizedAds = 1;
@@ -156,8 +159,11 @@
         } else if (window.PokiSDK) {
           hold(true); window.PokiSDK.commercialBreak().then(function () { done(true); }, function () { done(false); });
         } else if (ADSENSE_CLIENT) {
-          window.adBreak({ type: 'next', name: name || 'break', beforeAd: function () { hold(true); },
+          var started = false;
+          window.adBreak({ type: 'next', name: name || 'break', beforeAd: function () { started = true; hold(true); },
             adBreakDone: function (info) { done(info && info.breakStatus === 'viewed'); } });
+          // ad blockers stop Google's script from ever answering: give up quietly if no ad starts
+          setTimeout(function () { if (!started) done(false); }, 4000);
         } else done(false);
       } catch (e) { done(false); }
     });
