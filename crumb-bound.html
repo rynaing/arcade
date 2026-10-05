@@ -1068,7 +1068,7 @@ function cbLog(ev, d) {
     localStorage.setItem('cb-last-log', JSON.stringify(cbLogBuf));
   } catch (e) {}
 }
-/* Upload the finished match's log to Supabase (insert-only table, see supabase/cb_match_logs.sql). Best effort:
+/* Upload the finished match's log to Supabase (rate-limited log_cb_match() call, see supabase/cb_match_logs.sql). Best effort:
    never blocks or breaks play, runs once per match, and sends a compact payload (<= 300 events). */
 let cbLogSentFor = null;
 async function cbUploadLog(reason) {
@@ -1077,7 +1077,7 @@ async function cbUploadLog(reason) {
     cbLogSentFor = cbLogT0;
     const sb = await sbReady; if (!sb) return;
     const ev = cbLogBuf.slice(-300);
-    await sb.from('cb_match_logs').insert({ client_id: myId, role: Net.role || 'solo', reason, events: ev });
+    await sb.rpc('log_cb_match', { p_client_id: String(myId), p_role: Net.role || 'solo', p_reason: reason, p_events: ev });
   } catch (e) {}
 }
 function cbLogText() {
