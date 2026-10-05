@@ -1021,6 +1021,18 @@ function cbLog(ev, d) {
     localStorage.setItem('cb-last-log', JSON.stringify(cbLogBuf));
   } catch (e) {}
 }
+/* Upload the finished match's log to Supabase (insert-only table, see supabase/cb_match_logs.sql). Best effort:
+   never blocks or breaks play, runs once per match, and sends a compact payload (<= 300 events). */
+let cbLogSentFor = null;
+async function cbUploadLog(reason) {
+  try {
+    if (!cbLogBuf.length || cbLogSentFor === cbLogT0) return;
+    cbLogSentFor = cbLogT0;
+    const sb = await sbReady; if (!sb) return;
+    const ev = cbLogBuf.slice(-300);
+    await sb.from('cb_match_logs').insert({ client_id: myId, role: Net.role || 'solo', reason, events: ev });
+  } catch (e) {}
+}
 function cbLogText() {
   return JSON.stringify({ when: new Date().toISOString(), ua: navigator.userAgent, events: cbLogBuf }, null, 1);
 }
@@ -2353,6 +2365,7 @@ function showScreen(s) {
   if (!inPlay) { $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden'); }
 }
 function endMatch() {
+  cbLog('match-end', { winner: st && st.winner }); cbUploadLog('end');
   stopTimer(); turnState = 'idle';
   $('hud').classList.add('hidden'); $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden');
   const w = st.winner;
@@ -2725,6 +2738,7 @@ function sendGameChat() {
 }
 
 async function leaveRoom() {
+  if (st && !st.over) { cbLog('left-mid-match', {}); cbUploadLog('left'); }
   try { if (Net.channel) await Net.channel.unsubscribe(); } catch (e) {}
   Net.channel = null; Net.room = null; Net.role = 'solo';
   stopTimer(); st = null; turnState = 'idle'; anim = null;
