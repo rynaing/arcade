@@ -2,7 +2,7 @@
 
 A kid-friendly hub of free party and solo games — no sign-up, no ads, just pick a game and play.
 
-Live at https://rynaing.github.io/arcade/ · Free forever · Kid-friendly
+Live at https://cakecade.com/ · Free forever · Kid-friendly
 
 ## Games
 
