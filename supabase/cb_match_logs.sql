@@ -16,6 +16,8 @@ drop policy if exists "anon can insert match logs" on public.cb_match_logs;
 create policy "anon can insert match logs"
   on public.cb_match_logs for insert to anon, authenticated
   with check (true);
+-- Row-level security only filters rows; the role also needs the table privilege itself (without it the insert fails with 401 / 42501).
+grant insert on public.cb_match_logs to anon, authenticated;
 -- no select/update/delete policies on purpose: the table is write-only from the browser.
 
 create index if not exists cb_match_logs_created_at_idx on public.cb_match_logs (created_at);
