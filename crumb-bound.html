@@ -130,6 +130,7 @@
   .wbtn svg{flex:none;display:block}
   .wbtn.sel{border-color:#ffd166}
   .wbtn.ssready{border-color:#e599f7;box-shadow:0 0 10px #e599f799}
+  .wbtn.locked{opacity:.55}
   .wbtn:disabled{opacity:.4}
   #powWrap{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;width:280px;z-index:10;pointer-events:none}
   #game{container-type:inline-size}
@@ -423,26 +424,31 @@ function buildOpener(mobiles, rnd) {
   for (let k = 0; k < n; k++) for (const arr of seq) if (k < arr.length) out.push(arr[k]);
   return out;
 }
-/* lowest accumulated delay acts next (ties -> lower index) */
-function pickNext(st) {
-  if (st.turnIdx < st.opener.length) { const i = st.opener[st.turnIdx]; if (st.mobiles[i] && st.mobiles[i].alive) return i; }
+/* Turn order: teams always alternate (after you shoot, the other team goes next, whatever you fired).
+   Within a team the player who acted longest ago goes first (ties -> lower index). */
+function nextAlternating(mobiles, lastActed, prevIdx) {
+  const prevTeam = prevIdx >= 0 && mobiles[prevIdx] ? mobiles[prevIdx].team : null;
+  let pool = [];
+  for (let i = 0; i < mobiles.length; i++) if (mobiles[i].alive && mobiles[i].team !== prevTeam) pool.push(i);
+  if (!pool.length) for (let i = 0; i < mobiles.length; i++) if (mobiles[i].alive) pool.push(i);
   let best = -1;
-  for (let i = 0; i < st.mobiles.length; i++) {
-    if (!st.mobiles[i].alive) continue;
-    if (best < 0 || st.delays[i] < st.delays[best] || (st.delays[i] === st.delays[best] && i < best)) best = i;
-  }
+  for (const i of pool) if (best < 0 || lastActed[i] < lastActed[best]) best = i;
   return best;
 }
-/* preview of upcoming turns (assumes passes) for the HUD */
+function pickNext(st) {
+  if (st.turnIdx < st.opener.length) { const i = st.opener[st.turnIdx]; if (st.mobiles[i] && st.mobiles[i].alive) return i; }
+  return nextAlternating(st.mobiles, st.lastActed, activeIdx);
+}
+/* preview of upcoming turns for the HUD */
 function queuePreview(st, n) {
-  const ds = st.delays.slice(), out = [];
-  let tc = st.turnIdx + 1;
+  const la = st.lastActed.slice(), out = [];
+  let tc = st.turnIdx + 1, prev = st.turnIdx >= 0 ? activeIdx : -1;
   for (let k = 0; k < n; k++) {
     let idx = -1;
     if (tc < st.opener.length && st.mobiles[st.opener[tc]] && st.mobiles[st.opener[tc]].alive) idx = st.opener[tc];
-    else for (let i = 0; i < st.mobiles.length; i++) { if (!st.mobiles[i].alive) continue; if (idx < 0 || ds[i] < ds[idx]) idx = i; }
+    else idx = nextAlternating(st.mobiles, la, prev);
     if (idx < 0) break;
-    out.push(idx); ds[idx] += DELAY_COST.pass; tc++;
+    out.push(idx); la[idx] = tc; prev = idx; tc++;
   }
   return out;
 }
@@ -985,7 +991,7 @@ function botAim(st, meIdx) {
 function snapState(st) {
   return {
     terrain: Array.from(st.terrain, v => Math.round(v * 10) / 10),
-    mobiles: st.mobiles.map(m => ({ x: Math.round(m.x * 10) / 10, y: Math.round(m.y * 10) / 10, hp: m.hp, ss: Math.round(m.ss), alive: m.alive, ang: m.ang, face: m.face })),
+    mobiles: st.mobiles.map(m => ({ x: Math.round(m.x * 10) / 10, y: Math.round(m.y * 10) / 10, hp: m.hp, ss: Math.round(m.ss), cd1: m.cd1 || 0, alive: m.alive, ang: m.ang, face: m.face })),
     islands: st.islands.map(o => ({ x: o.x, y: o.y, w: o.w, h: o.h })),
     theme: st.theme || 'meadow',
     turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, over: st.over, winner: st.winner,
@@ -1091,7 +1097,7 @@ function newMatch(seed, defs) {
   const xs = spawnPositions(defs);
   const islands = genIslands(seed, terrain);
   st = { seed, terrain, mobiles: [], turnIdx: -1, wind: 0, sudden: false, over: false, winner: null,
-    delays: defs.map(() => 0), opener: [], wcur: 'calm', wnext: 'calm', win: defs.length,
+    delays: defs.map(() => 0), lastActed: defs.map(() => -1), opener: [], wcur: 'calm', wnext: 'calm', win: defs.length,
     thorX: -1, thorLevel: 0, thorDmg: 0, forceX: -1,
     islands, theme: ['meadow', 'sunset', 'night'][(seed >>> 0) % 3], dualLeft: 0, dualPlus: false };
   defs.forEach((d, i) => {
@@ -1131,6 +1137,7 @@ function startTurn() {
   st.turnIdx++;
   activeIdx = pickNext(st);
   if (activeIdx < 0 || !st.mobiles[activeIdx]) return; // no one left; checkWin covers
+  st.lastActed[activeIdx] = st.turnIdx;
   const m = st.mobiles[activeIdx];
   m.ang = m.team === 'A' ? 45 : 135;
   // wind: gentle + predictable. New target every 3rd turn (capped at ±14 mph),
@@ -1180,15 +1187,17 @@ function onTurnUI() {
   $('powWrap').classList.toggle('hidden', !mine);
   renderItemBar();
 }
-/* turn order by delay: lowest delay acts next; bar length = how far behind the leader */
+/* HUD: who is up now and who follows (teams alternate) */
 function renderDelayPanel() {
-  const el = $('delayPanel'); if (!el || !st || !st.delays) return;
-  const rows = st.mobiles.map((m, i) => ({ m, i, d: st.delays[i] || 0 })).filter(r => r.m.alive).sort((a, b) => a.d - b.d || a.i - b.i);
-  if (!rows.length) { el.innerHTML = ''; return; }
-  const min = rows[0].d, span = Math.max(1, rows[rows.length - 1].d - min);
-  el.innerHTML = '<div class="dp-h">TURN ORDER · delay</div>' + rows.map(r =>
-    '<div class="dp-r' + (r.i === activeIdx ? ' on' : '') + '"><span class="dp-n" style="color:' + (r.m.team === 'A' ? '#74c0fc' : '#ff8787') + '">' +
-    (r.i === activeIdx ? '▶ ' : '') + esc(r.m.name) + '</span><span class="dp-b"><i style="width:' + Math.round(8 + 92 * (r.d - min) / span) + '%"></i></span><span class="dp-v">+' + Math.round(r.d - min) + '</span></div>').join('');
+  const el = $('delayPanel'); if (!el || !st) return;
+  const ids = [];
+  for (const i of [activeIdx].concat(turnQueue || [])) if (st.mobiles[i] && !ids.includes(i) && (i === activeIdx || st.mobiles[i].alive)) ids.push(i);
+  if (!ids.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="dp-h">TURN ORDER</div>' + ids.slice(0, 4).map((i, k) => {
+    const m = st.mobiles[i];
+    return '<div class="dp-r' + (k === 0 ? ' on' : '') + '"><span class="dp-n" style="color:' + (m.team === 'A' ? '#74c0fc' : '#ff8787') + '">' +
+      (k === 0 ? '▶ ' : (k + '. ')) + esc(m.name) + '</span><span class="dp-b"></span><span class="dp-v">' + (k === 0 ? 'now' : 'next') + '</span></div>';
+  }).join('');
 }
 function updateWind() {
   const w = st.wind, dir = w === 0 ? '' : (w > 0 ? ' →' : ' ←');
@@ -1200,10 +1209,16 @@ function updateWeapons() {
   const def = MOBILES[m.mobile];
   for (let i = 0; i < 3; i++) {
     const b = $('w' + i);
-    b.innerHTML = (WPN_ICON[def.w[i].kind] || '') + '<span>' + (i + 1) + ' · ' + def.w[i].n + '</span><small class="dly" title="Delay: bigger shots push your next turn later">⏱' + DELAY_COST[i] + '</small>';
+    b.innerHTML = (WPN_ICON[def.w[i].kind] || '') + '<span>' + (i + 1) + ' · ' + def.w[i].n + '</span><small class="dly" title="Shell is always ready. Twin rests one turn after use. The special charges by dealing and taking damage, and by a third each turn you fire.">…</small>';
     b.classList.toggle('sel', aim.weapon === i);
     b.classList.toggle('ssready', i === 2 && m.ss >= SS_NEED);
-    b.disabled = (i === 2 && m.ss < SS_NEED) || !isMyTurn();
+    const locked = (i === 1 && (m.cd1 || 0) > 0) || (i === 2 && m.ss < SS_NEED);
+    b.classList.toggle('locked', locked);
+    b.disabled = locked || !isMyTurn();
+    const dl = b.querySelector('.dly');
+    if (dl) dl.textContent = i === 0 ? 'always ready' : i === 1 ? ((m.cd1 || 0) > 0 ? '🔒 recharging' : 'then rests 1 turn') : (m.ss >= SS_NEED ? '★ charged' : Math.round(100 * m.ss / SS_NEED) + '% charged');
+    const pct = Math.min(100, Math.round(100 * m.ss / SS_NEED));
+    b.style.backgroundImage = i === 2 ? 'linear-gradient(90deg,rgba(229,153,247,.5) ' + pct + '%,transparent ' + pct + '%)' : '';
   }
 }
 
@@ -1287,7 +1302,12 @@ function fireShot(shot) {
     const taken = Math.max(0, pre.mobiles[i].hp - m.hp) - (res.thorDmgByVictim[i] || 0);
     if (taken > 0) m.ss = Math.min(SS_NEED, m.ss + taken * 0.5 * ssMul);
   });
-  if (shot.weapon === 2 && src) src.ss = 0;
+  if (src) {
+    if ((src.cd1 || 0) > 0) src.cd1--;                 // Twin's rest turn is over
+    if (shot.weapon === 1) src.cd1 = 1;                // Twin: rests the next time this player acts
+    if (shot.weapon === 2) src.ss = 0;                 // special spent
+    else src.ss = Math.min(SS_NEED, src.ss + 34);      // special also recharges ~1/3 per turn fired (full in ~3 turns)
+  }
   // delay cost: weapon + time spent aiming
   { const me0 = m0 && m0.pid === myId;
     const hgm = m0 ? gearOf(m0).delay : 0;
@@ -1467,6 +1487,8 @@ function botFire() {
     m.ang = s.ang + tiltDegOf(m); // display relative to the tilted body; the shot uses the world angle
     flowTimeout(() => {
       if (turnState !== 'aim') return;
+      if (s.weapon === 1 && (m.cd1 || 0) > 0) s.weapon = 0;
+      if (s.weapon === 2 && m.ss < SS_NEED) s.weapon = 0;
       fireShot({ x: m.x, y: m.y, ang: s.ang, power: s.power, weapon: s.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: 2 });
     }, 700);
   });
@@ -1527,6 +1549,7 @@ window.addEventListener('keydown', e => {
   if (e.key === '1' || e.key === '2' || e.key === '3') {
     const w = +e.key - 1;
     const m = activeMobile();
+    if (w === 1 && (m.cd1 || 0) > 0) { toast('Twin is recharging — back next turn'); return; }
     if (w === 2 && m.ss < SS_NEED) { toast('SS not charged yet!'); return; }
     aim.weapon = w; updateWeapons(); SND('select');
   }
@@ -2531,6 +2554,7 @@ async function joinRoom(code, asHost) {
     const m = st.mobiles[activeIdx];
     // validate: move budget + SS charge
     if (Math.abs(payload.x - turnStartX) > moveBudgetOf(m) + 2) payload.x = turnStartX;
+    if (payload.weapon === 1 && (m.cd1 || 0) > 0) payload.weapon = 0;
     if (payload.weapon === 2 && m.ss < SS_NEED) payload.weapon = 0;
     if (payload.item && payload.weapon === 2) payload.item = null; // OG: no items with SS
     m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); m.ang = payload.ang; if (payload.face) m.face = payload.face;
@@ -2943,6 +2967,7 @@ function wireUI() {
   for (let i = 0; i < 3; i++) $('w' + i).onclick = () => {
     if (!isMyTurn()) return;
     const m = activeMobile();
+    if (i === 1 && (m.cd1 || 0) > 0) { toast('Twin is recharging — back next turn'); return; }
     if (i === 2 && m.ss < SS_NEED) { toast('SS not charged yet!'); return; }
     aim.weapon = i; updateWeapons();
   };
