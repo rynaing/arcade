@@ -10,10 +10,11 @@
 <meta property="og:title" content="Crumb Bound">
 <meta property="og:description" content="Turn-based artillery duels with pastry tanks — aim, ride the wind, and crumble the other team.">
 <meta property="og:url" content="https://rynaing.github.io/arcade/crumb-bound.html">
+<link rel="canonical" href="https://rynaing.github.io/arcade/crumb-bound.html">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E💥%3C/text%3E%3C/svg%3E">
 <script src="arcade-art.js?v=1" defer></script>
-<script src="arcade-ui.js?v=1" data-title="Crumb Bound" data-home="./index.html" data-layout="overlay"></script>
+<script src="arcade-ui.js?v=2" data-title="Crumb Bound" data-home="./index.html" data-layout="overlay"></script>
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;height:100%;background:#1b1430;overflow:hidden;
@@ -401,7 +402,7 @@ body.in-menu #rotateHint{display:none!important}
 </div>
 </div>
 <script src="leaderboard.js?v=2"></script>
-<script src="arcade-audio.js?v=1"></script>
+<script src="arcade-audio.js?v=2"></script>
 <script type="module">
 /* ================= Crumb Bound core sim (pure logic, no DOM) ================= */
 'use strict';
@@ -2454,6 +2455,7 @@ function endMatch() {
   if (Net.role === 'solo' && window.ArcadeBoard) ArcadeBoard.winBoard({ game: 'crumb-bound', won: !!won, name: myName, placeholder: /^player$/i, list: $('wl-list'), note: $('wl-note') });
   $('end-sub').textContent = sub + '  +' + gg + ' 🪙';
   $('endOv').classList.remove('hidden');
+  if (Net.role === 'solo' && window.ArcadeUI && ArcadeUI.adBreak) ArcadeUI.adBreak('cb-match-over');
   Net.sendEnd({ winner: w });
 }
 function fit() {

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://rynaing.github.io/arcade/sitemap.xml
