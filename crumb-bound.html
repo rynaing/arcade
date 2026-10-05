@@ -529,6 +529,14 @@ function saveEcon() {
   store.set('cb-gear-owned', gearOwned); store.set('cb-gear-equipped', gearEquipped); store.set('cb-wins', wins);
 }
 function loadoutSlots() { return loadout.reduce((a, id) => a + (ITEMS[id] ? ITEMS[id].slots : 0), 0); }
+/* welcome gift: everyone gets one free Teleport and one Band-Aid (once), equipped if there's room, so they are easy to find and try */
+if (!store.get('cb-tp-gift', false)) {
+  for (const id of ['teleport', 'bandaid']) {
+    inv[id] = (inv[id] || 0) + 1;
+    if (!loadout.includes(id) && loadoutSlots() + ITEMS[id].slots <= 6) loadout.push(id);
+  }
+  store.set('cb-tp-gift', true); saveEcon();
+}
 /* gear bonuses for ANY player: each mobile carries its owner's equipped gear (sent in
    the match defs), so every client applies everyone's gear identically. */
 function gearOf(m) { return gearStatsOf(m && m.gear); }
