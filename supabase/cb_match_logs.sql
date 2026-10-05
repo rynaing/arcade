@@ -16,6 +16,8 @@ drop policy if exists "anon can insert match logs" on public.cb_match_logs;
 create policy "anon can insert match logs"
   on public.cb_match_logs for insert to anon, authenticated
   with check (true);
+-- Row-level security only filters rows; the role also needs the table privilege itself (without it the insert fails with 401 / 42501).
+grant insert on public.cb_match_logs to anon, authenticated;
 -- no select/update/delete policies on purpose: the table is write-only from the browser.
 
 create index if not exists cb_match_logs_created_at_idx on public.cb_match_logs (created_at);
@@ -35,3 +37,10 @@ revoke all on function public.cb_prune_match_logs() from public, anon, authentic
 
 -- Schedule it daily (needs the pg_cron extension: Database > Extensions > pg_cron). Uncomment after enabling:
 -- select cron.schedule('cb-prune-match-logs', '17 3 * * *', $$select public.cb_prune_match_logs();$$);
+
+-- Hardening (run once, after the table exists): cap how large a single log row can be (~64 KB of JSON),
+-- so one client can't fill the free tier with oversized payloads. Normal logs are a few KB.
+alter table public.cb_match_logs
+  drop constraint if exists cb_match_logs_events_size;
+alter table public.cb_match_logs
+  add constraint cb_match_logs_events_size check (pg_column_size(events) <= 65536);
