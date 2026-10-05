@@ -16,7 +16,7 @@ Live at https://rynaing.github.io/arcade/ · Free forever · Kid-friendly
 | **Ryan's Cake TD** (`ryans-cake-td.html`) | Solo | Tower defense: survive 10 waves, then endless |
 
 **Game Night** (party games for the big screen, hosted in the [game-night](https://github.com/rynaing/game-night) repo):
-Trivia, Anagrams, Most Likely To, Math Sprint, Guesstimate and Common Threads (party or solo).
+Trivia, Most Likely To, Math Sprint, Guesstimate and Common Threads (party or solo).
 Each has its own card here and opens straight into that game (`game-night/?game=<key>`); the hub's
 **Game Night** filter lists them and the "Got a room code?" box joins a room.
 
