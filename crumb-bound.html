@@ -63,6 +63,12 @@
   .pslot.teamA{border-color:#4dabf7}.pslot.teamB{border-color:#ff8787}
   .pslot.me{outline:2px solid #ffd166}
   .crown{font-size:11px;color:#ffd166}
+  .pslot.ready{background:#1d4b35;border-color:#7bed9f;box-shadow:0 0 0 3px rgba(123,237,159,.35),0 0 18px rgba(123,237,159,.45)}
+  .pslot .rdybadge{margin-top:2px;font-weight:900;font-size:13px;letter-spacing:.04em;border-radius:999px;padding:3px 12px}
+  .pslot .rdybadge.on{background:#7bed9f;color:#0e3a24}
+  .pslot .rdybadge.off{background:rgba(255,255,255,.08);color:#9d8fd0;font-weight:800}
+  .rdybtn{font-weight:900}
+  .rdybtn.sel{background:#2f9e5f;border-color:#7bed9f;box-shadow:0 0 14px rgba(123,237,159,.6)}
   .pickRow{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap;justify-content:center}
   .pickRow .lbl{font-size:13px;color:#c6d8f2;font-weight:800}
   .mobbtn,.vmobbtn,.teambtn,.rdybtn{font-family:inherit;border:2px solid #4a3f7a;background:#241b45;color:#fff;border-radius:10px;
@@ -130,6 +136,7 @@
   .wbtn svg{flex:none;display:block}
   .wbtn.sel{border-color:#ffd166}
   .wbtn.ssready{border-color:#e599f7;box-shadow:0 0 10px #e599f799}
+  .wbtn.locked{opacity:.55}
   .wbtn:disabled{opacity:.4}
   #powWrap{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;width:280px;z-index:10;pointer-events:none}
   #game{container-type:inline-size}
@@ -164,6 +171,12 @@
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,.4)}
   .itembtn .cnt{position:absolute;top:-7px;right:-7px;background:#7048e8;border-radius:50%;font-size:11px;
     font-weight:900;min-width:20px;height:20px;line-height:20px;text-align:center;padding:0 4px}
+  .itembtn .inm{display:block;font-size:10px;font-weight:800;line-height:1.1;margin-top:2px;letter-spacing:.02em;white-space:nowrap}
+  /* touch: the d-pad sits at the bottom-left where the item bar lives, so park the items top-right under the HUD */
+  @media (pointer:coarse){
+    #itemBar{left:auto;right:12px;bottom:auto;top:58px;flex-direction:column;flex-wrap:wrap-reverse;align-content:flex-start;gap:6px;max-height:150px}
+    .itembtn{padding:4px 8px;font-size:15px}.itembtn .inm{font-size:9px}
+  }
   .itembtn.armed{border-color:#ffd166;box-shadow:0 0 14px #ffd166aa;transform:translateY(-3px)}
   /* ---- power bar sheen ---- */
   #powFill{background:linear-gradient(90deg,#51cf66,#ffd166 55%,#ff6b6b);position:relative;overflow:hidden}
@@ -228,6 +241,9 @@
 .hero-thumb,.card-thumb{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0}
 .card-thumb{width:96px;height:92px;background:radial-gradient(closest-side,rgba(255,182,213,.75),rgba(255,182,213,0))!important}
 .vcard.vmobbtn,.vcard.vmobbtn.sel,.bcard.botbtn,.bcard.botbtn.sel{background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,240,248,.94));color:#4a2c45;font-size:inherit;min-width:0;min-height:0}
+.vcard.mobbtn,.vcard.mobbtn.sel{background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,240,248,.94));color:#4a2c45;font-size:inherit;min-width:0;min-height:0}
+#lobby .lobby-card{width:880px}
+#lobby .vcard{padding:8px 6px 10px}#lobby .card-thumb{width:72px;height:70px}#lobby .card-name{font-size:15px}#lobby .procon,#lobby .shots{font-size:10.5px}
 .vcard.vmobbtn.sel{border-color:#ff6b9a;box-shadow:0 4px 0 #e64980,0 8px 22px rgba(230,73,128,.45)}
 .card-name{font-weight:900;font-size:17px}
 .card-role{font-size:12px;font-weight:800;color:#c2255c;text-transform:uppercase;letter-spacing:.06em}
@@ -352,12 +368,13 @@ body.in-menu #rotateHint{display:none!important}
       <div class="lobby-title">Lobby</div>
       <div class="lobby-room">Room <span id="room-code"></span> <button class="mini" id="btn-copy">copy invite</button></div>
       <div id="roster"></div>
-      <div class="pickRow"><span class="lbl">Mobile:</span>
-        <button class="mobbtn" data-m="shortcake">🍰 Shortcake</button>
-        <button class="mobbtn" data-m="eclair">🥖 Éclair</button>
-        <button class="mobbtn" data-m="meringue">🍦 Meringue</button>
-        <button class="mobbtn" data-m="fudge">🍫 Fudge</button>
-<button class="mobbtn" data-m="random">🎲 Random</button>
+      <div class="pickRow"><span class="lbl">Pick your vehicle:</span></div>
+      <div class="cards lobby-cards">
+        <button class="vcard mobbtn" data-m="shortcake"></button>
+        <button class="vcard mobbtn" data-m="eclair"></button>
+        <button class="vcard mobbtn" data-m="meringue"></button>
+        <button class="vcard mobbtn" data-m="fudge"></button>
+        <button class="vcard mobbtn" data-m="random"></button>
       </div>
       <div class="hintline" id="mob-blurb"></div>
       <div class="pickRow"><span class="lbl">Team:</span>
@@ -418,26 +435,31 @@ function buildOpener(mobiles, rnd) {
   for (let k = 0; k < n; k++) for (const arr of seq) if (k < arr.length) out.push(arr[k]);
   return out;
 }
-/* lowest accumulated delay acts next (ties -> lower index) */
-function pickNext(st) {
-  if (st.turnIdx < st.opener.length) { const i = st.opener[st.turnIdx]; if (st.mobiles[i] && st.mobiles[i].alive) return i; }
+/* Turn order: teams always alternate (after you shoot, the other team goes next, whatever you fired).
+   Within a team the player who acted longest ago goes first (ties -> lower index). */
+function nextAlternating(mobiles, lastActed, prevIdx) {
+  const prevTeam = prevIdx >= 0 && mobiles[prevIdx] ? mobiles[prevIdx].team : null;
+  let pool = [];
+  for (let i = 0; i < mobiles.length; i++) if (mobiles[i].alive && mobiles[i].team !== prevTeam) pool.push(i);
+  if (!pool.length) for (let i = 0; i < mobiles.length; i++) if (mobiles[i].alive) pool.push(i);
   let best = -1;
-  for (let i = 0; i < st.mobiles.length; i++) {
-    if (!st.mobiles[i].alive) continue;
-    if (best < 0 || st.delays[i] < st.delays[best] || (st.delays[i] === st.delays[best] && i < best)) best = i;
-  }
+  for (const i of pool) if (best < 0 || lastActed[i] < lastActed[best]) best = i;
   return best;
 }
-/* preview of upcoming turns (assumes passes) for the HUD */
+function pickNext(st) {
+  if (st.turnIdx < st.opener.length) { const i = st.opener[st.turnIdx]; if (st.mobiles[i] && st.mobiles[i].alive) return i; }
+  return nextAlternating(st.mobiles, st.lastActed, activeIdx);
+}
+/* preview of upcoming turns for the HUD */
 function queuePreview(st, n) {
-  const ds = st.delays.slice(), out = [];
-  let tc = st.turnIdx + 1;
+  const la = st.lastActed.slice(), out = [];
+  let tc = st.turnIdx + 1, prev = st.turnIdx >= 0 ? activeIdx : -1;
   for (let k = 0; k < n; k++) {
     let idx = -1;
     if (tc < st.opener.length && st.mobiles[st.opener[tc]] && st.mobiles[st.opener[tc]].alive) idx = st.opener[tc];
-    else for (let i = 0; i < st.mobiles.length; i++) { if (!st.mobiles[i].alive) continue; if (idx < 0 || ds[i] < ds[idx]) idx = i; }
+    else idx = nextAlternating(st.mobiles, la, prev);
     if (idx < 0) break;
-    out.push(idx); ds[idx] += DELAY_COST.pass; tc++;
+    out.push(idx); la[idx] = tc; prev = idx; tc++;
   }
   return out;
 }
@@ -530,6 +552,14 @@ function saveEcon() {
   store.set('cb-gear-owned', gearOwned); store.set('cb-gear-equipped', gearEquipped); store.set('cb-wins', wins);
 }
 function loadoutSlots() { return loadout.reduce((a, id) => a + (ITEMS[id] ? ITEMS[id].slots : 0), 0); }
+/* welcome gift: everyone gets one free Teleport and one Band-Aid (once), equipped if there's room, so they are easy to find and try */
+if (!store.get('cb-tp-gift', false)) {
+  for (const id of ['teleport', 'bandaid']) {
+    inv[id] = (inv[id] || 0) + 1;
+    if (!loadout.includes(id) && loadoutSlots() + ITEMS[id].slots <= 6) loadout.push(id);
+  }
+  store.set('cb-tp-gift', true); saveEcon();
+}
 /* gear bonuses for ANY player: each mobile carries its owner's equipped gear (sent in
    the match defs), so every client applies everyone's gear identically. */
 function gearOf(m) { return gearStatsOf(m && m.gear); }
@@ -549,6 +579,22 @@ function rankFor(w) { let r = RANKS[0][1]; for (const [n, name] of RANKS) if (w 
 function maxHpOf(m) { return m.hpMax != null ? m.hpMax : MOBILES[m.mobile].hp; }
 function moveBudgetOf(m) { return MOBILES[m.mobile].move + gearOf(m).move; }
 function climbOf(m) { return 30 + gearOf(m).climb; }
+/* Craters leave near-vertical walls, so a vehicle can end up in a pit it can't walk out of.
+   A step over a wall taller than the climb limit is normally refused; but when walls block BOTH
+   ways within ~200px the vehicle is boxed in, so let it scramble over the wall instead of being stuck. */
+function boxedIn(t, m) {
+  const lim = climbOf(m), c0 = Math.max(0, Math.min(COLS - 1, Math.floor(m.x / COLW)));
+  const freeDir = (dr) => {
+    for (let c = c0, n = 0; n < 50; n++) {
+      const nc = c + dr;
+      if (nc < 2 || nc > COLS - 3) return true;
+      if (Math.abs(t[nc] - t[c]) > lim) return false;
+      c = nc;
+    }
+    return true;
+  };
+  return !freeDir(-1) && !freeDir(1);
+}
 function trueRangeOf(m) { const t = MOBILES[m.mobile].ta; const e = gearOf(m).ta; return [t[0] - e, t[1] + e]; }
 
 /* Thumbnails for the weapon bar: one tiny SVG per projectile kind */
@@ -980,7 +1026,7 @@ function botAim(st, meIdx) {
 function snapState(st) {
   return {
     terrain: Array.from(st.terrain, v => Math.round(v * 10) / 10),
-    mobiles: st.mobiles.map(m => ({ x: Math.round(m.x * 10) / 10, y: Math.round(m.y * 10) / 10, hp: m.hp, ss: Math.round(m.ss), alive: m.alive, ang: m.ang, face: m.face })),
+    mobiles: st.mobiles.map(m => ({ x: Math.round(m.x * 10) / 10, y: Math.round(m.y * 10) / 10, hp: m.hp, ss: Math.round(m.ss), cd1: m.cd1 || 0, alive: m.alive, ang: m.ang, face: m.face })),
     islands: st.islands.map(o => ({ x: o.x, y: o.y, w: o.w, h: o.h })),
     theme: st.theme || 'meadow',
     turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, over: st.over, winner: st.winner,
@@ -1112,7 +1158,7 @@ function newMatch(seed, defs) {
   cbLogBuf = []; cbLogT0 = performance.now();
   cbLog('match', { role: Net.role, me: myId, defs: defs.map(d => ({ pid: d.pid, name: d.name, mobile: d.mobile, team: d.team, bot: !!d.isBot })) });
   st = { seed, terrain, mobiles: [], turnIdx: -1, wind: 0, sudden: false, over: false, winner: null,
-    delays: defs.map(() => 0), opener: [], wcur: 'calm', wnext: 'calm', win: defs.length,
+    delays: defs.map(() => 0), lastActed: defs.map(() => -1), opener: [], wcur: 'calm', wnext: 'calm', win: defs.length,
     thorX: -1, thorLevel: 0, thorDmg: 0, forceX: -1,
     islands, theme: ['meadow', 'sunset', 'night'][(seed >>> 0) % 3], dualLeft: 0, dualPlus: false };
   defs.forEach((d, i) => {
@@ -1152,6 +1198,7 @@ function startTurn() {
   st.turnIdx++;
   activeIdx = pickNext(st);
   if (activeIdx < 0 || !st.mobiles[activeIdx]) return; // no one left; checkWin covers
+  st.lastActed[activeIdx] = st.turnIdx;
   const m = st.mobiles[activeIdx];
   m.ang = m.team === 'A' ? 45 : 135;
   // wind: gentle + predictable. New target every 3rd turn (capped at ±14 mph),
@@ -1202,15 +1249,17 @@ function onTurnUI() {
   $('powWrap').classList.toggle('hidden', !mine);
   renderItemBar();
 }
-/* turn order by delay: lowest delay acts next; bar length = how far behind the leader */
+/* HUD: who is up now and who follows (teams alternate) */
 function renderDelayPanel() {
-  const el = $('delayPanel'); if (!el || !st || !st.delays) return;
-  const rows = st.mobiles.map((m, i) => ({ m, i, d: st.delays[i] || 0 })).filter(r => r.m.alive).sort((a, b) => a.d - b.d || a.i - b.i);
-  if (!rows.length) { el.innerHTML = ''; return; }
-  const min = rows[0].d, span = Math.max(1, rows[rows.length - 1].d - min);
-  el.innerHTML = '<div class="dp-h">TURN ORDER · delay</div>' + rows.map(r =>
-    '<div class="dp-r' + (r.i === activeIdx ? ' on' : '') + '"><span class="dp-n" style="color:' + (r.m.team === 'A' ? '#74c0fc' : '#ff8787') + '">' +
-    (r.i === activeIdx ? '▶ ' : '') + esc(r.m.name) + '</span><span class="dp-b"><i style="width:' + Math.round(8 + 92 * (r.d - min) / span) + '%"></i></span><span class="dp-v">+' + Math.round(r.d - min) + '</span></div>').join('');
+  const el = $('delayPanel'); if (!el || !st) return;
+  const ids = [];
+  for (const i of [activeIdx].concat(turnQueue || [])) if (st.mobiles[i] && !ids.includes(i) && (i === activeIdx || st.mobiles[i].alive)) ids.push(i);
+  if (!ids.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="dp-h">TURN ORDER</div>' + ids.slice(0, 4).map((i, k) => {
+    const m = st.mobiles[i];
+    return '<div class="dp-r' + (k === 0 ? ' on' : '') + '"><span class="dp-n" style="color:' + (m.team === 'A' ? '#74c0fc' : '#ff8787') + '">' +
+      (k === 0 ? '▶ ' : (k + '. ')) + esc(m.name) + '</span><span class="dp-b"></span><span class="dp-v">' + (k === 0 ? 'now' : 'next') + '</span></div>';
+  }).join('');
 }
 function updateWind() {
   const w = st.wind, dir = w === 0 ? '' : (w > 0 ? ' →' : ' ←');
@@ -1222,10 +1271,16 @@ function updateWeapons() {
   const def = MOBILES[m.mobile];
   for (let i = 0; i < 3; i++) {
     const b = $('w' + i);
-    b.innerHTML = (WPN_ICON[def.w[i].kind] || '') + '<span>' + (i + 1) + ' · ' + def.w[i].n + '</span><small class="dly" title="Delay: bigger shots push your next turn later">⏱' + DELAY_COST[i] + '</small>';
+    b.innerHTML = (WPN_ICON[def.w[i].kind] || '') + '<span>' + (i + 1) + ' · ' + def.w[i].n + '</span><small class="dly" title="Shell is always ready. Twin rests one turn after use. The special charges by dealing and taking damage, and by a third each turn you fire.">…</small>';
     b.classList.toggle('sel', aim.weapon === i);
     b.classList.toggle('ssready', i === 2 && m.ss >= SS_NEED);
-    b.disabled = (i === 2 && m.ss < SS_NEED) || !isMyTurn();
+    const locked = (i === 1 && (m.cd1 || 0) > 0) || (i === 2 && m.ss < SS_NEED);
+    b.classList.toggle('locked', locked);
+    b.disabled = locked || !isMyTurn();
+    const dl = b.querySelector('.dly');
+    if (dl) dl.textContent = i === 0 ? 'always ready' : i === 1 ? ((m.cd1 || 0) > 0 ? '🔒 recharging' : 'then rests 1 turn') : (m.ss >= SS_NEED ? '★ charged' : Math.round(100 * m.ss / SS_NEED) + '% charged');
+    const pct = Math.min(100, Math.round(100 * m.ss / SS_NEED));
+    b.style.backgroundImage = i === 2 ? 'linear-gradient(90deg,rgba(229,153,247,.5) ' + pct + '%,transparent ' + pct + '%)' : '';
   }
 }
 
@@ -1311,7 +1366,12 @@ function fireShot(shot) {
     const taken = Math.max(0, pre.mobiles[i].hp - m.hp) - (res.thorDmgByVictim[i] || 0);
     if (taken > 0) m.ss = Math.min(SS_NEED, m.ss + taken * 0.5 * ssMul);
   });
-  if (shot.weapon === 2 && src) src.ss = 0;
+  if (src) {
+    if ((src.cd1 || 0) > 0) src.cd1--;                 // Twin's rest turn is over
+    if (shot.weapon === 1) src.cd1 = 1;                // Twin: rests the next time this player acts
+    if (shot.weapon === 2) src.ss = 0;                 // special spent
+    else src.ss = Math.min(SS_NEED, src.ss + 34);      // special also recharges ~1/3 per turn fired (full in ~3 turns)
+  }
   // delay cost: weapon + time spent aiming
   { const me0 = m0 && m0.pid === myId;
     const hgm = m0 ? gearOf(m0).delay : 0;
@@ -1492,6 +1552,8 @@ function botFire() {
     m.ang = s.ang + tiltDegOf(m); // display relative to the tilted body; the shot uses the world angle
     flowTimeout(() => {
       if (turnState !== 'aim') return;
+      if (s.weapon === 1 && (m.cd1 || 0) > 0) s.weapon = 0;
+      if (s.weapon === 2 && m.ss < SS_NEED) s.weapon = 0;
       fireShot({ x: m.x, y: m.y, ang: s.ang, power: s.power, weapon: s.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: 2 });
     }, 700);
   });
@@ -1528,7 +1590,7 @@ function botMove(m, done) {
     if (Math.abs(dx) < 4 || moveLeft <= 0) { Net.sendMove({ x: m.x, idx: activeIdx, face: m.face, ang: m.ang }); return done(); }
     const s = Math.sign(dx) * Math.min(10, Math.abs(dx));
     const nx = Math.max(10, Math.min(W - 10, m.x + s));
-    if (Math.abs(groundAt(st.terrain, st.islands, nx, m.y) - groundAt(st.terrain, st.islands, m.x, m.y)) > climbOf(m)) {
+    if (Math.abs(groundAt(st.terrain, st.islands, nx, m.y) - groundAt(st.terrain, st.islands, m.x, m.y)) > climbOf(m) && !boxedIn(st.terrain, m)) {
       Net.sendMove({ x: m.x, idx: activeIdx, face: m.face, ang: m.ang }); return done();
     }
     m.x = nx; m.y = groundAt(st.terrain, st.islands, nx, m.y);
@@ -1552,6 +1614,7 @@ window.addEventListener('keydown', e => {
   if (e.key === '1' || e.key === '2' || e.key === '3') {
     const w = +e.key - 1;
     const m = activeMobile();
+    if (w === 1 && (m.cd1 || 0) > 0) { toast('Twin is recharging — back next turn'); return; }
     if (w === 2 && m.ss < SS_NEED) { toast('SS not charged yet!'); return; }
     aim.weapon = w; updateWeapons(); SND('select');
   }
@@ -1593,7 +1656,7 @@ function pollMove(dt) {
   const step = dx * 130 * dt;
   const nx = Math.max(10, Math.min(W - 10, m.x + step));
   // slope check: can't climb cliffs
-  if (Math.abs(surfY(st.terrain, nx) - surfY(st.terrain, m.x)) > climbOf(m)) return;
+  if (Math.abs(surfY(st.terrain, nx) - surfY(st.terrain, m.x)) > climbOf(m) && !boxedIn(st.terrain, m)) return;
   const used = Math.min(moveLeft, Math.abs(step));
   m.x = nx; m.y = groundAt(st.terrain, st.islands, nx, m.y); moveLeft -= used;
   moveAcc += dt;
@@ -2358,6 +2421,7 @@ function showScreen(s) {
     $('btn-solo').textContent = 'Play vs Bot'; refreshEconPills();
   }
   $('lobby').classList.toggle('hidden', s !== 'lobby');
+  if (s === 'lobby') requestAnimationFrame(() => document.querySelectorAll('#lobby .vcard').forEach((b, i) => { const c = b.querySelector('canvas'); if (c) drawThumb(c, b.dataset.m, myTeam, null, i + 4); }));
   const inPlay = s === 'play';
   $('hud').classList.toggle('hidden', !inPlay);
   $('gchat').classList.toggle('hidden', !inPlay || Net.role === 'solo');
@@ -2439,8 +2503,10 @@ Net.sendTurn = function (p) {
   if (Net.role !== 'host' || !Net.channel) return;
   Net.channel.send({ type: 'broadcast', event: 'turn', payload: p });
 };
+let snapSeq = 0, lastSnapSeq = 0;   // each shot result gets a number so a guest never replays one it already played
 Net.sendSnap = function (p) {
-  cbLog('snap-sent', { hasShot: !!p.shot, src: p.shot && p.shot.srcIdx });
+  if (p.seq == null) p.seq = ++snapSeq;
+  cbLog('snap-sent', { seq: p.seq, hasShot: !!p.shot, src: p.shot && p.shot.srcIdx });
   lastSnap = p;
   if (Net.role !== 'host' || !Net.channel) return;
   Net.channel.send({ type: 'broadcast', event: 'snap', payload: p });
@@ -2559,6 +2625,7 @@ async function joinRoom(code, asHost) {
     const m = st.mobiles[activeIdx];
     // validate: move budget + SS charge
     if (Math.abs(payload.x - turnStartX) > moveBudgetOf(m) + 2) payload.x = turnStartX;
+    if (payload.weapon === 1 && (m.cd1 || 0) > 0) payload.weapon = 0;
     if (payload.weapon === 2 && m.ss < SS_NEED) payload.weapon = 0;
     if (payload.item && payload.weapon === 2) payload.item = null; // OG: no items with SS
     m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); m.ang = payload.ang; if (payload.face) m.face = payload.face;
@@ -2567,8 +2634,11 @@ async function joinRoom(code, asHost) {
   ch.on('broadcast', { event: 'snap' }, ({ payload }) => {
     if (Net.role !== 'guest' || screen !== 'play') return;
     clearTimeout(shotAckTimer);
-    cbLog('snap-recv', { hasShot: !!payload.shot, src: payload.shot && payload.shot.srcIdx, turnState });
+    cbLog('snap-recv', { seq: payload.seq, hasShot: !!payload.shot, src: payload.shot && payload.shot.srcIdx, turnState });
     lastSnap = payload;
+    // a repeat of a result we already animated (resent after a "connection hiccup", or delivered twice): sync state, don't fire the shot again
+    if (payload.seq != null && payload.seq <= lastSnapSeq) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
+    if (payload.seq != null) lastSnapSeq = payload.seq;
     if (!payload.shot) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
     const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)), islands: st.islands.map(o => ({ x: o.x, y: o.y, w: o.w, h: o.h })) };
     turnState = 'anim'; stopTimer();
@@ -2607,6 +2677,7 @@ async function joinRoom(code, asHost) {
 
 function migrateHost() {
   toast('Host left — you are the host now', 2200);
+  snapSeq = lastSnapSeq; // keep numbering monotonic for the other guests
   Net.role = 'host';
   if (lastSnap) applySnapState(st, lastSnap.final);
   if (st.over) return endMatch();
@@ -2629,9 +2700,10 @@ function renderRoster() {
   ps.forEach(p => {
     const you = p.id === myId;
     const tcls = p.team === 'A' ? 'teamA' : 'teamB';
-    html += '<div class="pslot ' + tcls + (you ? ' me' : '') + '"><div class="avatar">' + (MOBILES[p.mobile] ? MOBILES[p.mobile].icon : (p.mobile === RANDOM_MOBILE ? '🎲' : '🍰')) + '</div>' +
+    html += '<div class="pslot ' + tcls + (you ? ' me' : '') + (p.ready ? ' ready' : '') + '"><div class="avatar">' + (MOBILES[p.mobile] ? MOBILES[p.mobile].icon : (p.mobile === RANDOM_MOBILE ? '🎲' : '🍰')) + '</div>' +
       '<div class="pname">' + esc(p.name) + (you ? ' (you)' : '') + '</div>' +
-      '<div class="ptag">Team ' + p.team + ' · ' + (p.ready ? '✓ ready' : '…') + '</div>' +
+      '<div class="ptag">Team ' + p.team + '</div>' +
+      '<div class="rdybadge ' + (p.ready ? 'on' : 'off') + '">' + (p.ready ? '✓ READY' : 'not ready') + '</div>' +
       (isNetHost() && you ? '<div class="crown">👑 host</div>' : '') + '</div>';
   });
   for (let i = ps.length; i < 4; i++) html += '<div class="pslot"><div class="avatar">➕</div><div class="ptag">open slot</div></div>';
@@ -2644,6 +2716,7 @@ function renderRoster() {
   });
   const me = lobbyState[myId];
   $('btn-ready').classList.toggle('sel', !!(me && me.ready));
+  $('btn-ready').textContent = me && me.ready ? '✓ Ready! (tap to cancel)' : 'Tap when ready';
   const host = isNetHost();
   $('btn-start').classList.toggle('hidden', !host);
   const counts = { A: 0, B: 0 };
@@ -2741,6 +2814,7 @@ async function leaveRoom() {
   if (st && !st.over) { cbLog('left-mid-match', {}); cbUploadLog('left'); }
   try { if (Net.channel) await Net.channel.unsubscribe(); } catch (e) {}
   Net.channel = null; Net.room = null; Net.role = 'solo';
+  snapSeq = 0; lastSnapSeq = 0;
   stopTimer(); st = null; turnState = 'idle'; anim = null;
   showScreen('menu');
 }
@@ -2760,7 +2834,7 @@ function renderItemBar() {
     const n = inv[id] || 0; if (n <= 0) continue;
     const b = document.createElement('button');
     b.className = 'itembtn' + (armedItem === id ? ' armed' : '');
-    b.innerHTML = it.icon + '<span class="cnt">' + n + '</span>';
+    b.innerHTML = it.icon + '<span class="inm">' + it.n + '</span><span class="cnt">' + n + '</span>';
     b.title = it.n + ' — ' + it.desc;
     b.onclick = () => useItem(id);
     bar.appendChild(b);
@@ -2974,6 +3048,7 @@ function wireUI() {
   for (let i = 0; i < 3; i++) $('w' + i).onclick = () => {
     if (!isMyTurn()) return;
     const m = activeMobile();
+    if (i === 1 && (m.cd1 || 0) > 0) { toast('Twin is recharging — back next turn'); return; }
     if (i === 2 && m.ss < SS_NEED) { toast('SS not charged yet!'); return; }
     aim.weapon = i; updateWeapons();
   };
