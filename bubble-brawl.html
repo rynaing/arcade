@@ -125,6 +125,7 @@ canvas{box-shadow:0 10px 40px rgba(20,0,30,.55),0 0 0 4px #fff,0 0 0 7px var(--a
 .dialog h2{color:var(--arc-pink-deep)}
 .dialog p{color:#6b5a72}
 .dialog b{color:var(--arc-pink-deep)}
+.dialog .rules-link{color:var(--arc-pink-deep);font-weight:800;white-space:nowrap}
 .dialog .keys{background:#fff0f6;border:2px solid #ffd1e2;color:var(--arc-plum)}
 .dialog .keys kbd{background:#fff;color:var(--arc-plum);border:2px solid #ffd1e2;border-bottom-width:3px;border-radius:7px}
 button.big{background:linear-gradient(180deg,#ff8fb8,var(--arc-pink-deep));box-shadow:0 5px 0 var(--arc-pink-dark),0 8px 16px rgba(60,10,40,.28);font-family:var(--arc-font);font-weight:900;text-shadow:0 1px 0 rgba(0,0,0,.2)}
@@ -166,8 +167,8 @@ button.mini:hover{background:#fff0f6}
 <div class="arc-cast-slot" data-arc-cast="blob0,blob1,blob3,shortcake,blob4,blob6" data-size="56"></div>
 <div class="arc-presents">Ryan Cake Studios presents</div>
 <h1>🫧 Bubble Brawl</h1>
-<p>Drop <b>water balloons</b> and splash your rivals! A splash traps you in a <b>bubble</b> for 4 seconds — <b>walk into a trapped rival to pop them!</b> Splashed again while trapped? Pop. Nobody gets you? You break free. Last blob standing wins.</p>
-<div class="keys"><kbd>←↑↓→</kbd> or <kbd>WASD</kbd> move &nbsp;·&nbsp; <kbd>Space</kbd> drop balloon<br>Crates drop powerups: 💧 +1 balloon, 🎯 +1 blast range, 👟 speed up, 🛡 shield (blocks one splash)<br><kbd>Esc</kbd> pauses. Your own balloons trap you too — leave an escape route! With 1:30 left the walls close in, so head for the middle.</div>
+<p>Splash rivals with <b>water balloons</b> to trap them in bubbles, then <b>walk into them to pop them</b>. Last blob standing wins! <a class="rules-link" href="how-to-play.html#bubble-brawl">Full rules</a></p>
+<div class="keys"><kbd>←↑↓→</kbd> / <kbd>WASD</kbd> move &nbsp;·&nbsp; <kbd>Space</kbd> balloon</div>
 <input type="text" id="name-input" maxlength="14" placeholder="Your name"><br>
 <button class="big" id="startBtn">▶ Solo vs Bots</button><br>
 <div class="diff" id="diffRow" role="radiogroup" aria-label="Bot difficulty">Bots: <button class="mini diff-b" data-d="easy" role="radio">Easy</button><button class="mini diff-b" data-d="normal" role="radio">Normal</button><button class="mini diff-b" data-d="hard" role="radio">Hard</button></div>
