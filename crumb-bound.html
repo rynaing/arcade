@@ -235,6 +235,9 @@
 .hero-thumb,.card-thumb{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0}
 .card-thumb{width:96px;height:92px;background:radial-gradient(closest-side,rgba(255,182,213,.75),rgba(255,182,213,0))!important}
 .vcard.vmobbtn,.vcard.vmobbtn.sel,.bcard.botbtn,.bcard.botbtn.sel{background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,240,248,.94));color:#4a2c45;font-size:inherit;min-width:0;min-height:0}
+.vcard.mobbtn,.vcard.mobbtn.sel{background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,240,248,.94));color:#4a2c45;font-size:inherit;min-width:0;min-height:0}
+#lobby .lobby-card{width:880px}
+#lobby .vcard{padding:8px 6px 10px}#lobby .card-thumb{width:72px;height:70px}#lobby .card-name{font-size:15px}#lobby .procon,#lobby .shots{font-size:10.5px}
 .vcard.vmobbtn.sel{border-color:#ff6b9a;box-shadow:0 4px 0 #e64980,0 8px 22px rgba(230,73,128,.45)}
 .card-name{font-weight:900;font-size:17px}
 .card-role{font-size:12px;font-weight:800;color:#c2255c;text-transform:uppercase;letter-spacing:.06em}
@@ -359,12 +362,13 @@ body.in-menu #rotateHint{display:none!important}
       <div class="lobby-title">Lobby</div>
       <div class="lobby-room">Room <span id="room-code"></span> <button class="mini" id="btn-copy">copy invite</button></div>
       <div id="roster"></div>
-      <div class="pickRow"><span class="lbl">Mobile:</span>
-        <button class="mobbtn" data-m="shortcake">🍰 Shortcake</button>
-        <button class="mobbtn" data-m="eclair">🥖 Éclair</button>
-        <button class="mobbtn" data-m="meringue">🍦 Meringue</button>
-        <button class="mobbtn" data-m="fudge">🍫 Fudge</button>
-<button class="mobbtn" data-m="random">🎲 Random</button>
+      <div class="pickRow"><span class="lbl">Pick your vehicle:</span></div>
+      <div class="cards lobby-cards">
+        <button class="vcard mobbtn" data-m="shortcake"></button>
+        <button class="vcard mobbtn" data-m="eclair"></button>
+        <button class="vcard mobbtn" data-m="meringue"></button>
+        <button class="vcard mobbtn" data-m="fudge"></button>
+        <button class="vcard mobbtn" data-m="random"></button>
       </div>
       <div class="hintline" id="mob-blurb"></div>
       <div class="pickRow"><span class="lbl">Team:</span>
@@ -2363,6 +2367,7 @@ function showScreen(s) {
     $('btn-solo').textContent = 'Play vs Bot'; refreshEconPills();
   }
   $('lobby').classList.toggle('hidden', s !== 'lobby');
+  if (s === 'lobby') requestAnimationFrame(() => document.querySelectorAll('#lobby .vcard').forEach((b, i) => { const c = b.querySelector('canvas'); if (c) drawThumb(c, b.dataset.m, myTeam, null, i + 4); }));
   const inPlay = s === 'play';
   $('hud').classList.toggle('hidden', !inPlay);
   $('gchat').classList.toggle('hidden', !inPlay || Net.role === 'solo');
