@@ -2406,7 +2406,9 @@ Net.sendTurn = function (p) {
   if (Net.role !== 'host' || !Net.channel) return;
   Net.channel.send({ type: 'broadcast', event: 'turn', payload: p });
 };
+let snapSeq = 0, lastSnapSeq = 0;   // each shot result gets a number so a guest never replays one it already played
 Net.sendSnap = function (p) {
+  if (p.seq == null) p.seq = ++snapSeq;
   lastSnap = p;
   if (Net.role !== 'host' || !Net.channel) return;
   Net.channel.send({ type: 'broadcast', event: 'snap', payload: p });
@@ -2534,6 +2536,9 @@ async function joinRoom(code, asHost) {
     if (Net.role !== 'guest' || screen !== 'play') return;
     clearTimeout(shotAckTimer);
     lastSnap = payload;
+    // a repeat of a result we already animated (resent after a "connection hiccup", or delivered twice): sync state, don't fire the shot again
+    if (payload.seq != null && payload.seq <= lastSnapSeq) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
+    if (payload.seq != null) lastSnapSeq = payload.seq;
     if (!payload.shot) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
     const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)), islands: st.islands.map(o => ({ x: o.x, y: o.y, w: o.w, h: o.h })) };
     turnState = 'anim'; stopTimer();
@@ -2572,6 +2577,7 @@ async function joinRoom(code, asHost) {
 
 function migrateHost() {
   toast('Host left — you are the host now', 2200);
+  snapSeq = lastSnapSeq; // keep numbering monotonic for the other guests
   Net.role = 'host';
   if (lastSnap) applySnapState(st, lastSnap.final);
   if (st.over) return endMatch();
@@ -2704,6 +2710,7 @@ function sendGameChat() {
 async function leaveRoom() {
   try { if (Net.channel) await Net.channel.unsubscribe(); } catch (e) {}
   Net.channel = null; Net.room = null; Net.role = 'solo';
+  snapSeq = 0; lastSnapSeq = 0;
   stopTimer(); st = null; turnState = 'idle'; anim = null;
   showScreen('menu');
 }
