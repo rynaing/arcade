@@ -63,6 +63,12 @@
   .pslot.teamA{border-color:#4dabf7}.pslot.teamB{border-color:#ff8787}
   .pslot.me{outline:2px solid #ffd166}
   .crown{font-size:11px;color:#ffd166}
+  .pslot.ready{background:#1d4b35;border-color:#7bed9f;box-shadow:0 0 0 3px rgba(123,237,159,.35),0 0 18px rgba(123,237,159,.45)}
+  .pslot .rdybadge{margin-top:2px;font-weight:900;font-size:13px;letter-spacing:.04em;border-radius:999px;padding:3px 12px}
+  .pslot .rdybadge.on{background:#7bed9f;color:#0e3a24}
+  .pslot .rdybadge.off{background:rgba(255,255,255,.08);color:#9d8fd0;font-weight:800}
+  .rdybtn{font-weight:900}
+  .rdybtn.sel{background:#2f9e5f;border-color:#7bed9f;box-shadow:0 0 14px rgba(123,237,159,.6)}
   .pickRow{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap;justify-content:center}
   .pickRow .lbl{font-size:13px;color:#c6d8f2;font-weight:800}
   .mobbtn,.vmobbtn,.teambtn,.rdybtn{font-family:inherit;border:2px solid #4a3f7a;background:#241b45;color:#fff;border-radius:10px;
@@ -2594,9 +2600,10 @@ function renderRoster() {
   ps.forEach(p => {
     const you = p.id === myId;
     const tcls = p.team === 'A' ? 'teamA' : 'teamB';
-    html += '<div class="pslot ' + tcls + (you ? ' me' : '') + '"><div class="avatar">' + (MOBILES[p.mobile] ? MOBILES[p.mobile].icon : (p.mobile === RANDOM_MOBILE ? '🎲' : '🍰')) + '</div>' +
+    html += '<div class="pslot ' + tcls + (you ? ' me' : '') + (p.ready ? ' ready' : '') + '"><div class="avatar">' + (MOBILES[p.mobile] ? MOBILES[p.mobile].icon : (p.mobile === RANDOM_MOBILE ? '🎲' : '🍰')) + '</div>' +
       '<div class="pname">' + esc(p.name) + (you ? ' (you)' : '') + '</div>' +
-      '<div class="ptag">Team ' + p.team + ' · ' + (p.ready ? '✓ ready' : '…') + '</div>' +
+      '<div class="ptag">Team ' + p.team + '</div>' +
+      '<div class="rdybadge ' + (p.ready ? 'on' : 'off') + '">' + (p.ready ? '✓ READY' : 'not ready') + '</div>' +
       (isNetHost() && you ? '<div class="crown">👑 host</div>' : '') + '</div>';
   });
   for (let i = ps.length; i < 4; i++) html += '<div class="pslot"><div class="avatar">➕</div><div class="ptag">open slot</div></div>';
@@ -2609,6 +2616,7 @@ function renderRoster() {
   });
   const me = lobbyState[myId];
   $('btn-ready').classList.toggle('sel', !!(me && me.ready));
+  $('btn-ready').textContent = me && me.ready ? '✓ Ready! (tap to cancel)' : 'Tap when ready';
   const host = isNetHost();
   $('btn-start').classList.toggle('hidden', !host);
   const counts = { A: 0, B: 0 };
