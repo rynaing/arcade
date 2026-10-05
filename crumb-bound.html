@@ -548,6 +548,22 @@ function rankFor(w) { let r = RANKS[0][1]; for (const [n, name] of RANKS) if (w 
 function maxHpOf(m) { return m.hpMax != null ? m.hpMax : MOBILES[m.mobile].hp; }
 function moveBudgetOf(m) { return MOBILES[m.mobile].move + gearOf(m).move; }
 function climbOf(m) { return 30 + gearOf(m).climb; }
+/* Craters leave near-vertical walls, so a vehicle can end up in a pit it can't walk out of.
+   A step over a wall taller than the climb limit is normally refused; but when walls block BOTH
+   ways within ~200px the vehicle is boxed in, so let it scramble over the wall instead of being stuck. */
+function boxedIn(t, m) {
+  const lim = climbOf(m), c0 = Math.max(0, Math.min(COLS - 1, Math.floor(m.x / COLW)));
+  const freeDir = (dr) => {
+    for (let c = c0, n = 0; n < 50; n++) {
+      const nc = c + dr;
+      if (nc < 2 || nc > COLS - 3) return true;
+      if (Math.abs(t[nc] - t[c]) > lim) return false;
+      c = nc;
+    }
+    return true;
+  };
+  return !freeDir(-1) && !freeDir(1);
+}
 function trueRangeOf(m) { const t = MOBILES[m.mobile].ta; const e = gearOf(m).ta; return [t[0] - e, t[1] + e]; }
 
 /* Thumbnails for the weapon bar: one tiny SVG per projectile kind */
@@ -1497,7 +1513,7 @@ function botMove(m, done) {
     if (Math.abs(dx) < 4 || moveLeft <= 0) { Net.sendMove({ x: m.x, idx: activeIdx, face: m.face, ang: m.ang }); return done(); }
     const s = Math.sign(dx) * Math.min(10, Math.abs(dx));
     const nx = Math.max(10, Math.min(W - 10, m.x + s));
-    if (Math.abs(groundAt(st.terrain, st.islands, nx, m.y) - groundAt(st.terrain, st.islands, m.x, m.y)) > climbOf(m)) {
+    if (Math.abs(groundAt(st.terrain, st.islands, nx, m.y) - groundAt(st.terrain, st.islands, m.x, m.y)) > climbOf(m) && !boxedIn(st.terrain, m)) {
       Net.sendMove({ x: m.x, idx: activeIdx, face: m.face, ang: m.ang }); return done();
     }
     m.x = nx; m.y = groundAt(st.terrain, st.islands, nx, m.y);
@@ -1561,7 +1577,7 @@ function pollMove(dt) {
   const step = dx * 130 * dt;
   const nx = Math.max(10, Math.min(W - 10, m.x + step));
   // slope check: can't climb cliffs
-  if (Math.abs(surfY(st.terrain, nx) - surfY(st.terrain, m.x)) > climbOf(m)) return;
+  if (Math.abs(surfY(st.terrain, nx) - surfY(st.terrain, m.x)) > climbOf(m) && !boxedIn(st.terrain, m)) return;
   const used = Math.min(moveLeft, Math.abs(step));
   m.x = nx; m.y = groundAt(st.terrain, st.islands, nx, m.y); moveLeft -= used;
   moveAcc += dt;
