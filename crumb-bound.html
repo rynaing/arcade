@@ -395,7 +395,8 @@ body.in-menu #rotateHint{display:none!important}
     <div id="end-sub"></div>
     <div class="wins-lb" id="wl" hidden><h3>&#127757; Most wins vs bots</h3><ol id="wl-list"></ol><p id="wl-note" hidden></p></div>
     <div class="btnRow"><button class="big" id="btn-again" style="background:linear-gradient(180deg,#7bed9f,#2f9e5f);box-shadow:0 4px 0 #1d6b3f">Rematch</button>
-    <button class="big" id="btn-menu2" style="background:linear-gradient(180deg,#b197fc,#7048e8);box-shadow:0 4px 0 #4527a0">Menu</button></div>
+    <button class="big" id="btn-menu2" style="background:linear-gradient(180deg,#b197fc,#7048e8);box-shadow:0 4px 0 #4527a0">Menu</button>
+    <button class="big" id="btn-log" title="Copy this match's turn and shot log" style="background:#2c2350;box-shadow:0 4px 0 #17122e;font-size:14px">📋 Copy match log</button></div>
   </div>
 </div>
 </div>
@@ -1057,6 +1058,30 @@ let myName = 'Player';
 try { myName = localStorage.getItem('cb-name') || 'Player'; $('name-input').value = myName; } catch (e) {}
 
 const Net = { channel: null, room: null, role: 'solo' }; // role: solo|host|guest; net.js fills in
+/* per-match event log (for debugging online games): kept in memory + localStorage 'cb-last-log', copy it with the end-screen button */
+let cbLogBuf = [], cbLogT0 = performance.now();
+function cbLog(ev, d) {
+  try {
+    cbLogBuf.push(Object.assign({ t: Math.round(performance.now() - cbLogT0), ev }, d || {}));
+    if (cbLogBuf.length > 500) cbLogBuf.shift();
+    localStorage.setItem('cb-last-log', JSON.stringify(cbLogBuf));
+  } catch (e) {}
+}
+/* Upload the finished match's log to Supabase (insert-only table, see supabase/cb_match_logs.sql). Best effort:
+   never blocks or breaks play, runs once per match, and sends a compact payload (<= 300 events). */
+let cbLogSentFor = null;
+async function cbUploadLog(reason) {
+  try {
+    if (!cbLogBuf.length || cbLogSentFor === cbLogT0) return;
+    cbLogSentFor = cbLogT0;
+    const sb = await sbReady; if (!sb) return;
+    const ev = cbLogBuf.slice(-300);
+    await sb.from('cb_match_logs').insert({ client_id: myId, role: Net.role || 'solo', reason, events: ev });
+  } catch (e) {}
+}
+function cbLogText() {
+  return JSON.stringify({ when: new Date().toISOString(), ua: navigator.userAgent, events: cbLogBuf }, null, 1);
+}
 let st = null;            // authoritative-ish local state
 let screen = 'menu';      // menu|lobby|play
 let turnState = 'idle';   // idle|aim|anim
@@ -1130,6 +1155,8 @@ function newMatch(seed, defs) {
   const terrain = genTerrain(seed);
   const xs = spawnPositions(defs);
   const islands = genIslands(seed, terrain);
+  cbLogBuf = []; cbLogT0 = performance.now();
+  cbLog('match', { role: Net.role, me: myId, defs: defs.map(d => ({ pid: d.pid, name: d.name, mobile: d.mobile, team: d.team, bot: !!d.isBot })) });
   st = { seed, terrain, mobiles: [], turnIdx: -1, wind: 0, sudden: false, over: false, winner: null,
     delays: defs.map(() => 0), lastActed: defs.map(() => -1), opener: [], wcur: 'calm', wnext: 'calm', win: defs.length,
     thorX: -1, thorLevel: 0, thorDmg: 0, forceX: -1,
@@ -1198,6 +1225,7 @@ function startTurn() {
   aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = 0; aim.powDir = 1;
   moveLeft = moveBudgetOf(m); turnStartX = m.x;
   turnQueue = queuePreview(st, 3);
+  cbLog('turn-start', { turnIdx: st.turnIdx, active: activeIdx, delays: st.delays.slice(), queue: turnQueue });
   Net.sendTurn({ turnIdx: st.turnIdx, wind: st.wind, sudden: st.sudden, activeIdx,
     wcur: st.wcur, wnext: st.wnext, win: st.win,
     thorX: st.thorX, thorLevel: st.thorLevel, thorDmg: st.thorDmg, forceX: st.forceX,
@@ -1295,6 +1323,7 @@ function onTimeout() {
 
 /* forfeit the turn (timeout): no shot, just delay cost */
 function passTurn() {
+  cbLog('pass-turn', { active: activeIdx, turnState });
   if (turnState !== 'aim') return;
   turnState = 'anim'; stopTimer();
   const m = activeMobile();
@@ -1310,6 +1339,7 @@ function passTurn() {
 
 /* host/solo: resolve a shot, animate, broadcast */
 function fireShot(shot) {
+  cbLog('fire-shot', { src: shot.srcIdx, weapon: shot.weapon, item: shot.item || null, power: shot.power, turnState, accepted: turnState === 'aim' });
   if (turnState !== 'aim') return;
   turnState = 'anim'; stopTimer();
   const secs = shot.secs != null ? shot.secs : turnSecs();
@@ -1476,6 +1506,7 @@ function stepAnim(dt) {
 }
 
 function onShotDone() {
+  cbLog('shot-done', { dualLeft: st && st.dualLeft, over: st && st.over, pending: !!pendingTurn });
   // Dual / Dual+: the second shot happens now — same turn, no turn advance
   if (st.dualLeft > 0 && !st.over) {
     st.dualLeft--;
@@ -1599,6 +1630,7 @@ window.addEventListener('keyup', e => {
 
 function doFire() {
   const m = activeMobile(); if (!m) return;
+  cbLog('fire-input', { role: Net.role, active: activeIdx, me: myDefIdx, turnState, power: Math.round(aim.power), weapon: aim.weapon, item: armedItem });
   const shot = { x: m.x, y: m.y, ang: aim.ang - tiltDegOf(m), power: Math.max(5, Math.round(aim.power)), weapon: aim.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: turnSecs(), item: armedItem, face: m.face };
   if (armedItem) { inv[armedItem] = Math.max(0, (inv[armedItem] || 0) - 1); if (!inv[armedItem]) delete inv[armedItem]; saveEcon(); }
   armedItem = null; renderItemBar();
@@ -2397,6 +2429,7 @@ function showScreen(s) {
   if (!inPlay) { $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden'); }
 }
 function endMatch() {
+  cbLog('match-end', { winner: st && st.winner }); cbUploadLog('end');
   stopTimer(); turnState = 'idle';
   $('hud').classList.add('hidden'); $('weapBar').classList.add('hidden'); $('powWrap').classList.add('hidden');
   const w = st.winner;
@@ -2473,6 +2506,7 @@ Net.sendTurn = function (p) {
 let snapSeq = 0, lastSnapSeq = 0;   // each shot result gets a number so a guest never replays one it already played
 Net.sendSnap = function (p) {
   if (p.seq == null) p.seq = ++snapSeq;
+  cbLog('snap-sent', { seq: p.seq, hasShot: !!p.shot, src: p.shot && p.shot.srcIdx });
   lastSnap = p;
   if (Net.role !== 'host' || !Net.channel) return;
   Net.channel.send({ type: 'broadcast', event: 'snap', payload: p });
@@ -2600,6 +2634,7 @@ async function joinRoom(code, asHost) {
   ch.on('broadcast', { event: 'snap' }, ({ payload }) => {
     if (Net.role !== 'guest' || screen !== 'play') return;
     clearTimeout(shotAckTimer);
+    cbLog('snap-recv', { seq: payload.seq, hasShot: !!payload.shot, src: payload.shot && payload.shot.srcIdx, turnState });
     lastSnap = payload;
     // a repeat of a result we already animated (resent after a "connection hiccup", or delivered twice): sync state, don't fire the shot again
     if (payload.seq != null && payload.seq <= lastSnapSeq) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
@@ -2736,6 +2771,7 @@ function onRemoteTurn(p) {
   turnQueue = p.queue || [];
   const m = st.mobiles[activeIdx];
   if (st.wcur === 'moon' && m) m.hp = Math.min(maxHpOf(m), m.hp + 4);
+  cbLog('turn-recv', { turnIdx: p.turnIdx, active: p.activeIdx, dual: !!p.dual, mine: p.activeIdx === myDefIdx });
   turnState = 'aim'; timeLeft = TURN_TIME;
   turnStartT = performance.now();
   aim.ang = m.ang; aim.power = 0; aim.charging = false; aim.weapon = p.dual ? (p.dualWeapon || 0) : 0; aim.powDir = 1;
@@ -2775,6 +2811,7 @@ function sendGameChat() {
 }
 
 async function leaveRoom() {
+  if (st && !st.over) { cbLog('left-mid-match', {}); cbUploadLog('left'); }
   try { if (Net.channel) await Net.channel.unsubscribe(); } catch (e) {}
   Net.channel = null; Net.room = null; Net.role = 'solo';
   snapSeq = 0; lastSnapSeq = 0;
@@ -3030,6 +3067,11 @@ function wireUI() {
     }
   };
   $('btn-menu2').onclick = leaveRoom;
+  $('btn-log').onclick = async () => {
+    const txt = cbLogText();
+    try { await navigator.clipboard.writeText(txt); toast('Match log copied'); }
+    catch (e) { window.prompt('Copy the match log (Ctrl/Cmd+C):', txt); }
+  };
   // drag the battlefield to look around (mouse or finger)
   cv.style.touchAction = 'none';
   cv.addEventListener('pointerdown', e => {
