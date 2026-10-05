@@ -109,5 +109,59 @@
   function castSoon() { if (!castInit()) { window.addEventListener('load', castInit); setTimeout(castInit, 400); } }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', castSoon); else castSoon();
 
-  window.ArcadeUI = { cast: castInit, barHeight: function () { return (document.getElementById('arc-bar') || {}).offsetHeight || 32; } };
+  /* ---------------- money: analytics + ad breaks ----------------
+   * Everything here is off until a key below is filled in, so the site behaves exactly as before.
+   *  - CF_ANALYTICS_TOKEN: Cloudflare Web Analytics token (cookie-free page views, no banner needed)
+   *  - ADSENSE_CLIENT: 'ca-pub-…' once AdSense approves the domain (H5 Games Ads / adBreak API)
+   *  - NON_PERSONALIZED: keep true while the arcade is pitched at kids (Google's child-safe ad mode)
+   * Games call ArcadeUI.adBreak('name') at natural breaks (results screens, solo play only). On a
+   * game portal its SDK wins: CrazyGames (CrazyGames.SDK) or Poki (PokiSDK), if loaded on the page.
+   * Add ?adtest=1 to a page URL to see AdSense test ads.
+   */
+  var CF_ANALYTICS_TOKEN = '';
+  var ADSENSE_CLIENT = '';
+  var NON_PERSONALIZED = true;
+  var AD_GAP_MS = 120000;   // at most one ad break every 2 minutes
+  var lastAd = 0;
+
+  function addScript(src, attrs) {
+    var s = document.createElement('script'); s.async = true; s.src = src;
+    for (var k in attrs) s.setAttribute(k, attrs[k]);
+    document.head.appendChild(s);
+  }
+  if (CF_ANALYTICS_TOKEN && location.protocol === 'https:')
+    addScript('https://static.cloudflareinsights.com/beacon.min.js', { 'data-cf-beacon': JSON.stringify({ token: CF_ANALYTICS_TOKEN }) });
+  if (ADSENSE_CLIENT) {
+    var test = /[?&]adtest=1\b/.test(location.search);
+    addScript('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT,
+      test ? { crossorigin: 'anonymous', 'data-adbreak-test': 'on' } : { crossorigin: 'anonymous' });
+    window.adsbygoogle = window.adsbygoogle || [];
+    if (NON_PERSONALIZED) window.adsbygoogle.requestNonPersonalizedAds = 1;
+    window.adBreak = window.adConfig = function (o) { window.adsbygoogle.push(o); };
+    window.adConfig({ preloadAdBreaks: 'on', sound: 'on' });
+  }
+
+  // silence the shared sound engine while an ad plays, without touching the player's mute setting
+  function hold(on) { if (window.ArcadeAudio && ArcadeAudio.hold) ArcadeAudio.hold(on); }
+  /* resolves true if an ad was shown; never rejects, so callers can ignore it */
+  function adBreak(name) {
+    return new Promise(function (resolve) {
+      if (Date.now() - lastAd < AD_GAP_MS) return resolve(false);
+      var settled = false;
+      function done(shown) { if (settled) return; settled = true; hold(false); if (shown) lastAd = Date.now(); resolve(!!shown); }
+      try {
+        var cg = window.CrazyGames && window.CrazyGames.SDK;
+        if (cg && cg.ad) {
+          cg.ad.requestAd('midgame', { adStarted: function () { hold(true); }, adFinished: function () { done(true); }, adError: function () { done(false); } });
+        } else if (window.PokiSDK) {
+          hold(true); window.PokiSDK.commercialBreak().then(function () { done(true); }, function () { done(false); });
+        } else if (ADSENSE_CLIENT) {
+          window.adBreak({ type: 'next', name: name || 'break', beforeAd: function () { hold(true); },
+            adBreakDone: function (info) { done(info && info.breakStatus === 'viewed'); } });
+        } else done(false);
+      } catch (e) { done(false); }
+    });
+  }
+
+  window.ArcadeUI = { cast: castInit, adBreak: adBreak, barHeight: function () { return (document.getElementById('arc-bar') || {}).offsetHeight || 32; } };
 })();

@@ -9,11 +9,12 @@
 <meta property="og:site_name" content="Ryan Cake Studios Arcade">
 <meta property="og:title" content="Hamster Roll">
 <meta property="og:description" content="2D hamster-ball racing across 4 tracks — race solo for world times or make a room with friends.">
-<meta property="og:url" content="https://rynaing.github.io/arcade/hamster-roll.html">
+<meta property="og:url" content="https://cakecade.com/hamster-roll.html">
+<link rel="canonical" href="https://cakecade.com/hamster-roll.html">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🐹%3C/text%3E%3C/svg%3E">
 <script src="arcade-art.js?v=1" defer></script>
-<script src="arcade-ui.js?v=1" data-title="Hamster Roll" data-home="./index.html" data-layout="overlay"></script>
+<script src="arcade-ui.js?v=2" data-title="Hamster Roll" data-home="./index.html" data-layout="overlay"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#0b1020;font-family:'Trebuchet MS','Comic Sans MS',system-ui,sans-serif;user-select:none;-webkit-user-select:none}
@@ -243,7 +244,7 @@ table.res td,table.res th{border-bottom:1px solid #ffd1e2;color:var(--arc-ink)}t
 <div id="rotate-hint"><span>🔄 Rotate your phone for the full track</span></div>
 
 <script src="leaderboard.js?v=2"></script>
-<script src="arcade-audio.js?v=1"></script>
+<script src="arcade-audio.js?v=2"></script>
 <script type="module">
 
 /* ================= config ================= */
@@ -1497,6 +1498,7 @@ function showMatchResults(){
     html+=`<br><button class="btn alt" id="btn-tolobby">Back to Lobby</button>`;
   }
   $('results-card').innerHTML=html;$('results').style.display='flex';
+  if(S.solo&&window.ArcadeUI&&ArcadeUI.adBreak)ArcadeUI.adBreak('hr-match-over');
   if(S.solo){
     $('btn-again').onclick=()=>startMatch(true);
     $('btn-tomenu').onclick=()=>location.reload();

@@ -9,11 +9,12 @@
 <meta property="og:site_name" content="Ryan Cake Studios Arcade">
 <meta property="og:title" content="Bubble Brawl">
 <meta property="og:description" content="Water-balloon arena battler — trap rival blobs in bubbles and pop them. Solo vs bots or online with friends.">
-<meta property="og:url" content="https://rynaing.github.io/arcade/bubble-brawl.html">
+<meta property="og:url" content="https://cakecade.com/bubble-brawl.html">
+<link rel="canonical" href="https://cakecade.com/bubble-brawl.html">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🫧%3C/text%3E%3C/svg%3E">
 <script src="arcade-art.js?v=1" defer></script>
-<script src="arcade-ui.js?v=1" data-title="Bubble Brawl" data-home="./index.html"></script>
+<script src="arcade-ui.js?v=2" data-title="Bubble Brawl" data-home="./index.html"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{height:100%}
@@ -210,7 +211,7 @@ button.mini:hover{background:#fff0f6}
 <span class="chip" id="hPips" title="Balloons · Range · Speed (max 8 · 8 · 6)"></span>
 </div>
 <script src="leaderboard.js?v=2"></script>
-<script src="arcade-audio.js?v=1"></script>
+<script src="arcade-audio.js?v=2"></script>
 <script type="module">
 const SUPABASE_URL='https://ukrxoqsvyvlyeblubjeo.supabase.co';
 const SUPABASE_KEY='sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
@@ -1028,6 +1029,7 @@ function endMatch(result){
  $('endOv').classList.remove('hidden');
  // world win board: solo vs bots only
  $('wl').hidden=!S.solo;
+ if(S.solo&&window.ArcadeUI&&ArcadeUI.adBreak)ArcadeUI.adBreak('bb-match-over');
  if(S.solo&&window.ArcadeBoard)ArcadeBoard.winBoard({game:'bubble-brawl',won:result==='win',name:myName||$('name-input').value,placeholder:/^player$/i,list:$('wl-list'),note:$('wl-note')});
  updateHud();
 }
