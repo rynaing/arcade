@@ -118,7 +118,7 @@
    * game portal its SDK wins: CrazyGames (CrazyGames.SDK) or Poki (PokiSDK), if loaded on the page.
    * Add ?adtest=1 to a page URL to see AdSense test ads.
    */
-  var CF_ANALYTICS_TOKEN = '';
+  var CF_ANALYTICS_TOKEN = '89d2ba8dbecd428bac5bca26479cf03d';
   var ADSENSE_CLIENT = '';
   var NON_PERSONALIZED = true;
   var AD_GAP_MS = 120000;   // at most one ad break every 2 minutes
@@ -129,7 +129,7 @@
     for (var k in attrs) s.setAttribute(k, attrs[k]);
     document.head.appendChild(s);
   }
-  if (CF_ANALYTICS_TOKEN && location.protocol === 'https:')
+  if (CF_ANALYTICS_TOKEN && /(^|\.)cakecade\.com$/.test(location.hostname))   // live site only, not local testing
     addScript('https://static.cloudflareinsights.com/beacon.min.js', { 'data-cf-beacon': JSON.stringify({ token: CF_ANALYTICS_TOKEN }) });
   if (ADSENSE_CLIENT) {
     var test = /[?&]adtest=1\b/.test(location.search);
