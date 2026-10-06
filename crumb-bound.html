@@ -2479,12 +2479,14 @@ const SUPABASE_KEY = 'sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
 const NET_ROOM_PREFIX = 'cb-v6:'; // v6: every player's gear travels in the match defs
 /* Multiplayer-only client, loaded lazily: the menu, solo mode, and shop must
    keep working even if the Supabase CDN is unreachable. Resolves to null then. */
-const sbReady = (async () => {
-  try {
-    const supa = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-    return supa.createClient(SUPABASE_URL, SUPABASE_KEY);
-  } catch (e) { return null; }
-})();
+const sbReady = new Promise(res => {
+  // pinned copy in vendor/ (bump by replacing the file and this path; see README)
+  const s = document.createElement('script');
+  s.src = 'vendor/supabase-js-2.117.2.umd.js';
+  s.onload = () => { try { res(window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)); } catch (e) { res(null); } };
+  s.onerror = () => res(null);
+  document.head.appendChild(s);
+});
 
 /* Everything on the channel comes from another player's browser, so it's checked before use:
    strings are clipped, numbers must be finite, keys must be ones this page knows. */

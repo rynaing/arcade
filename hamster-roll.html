@@ -253,7 +253,8 @@ const SUPABASE_URL='https://ukrxoqsvyvlyeblubjeo.supabase.co';
 const SUPABASE_KEY='sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
 /* Multiplayer-only client, loaded lazily so the menu and solo play work even
    if the Supabase CDN is slow or blocked (school networks). Resolves to null then. */
-const sbReady=(async()=>{try{const supa=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');return supa.createClient(SUPABASE_URL,SUPABASE_KEY);}catch(e){return null;}})();
+const sbReady=new Promise(res=>{const s=document.createElement('script');s.src='vendor/supabase-js-2.117.2.umd.js'; // pinned copy in vendor/, see README
+  s.onload=()=>{try{res(window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY));}catch(e){res(null);}};s.onerror=()=>res(null);document.head.appendChild(s);});
 const cv=document.getElementById('cv');let ctx=cv.getContext('2d');
 const VW=960,VH=540;
 function fit(){const s=Math.min(innerWidth/VW,innerHeight/VH);cv.width=VW*s;cv.height=VH*s;cv.style.width=VW*s+'px';cv.style.height=VH*s+'px';ctx.setTransform(s,0,0,s,0,0);
