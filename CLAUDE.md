@@ -52,10 +52,24 @@ analytics script or re-run Cloudflare's setup.
   Keep the source of truth in `supabase/*.sql`.
 - Bump the `?v=` on `leaderboard.js` script tags in every page when the client changes.
 
+## Game decisions
+
+- Crumb Bound: teams always alternate turns (within a team, whoever acted longest ago goes
+  first). Weapons: Shell is always ready, Twin rests 1 turn after use, the special charges to
+  full in about 3 turns.
+- Crumb Bound: every player gets one free Teleport and one Band-Aid (a one-time welcome gift).
+- Crumb Bound match logs upload to Supabase `cb_match_logs` through `log_cb_match()` only
+  (anon can insert through it, not read). `cb_prune_match_logs()` deletes 30+ day rows only
+  when the database nears 400 MB. See `supabase/cb_match_logs.sql`; Ryan runs the SQL.
+- Hamster Roll: every player in a room gets a distinct colour.
+- Ryan's Cake TD keeps its own synth and music (it shares the arcade mute setting through its
+  🔊 button). Moving it onto `arcade-audio.js` would change how it sounds, so ask Ryan first.
+
 ## Archived games
 
 - Most Likely To, Math Sprint, Guesstimate, Common Threads, Common Threads Solo and Anagrams
   are archived. Their cards are commented out in `index.html` with an `ARCHIVED` note.
+  Anagrams' code is kept in game-night, hidden from its picker and `?game=` links.
 - They stay archived unless Ryan says otherwise. The games themselves live in the
   game-night repo.
 
@@ -70,7 +84,8 @@ analytics script or re-run Cloudflare's setup.
 
 ## Merging
 
-- Game, content and docs changes: open a PR, test it, and merge it yourself once it's safe.
+- Game, content and docs changes: open a PR, test it, and squash-merge it yourself once it's
+  safe and the Site checks are green.
 - Ads, privacy, leaderboard database changes and deleting anything: leave the PR for Ryan.
 
 ## Style
