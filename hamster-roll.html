@@ -244,7 +244,7 @@ table.res td,table.res th{border-bottom:1px solid #ffd1e2;color:var(--arc-ink)}t
 </div>
 <div id="rotate-hint"><span>🔄 Rotate your phone for the full track</span></div>
 
-<script src="leaderboard.js?v=2"></script>
+<script src="leaderboard.js?v=3"></script>
 <script src="arcade-audio.js?v=2"></script>
 <script src="arcade-net.js?v=1"></script>
 <script type="module">
@@ -341,7 +341,7 @@ const S={screen:'menu',solo:true,room:null,channel:null,players:{},order:[],trac
   race:null,remotes:{},finishes:{},myResults:[],totalMs:0,totalCoins:0,boosts:0,
   best:(()=>{try{return JSON.parse(localStorage.getItem('hr2-best')||'{}')||{};}catch(e){return{};}})()};
 let myName='';try{myName=localStorage.getItem('hr-name')||'';}catch(e){}
-if(myName)$('name-input').value=myName;
+$('name-input').value=myName||(window.ArcadeBoard?ArcadeBoard.friendlyName():'');
 const me={x:0,y:0,vx:0,vy:0,grounded:false,wallDir:0,jumpsUsed:0,movedSinceJump:false,face:1,
   roll:0,spin:0,boosts:0,coins:0,finished:false,dnf:false,finishMs:0,dizzy:0,color:PALETTE[0],skin:'bubble',cpIdx:0,path:null,padCd:0,slopeM:0};
 
@@ -1460,7 +1460,7 @@ function worldShow(t){
 function worldPost(t,ms){
   worldNote='';
   if(!window.ArcadeBoard)return;
-  if(!myName||/^hamster$/i.test(myName)){worldNote='Type your name on the menu to post world times.';return;}
+  if(ArcadeBoard.isDefaultName(myName)){worldNote='Type your name on the menu to post world times.';return;}
   ArcadeBoard.setName(myName);
   worldNote='Posting your time…';
   ArcadeBoard.submit('hamster-roll',trackSlug(t),myName,ms,{}).then(res=>{
@@ -1518,7 +1518,7 @@ function sendChat(text){
   S.channel.send({type:'broadcast',event:'chat',payload:{id:myId,name:myName,text}});
 }
 async function joinRoom(code,isHost){
-  myName=($('name-input').value||'').trim().slice(0,14)||'Hamster';
+  myName=($('name-input').value||'').trim().slice(0,14)||(window.ArcadeBoard?ArcadeBoard.friendlyName():'Player');
   try{localStorage.setItem('hr-name',myName);}catch(e){}
   setErr('');
   const res=await ArcadeNet.join({prefix:'hr2:',code,id:myId,
@@ -1671,7 +1671,7 @@ function closeShop(){
 $('btn-shop').onclick=openShop;refreshShopBtn();
 
 /* ================= UI wiring ================= */
-$('btn-practice').onclick=()=>{myName=($('name-input').value||'').trim().slice(0,14)||'Hamster';try{localStorage.setItem('hr-name',myName);}catch(e){}S.screen='race';startMatch(true);};
+$('btn-practice').onclick=()=>{myName=($('name-input').value||'').trim().slice(0,14)||(window.ArcadeBoard?ArcadeBoard.friendlyName():'Player');try{localStorage.setItem('hr-name',myName);}catch(e){}S.screen='race';startMatch(true);};
 $('btn-create').onclick=()=>joinRoom(ArcadeNet.newCode(),true);
 $('btn-join').onclick=()=>{$('join-row').style.display='block';$('code-input').focus();};
 $('btn-go').onclick=()=>joinRoom($('code-input').value,false);

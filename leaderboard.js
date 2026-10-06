@@ -9,6 +9,8 @@
  *   ArcadeBoard.top(game, board, {period, limit})        -> Promise<rows | null>
  *   ArcadeBoard.render(el, rows, {format, emptyText})     -> fills a list element
  *   ArcadeBoard.name() / ArcadeBoard.setName(n)           -> remembered player name
+ *   ArcadeBoard.friendlyName(fresh) / isDefaultName(n)    -> fun default name, and
+ *                                    whether a name is a default (defaults don't post)
  *
  * Submissions that fail because of the network are queued in localStorage and
  * retried on the next page load, so an offline win isn't lost.
@@ -50,6 +52,30 @@
   }
 
   function cleanName(n) { return String(n || '').replace(/\s+/g, ' ').trim().slice(0, 16); }
+
+  // Default names for players who haven't typed one, e.g. "Sunny Otter".
+  // Words are short so every pair fits the 14-character name boxes.
+  var ADJ = ['Sunny', 'Zippy', 'Jolly', 'Bouncy', 'Fuzzy', 'Giggly', 'Cosmic', 'Peppy', 'Snappy', 'Speedy',
+    'Comfy', 'Bubbly', 'Frosty', 'Lucky', 'Dizzy', 'Cheery', 'Sugary', 'Toasty', 'Wobbly', 'Sparkly'];
+  var CRITTER = ['Otter', 'Panda', 'Bunny', 'Puffin', 'Kitten', 'Koala', 'Gecko', 'Llama', 'Turtle', 'Corgi',
+    'Sloth', 'Lemur', 'Pony', 'Frog', 'Owl', 'Fox', 'Bee', 'Duck', 'Hedgie', 'Moose'];
+  var LS_DEFAULT = 'arcade-default-name';
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  // The same fun name each visit on this device, or a new one when `fresh`.
+  function friendlyName(fresh) {
+    var n = fresh ? '' : lsGet(LS_DEFAULT, '');
+    if (!n || !isDefaultName(n)) { n = pick(ADJ) + ' ' + pick(CRITTER); if (!fresh) lsSet(LS_DEFAULT, n); }
+    return n;
+  }
+  // Defaults (our fun names, plus the old "Player"/"Player 2"/"Hamster") never go
+  // on the world boards: a player has to type their own name for that.
+  function isDefaultName(n) {
+    n = cleanName(n).toLowerCase();
+    if (!n || /^(player( \d+)?|hamster)$/.test(n)) return true;
+    var w = n.split(' ');
+    var has = function (a, x) { return a.some(function (y) { return y.toLowerCase() === x; }); };
+    return w.length === 2 && has(ADJ, w[0]) && has(CRITTER, w[1]);
+  }
 
   function queue() { try { return JSON.parse(lsGet(LS_QUEUE, '[]')) || []; } catch (e) { return []; } }
   function saveQueue(q) { lsSet(LS_QUEUE, JSON.stringify(q.slice(-20))); }
@@ -127,7 +153,7 @@
   }
 
   // Win-count boards (vs bots): post one win if the player won and has a real
-  // name, then show the top 5. `placeholder` names (e.g. 'Player') don't post.
+  // name, then show the top 5. Default names and `placeholder` matches don't post.
   function winBoard(o) {
     var note = function (t) { if (o.note) { o.note.textContent = t || ''; o.note.hidden = !t; } };
     var AB = window.ArcadeBoard; // public object, so callers (and tests) can wrap it
@@ -135,7 +161,7 @@
     note('');
     var n = cleanName(o.name);
     if (!o.won) return show();
-    if (!n || (o.placeholder && o.placeholder.test(n))) { note('Type your name on the menu to count your wins worldwide.'); return show(); }
+    if (isDefaultName(n) || (o.placeholder && o.placeholder.test(n))) { note('Type your name on the menu to count your wins worldwide.'); return show(); }
     AB.setName(n);
     return AB.submit(o.game, 'wins', n, 1, {}).then(function (res) {
       note(res.ok ? '🌍 +1 world win!' : res.queued ? '📡 Offline — your win will count next visit.' : res.error);
@@ -151,7 +177,9 @@
     format: fmt,
     clientId: clientId,
     name: function () { return cleanName(lsGet(LS_NAME, '')); },
-    setName: function (n) { n = cleanName(n); if (n) lsSet(LS_NAME, n); return n; }
+    setName: function (n) { n = cleanName(n); if (n && !isDefaultName(n)) lsSet(LS_NAME, n); return n; },
+    friendlyName: friendlyName,
+    isDefaultName: isDefaultName
   };
 
   if (document.readyState === 'complete') setTimeout(flushQueue, 1500);
