@@ -48,7 +48,8 @@ analytics script or re-run Cloudflare's setup.
 - Test runs must never post to the world leaderboard. When playtesting (by hand or with
   Playwright), block or stub `submit_score` requests to Supabase, or wrap
   `window.ArcadeBoard.submit` so it never sends. Test scores have leaked before.
-- Database changes (tables, functions, deleting scores) go to Ryan as SQL he runs himself.
+- Database changes (tables, functions) go to Ryan as SQL he runs himself. Deleting rows (test scores,
+  test data) is allowed: see Deletes below.
   Keep the source of truth in `supabase/*.sql`.
 - Bump the `?v=` on `leaderboard.js` script tags in every page when the client changes.
 - Players who haven't typed a name get a fun default like "Sunny Otter" (`ArcadeBoard.friendlyName()`,
@@ -89,7 +90,18 @@ analytics script or re-run Cloudflare's setup.
 
 - Game, content and docs changes: open a PR, test it, and squash-merge it yourself once it's
   safe and the Site checks are green.
-- Ads, privacy, leaderboard database changes and deleting anything: leave the PR for Ryan.
+- Ads, privacy and leaderboard database changes: leave the PR for Ryan.
+
+## Deletes
+
+Claude may delete things (test rows in Supabase, files, branches, archived code) without asking,
+but every delete must be noted:
+- Say what was deleted and why in the PR description or the thread where it happened.
+- Add one line to the log below: date, what was deleted (table and row ids, file paths), why.
+  For database rows, keep the SQL used. Never delete real players' data.
+
+Delete log:
+- (none yet)
 
 ## Style
 
