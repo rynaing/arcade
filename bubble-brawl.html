@@ -9,11 +9,13 @@
 <meta property="og:site_name" content="Ryan Cake Studios Arcade">
 <meta property="og:title" content="Bubble Brawl">
 <meta property="og:description" content="Water-balloon arena battler — trap rival blobs in bubbles and pop them. Solo vs bots or online with friends.">
-<meta property="og:url" content="https://rynaing.github.io/arcade/bubble-brawl.html">
+<meta property="og:url" content="https://cakecade.com/bubble-brawl.html">
+<link rel="canonical" href="https://cakecade.com/bubble-brawl.html">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🫧%3C/text%3E%3C/svg%3E">
 <script src="arcade-art.js?v=1" defer></script>
-<script src="arcade-ui.js?v=1" data-title="Bubble Brawl" data-home="./index.html"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5048455596508415" crossorigin="anonymous"></script>
+<script src="arcade-ui.js?v=4" data-title="Bubble Brawl" data-home="./index.html"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{height:100%}
@@ -123,6 +125,7 @@ canvas{box-shadow:0 10px 40px rgba(20,0,30,.55),0 0 0 4px #fff,0 0 0 7px var(--a
 .dialog h2{color:var(--arc-pink-deep)}
 .dialog p{color:#6b5a72}
 .dialog b{color:var(--arc-pink-deep)}
+.dialog .rules-link{color:var(--arc-pink-deep);font-weight:800;white-space:nowrap}
 .dialog .keys{background:#fff0f6;border:2px solid #ffd1e2;color:var(--arc-plum)}
 .dialog .keys kbd{background:#fff;color:var(--arc-plum);border:2px solid #ffd1e2;border-bottom-width:3px;border-radius:7px}
 button.big{background:linear-gradient(180deg,#ff8fb8,var(--arc-pink-deep));box-shadow:0 5px 0 var(--arc-pink-dark),0 8px 16px rgba(60,10,40,.28);font-family:var(--arc-font);font-weight:900;text-shadow:0 1px 0 rgba(0,0,0,.2)}
@@ -164,8 +167,8 @@ button.mini:hover{background:#fff0f6}
 <div class="arc-cast-slot" data-arc-cast="blob0,blob1,blob3,shortcake,blob4,blob6" data-size="56"></div>
 <div class="arc-presents">Ryan Cake Studios presents</div>
 <h1>🫧 Bubble Brawl</h1>
-<p>Drop <b>water balloons</b> and splash your rivals! A splash traps you in a <b>bubble</b> for 4 seconds — <b>walk into a trapped rival to pop them!</b> Splashed again while trapped? Pop. Nobody gets you? You break free. Last blob standing wins.</p>
-<div class="keys"><kbd>←↑↓→</kbd> or <kbd>WASD</kbd> move &nbsp;·&nbsp; <kbd>Space</kbd> drop balloon<br>Crates drop powerups: 💧 +1 balloon, 🎯 +1 blast range, 👟 speed up, 🛡 shield (blocks one splash)<br><kbd>Esc</kbd> pauses. Your own balloons trap you too — leave an escape route! With 1:30 left the walls close in, so head for the middle.</div>
+<p>Splash rivals with <b>water balloons</b> to trap them in bubbles, then <b>walk into them to pop them</b>. Last blob standing wins! <a class="rules-link" href="how-to-play.html#bubble-brawl">Full rules</a></p>
+<div class="keys"><kbd>←↑↓→</kbd> / <kbd>WASD</kbd> move &nbsp;·&nbsp; <kbd>Space</kbd> balloon</div>
 <input type="text" id="name-input" maxlength="14" placeholder="Your name"><br>
 <button class="big" id="startBtn">▶ Solo vs Bots</button><br>
 <div class="diff" id="diffRow" role="radiogroup" aria-label="Bot difficulty">Bots: <button class="mini diff-b" data-d="easy" role="radio">Easy</button><button class="mini diff-b" data-d="normal" role="radio">Normal</button><button class="mini diff-b" data-d="hard" role="radio">Hard</button></div>
@@ -210,7 +213,7 @@ button.mini:hover{background:#fff0f6}
 <span class="chip" id="hPips" title="Balloons · Range · Speed (max 8 · 8 · 6)"></span>
 </div>
 <script src="leaderboard.js?v=2"></script>
-<script src="arcade-audio.js?v=1"></script>
+<script src="arcade-audio.js?v=2"></script>
 <script type="module">
 const SUPABASE_URL='https://ukrxoqsvyvlyeblubjeo.supabase.co';
 const SUPABASE_KEY='sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
@@ -231,9 +234,9 @@ async function joinRoom(code,isHost){
   const ch=sb.channel('bb-v2:'+code,{config:{presence:{key:myId},broadcast:{ack:false}}});
   S.channel=ch;S.room=code;S.players={};S.solo=false;
   ch.on('presence',{event:'sync'},renderRoster);
-  ch.on('presence',{event:'join'},({newPresences})=>{for(const p of newPresences)if(p.id!==myId){lobbyChat(null,p.name+' joined the room',true);}renderRoster();});
+  ch.on('presence',{event:'join'},({newPresences})=>{for(const p of newPresences.map(cleanPresence))if(p.id!==myId){lobbyChat(null,p.name+' joined the room',true);}renderRoster();});
   ch.on('presence',{event:'leave'},({leftPresences})=>{
-    for(const p of leftPresences){
+    for(const p of leftPresences.map(cleanPresence)){
       const wasHost=S.players[p.id]&&hostPid()===p.id;
       delete S.players[p.id];
       if(state==='play'&&S.netRole==='host'){
@@ -247,11 +250,11 @@ async function joinRoom(code,isHost){
     }
     renderRoster();
   });
-  ch.on('broadcast',{event:'chat'},({payload})=>{if(payload.id!==myId)lobbyChat(payload.name,payload.text);});
-  ch.on('broadcast',{event:'mstart'},({payload})=>{guestStart(payload);});
+  ch.on('broadcast',{event:'chat'},({payload})=>{const t=netStr(payload.text,120);if(payload.id!==myId&&t)lobbyChat(netStr(payload.name,14)||'Player',t);});
+  ch.on('broadcast',{event:'mstart'},({payload})=>{if(payload&&Array.isArray(payload.defs)&&payload.defs.length&&typeof payload.grid==='string')guestStart(payload);});
   ch.on('broadcast',{event:'snap'},({payload})=>{if(S.netRole==='guest'&&state==='play')applySnap(payload);});
-  ch.on('broadcast',{event:'mend'},({payload})=>{if(S.netRole==='guest')onGuestMend(payload);});
-  ch.on('broadcast',{event:'inp'},({payload})=>{if(S.netRole!=='host')return;const p=players.find(q=>q.pid===payload.id);if(p&&p.alive&&!p.isBot)p.netDir=payload.d;});
+  ch.on('broadcast',{event:'mend'},({payload})=>{if(S.netRole==='guest'&&payload)onGuestMend(payload);});
+  ch.on('broadcast',{event:'inp'},({payload})=>{if(S.netRole!=='host')return;const p=players.find(q=>q.pid===payload.id);if(p&&p.alive&&!p.isBot)p.netDir=cleanDir(payload.d);});
   ch.on('broadcast',{event:'bomb'},({payload})=>{if(S.netRole!=='host')return;const p=players.find(q=>q.pid===payload.id);if(p)dropBomb(p);});
   const ok=await new Promise(res=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;res(false);}},10000);
     ch.subscribe(st=>{if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(true);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'){done=true;clearTimeout(to);res(false);}});});
@@ -266,6 +269,8 @@ async function joinRoom(code,isHost){
   lobbyChat(null,'Welcome to room '+code+'! Host starts the match.',true);
   renderRoster();
 }
+/* a remote stick direction is null or one of the four unit steps */
+function cleanDir(d){if(!Array.isArray(d))return null;const x=d[0],y=d[1];return (Math.abs(x)+Math.abs(y)===1&&Number.isInteger(x)&&Number.isInteger(y))?[x,y]:null;}
 function isHost(){
   const ps=Object.values(S.players);
   if(!ps.length)return false;
@@ -284,7 +289,7 @@ async function backToMenu(){
 function renderRoster(){
   if(!S.channel)return;
   S.players={};
-  for(const arr of Object.values(S.channel.presenceState()))for(const p of arr)S.players[p.id]=p;
+  for(const arr of Object.values(S.channel.presenceState()))for(const p of arr){const c=cleanPresence(p);if(c.id)S.players[c.id]=c;}
   const ps=Object.values(S.players).sort((a,b)=>a.joinedAt-b.joinedAt);
   let html='';
   for(let i=0;i<4;i++){
@@ -329,7 +334,7 @@ function setGrid(gs){grid=[];for(let y=0;y<ROWS;y++){grid[y]=[];for(let x=0;x<CO
 function mePlayer(){return players.find(p=>p.pid===myId)||players[0];}
 function hostStartMatch(){
   if(!S.channel)return;
-  const ps=Object.values(S.channel.presenceState()).flat().sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,4);
+  const ps=Object.values(S.channel.presenceState()).flat().map(cleanPresence).filter(p=>p.id).sort((a,b)=>a.joinedAt-b.joinedAt).slice(0,4);
   if(!ps.length)return;
   const spots=[[1,1],[COLS-2,1],[1,ROWS-2],[COLS-2,ROWS-2]].sort(()=>Math.random()-0.5);
   const darkFor=c=>{const i=PALETTE.indexOf(c);return i>=0?PALETTE_D[i]:'#5a6376';};
@@ -350,7 +355,7 @@ function hostStartMatch(){
 }
 function guestStart(pl){
   setGrid(pl.grid);theme=(pl.th|0)%THEMES.length;sdReset();
-  makePlayers(pl.defs.map(d=>({pid:d.pid,name:d.name,color:d.color,dark:d.dark,isBot:d.isBot,isRemote:true,cx:d.cx,cy:d.cy})));
+  makePlayers(pl.defs.slice(0,4).map(d=>({pid:netStr(d.pid,32),name:netStr(d.name,14)||'Player',color:safeColor(d.color),dark:safeDark(d.dark),isBot:d.isBot===true,isRemote:true,cx:netCell(d.cx,COLS),cy:netCell(d.cy,ROWS)})));
   bombs=[];flames=[];powerups=[];particles=[];
   timeLeft=MATCH_TIME;score=0;kills=0;shake=0;
   S.netRole='guest';S.solo=false;lastDirK='x';
@@ -372,7 +377,8 @@ function sendSnap(){
   }});S.popEv=[];}catch(e){}
 }
 function applySnap(sn){
-  if(!sn||!sn.ps||sn.ps.length!==players.length)return;
+  if(!sn||!Array.isArray(sn.ps)||sn.ps.length!==players.length||!isFinite(sn.t)||typeof sn.g!=='string')return;
+  if(!sn.ps.every(a=>Array.isArray(a)&&a.slice(1,5).every(isFinite))||!Array.isArray(sn.bs)||!Array.isArray(sn.fs)||!Array.isArray(sn.us))return;
   timeLeft=sn.t;
   if(timeLeft<=SD_START&&!sdSeen){sdSeen=true;sdBannerUntil=performance.now()/1000+3.2;sfx('stun');if(!REDUCE_MOTION)shake=Math.min(12.5,shake+8)}
   for(let i=0;i<sn.ps.length;i++){
@@ -422,7 +428,7 @@ function onGuestMend(pl){
   if(state!=='play')return;state='over';
   if(pl.d||(pl.d===undefined&&pl.pid==='')){showDraw(!!pl.tu);return} // (a bot can win: its pid is '' too)
   const won=pl.pid!==''&&pl.pid===myId;
-  const gpops=pl.pops||0;
+  const gpops=netNum(pl.pops,0)|0;pl.name=netStr(pl.name,14)||'Player';
   const gtxt=gpops>0?('<b>'+esc(pl.name)+'</b> popped <b>'+gpops+'</b> rival'+(gpops===1?'':'s')+'.'):'Last blob standing!';
   showEnd(won?'\uD83C\uDFC6 You win!':'\uD83C\uDFC6 '+esc(pl.name)+' wins!',won?'Last blob standing!':gtxt,won);
 }
@@ -452,6 +458,12 @@ const S={screen:'menu',room:null,channel:null,players:{},solo:true,netRole:'solo
 const PALETTE=['#ff7b8a','#4aa8ff','#51d88a','#b07fe8','#ffd76a','#ff9d5c','#2ed8d0','#e8e8f0'];
 const PALETTE_D=['#d44a5c','#2b6fd4','#2f9e5f','#7d4fc0','#c9a13b','#c96a2e','#1a9a94','#9a9ab0'];
 const safeColor=c=>PALETTE.includes(c)?c:'#8a93a8';          // presence data is untrusted: palette colours only
+const safeDark=c=>PALETTE_D.includes(c)?c:'#5a6376';
+/* everything on the channel comes from another player's browser: clip strings, require finite numbers */
+const netStr=(v,n)=>(typeof v==='string'?v:'').slice(0,n);
+const netNum=(v,d)=>(typeof v==='number'&&isFinite(v)?v:d);
+const netCell=(v,max)=>Number.isInteger(v)&&v>=0&&v<max?v:1;
+function cleanPresence(p){return{id:netStr(p.id,32),name:netStr(p.name,14)||'Player',color:safeColor(p.color),joinedAt:netNum(p.joinedAt,Date.now())};}
 /* unique colours for a roster: keep each player's pick when it's valid and not taken, else the next free one */
 function assignColors(wanted){
   const taken=new Set(),out=[];
@@ -1028,6 +1040,7 @@ function endMatch(result){
  $('endOv').classList.remove('hidden');
  // world win board: solo vs bots only
  $('wl').hidden=!S.solo;
+ if(S.solo&&window.ArcadeUI&&ArcadeUI.adBreak)ArcadeUI.adBreak('bb-match-over');
  if(S.solo&&window.ArcadeBoard)ArcadeBoard.winBoard({game:'bubble-brawl',won:result==='win',name:myName||$('name-input').value,placeholder:/^player$/i,list:$('wl-list'),note:$('wl-note')});
  updateHud();
 }

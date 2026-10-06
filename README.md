@@ -1,8 +1,8 @@
 # Ryan Cake Studios Arcade
 
-A kid-friendly hub of free party and solo games — no sign-up, no ads, just pick a game and play.
+A free hub of party and solo games for all ages — no sign-up, just pick a game and play.
 
-Live at https://rynaing.github.io/arcade/ · Free forever · Kid-friendly
+Live at https://cakecade.com/ · Free forever · Kid-friendly
 
 ## Games
 
@@ -13,10 +13,11 @@ Live at https://rynaing.github.io/arcade/ · Free forever · Kid-friendly
 | **Crumb Bound** (`crumb-bound.html`) | Solo vs bots · online 1v1 / 2v2 | GunBound-style pastry artillery: scrolling map, delay turn order, weather, slopes tilt your cannon, Random pick with a secret legendary |
 | **Bubble Brawl** (`bubble-brawl.html`) | Solo vs bots · online | Balloono-style arena: splashes trap you in a bubble, rivals pop you by touch |
 | **Hamster Roll** (`hamster-roll.html`) | Solo · online race | Ball Racer-style 2D hamster-ball racing across 4 tracks |
+| **Frosted Duel** (`frosted-duel.html`) | Solo vs bot | 3D third-person arena duel (three.js, vendored in `vendor/`): sprinkle blaster, sword slash and lunge, block and parry, dash, wall-run |
 | **Ryan's Cake TD** (`ryans-cake-td.html`) | Solo | Tower defense: survive 10 waves, then endless |
 
 **Game Night** (party games for the big screen, hosted in the [game-night](https://github.com/rynaing/game-night) repo):
-Trivia, Anagrams, Most Likely To, Math Sprint, Guesstimate and Common Threads (party or solo).
+Trivia. (Most Likely To, Math Sprint, Guesstimate, Anagrams and Common Threads are archived: their cards are commented out in index.html.)
 Each has its own card here and opens straight into that game (`game-night/?game=<key>`); the hub's
 **Game Night** filter lists them and the "Got a room code?" box joins a room.
 
@@ -36,3 +37,10 @@ simulation or messages change so old cached copies can't join new rooms.
 ## Archived games
 
 Removed but recoverable from git tags: `archive/berrybrook-swordplay`, `archive/word-crumb`.
+
+## Checks
+
+`tests/` runs on every PR (`.github/workflows/checks.yml`): shared-script `?v=` values must
+match across pages and change when the script does, every page must load without script errors,
+and each online game must start a match while a fake player sends bad data. Run them locally with
+`cd tests && npm ci && npx playwright install chromium && node check-versions.mjs && node smoke.mjs && node online.mjs`.

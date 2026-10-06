@@ -8,6 +8,7 @@
  *   ArcadeAudio.toggle()            — mute / unmute everything (remembered across games)
  *   ArcadeAudio.bindButton(el)      — make a button show 🔊/🔇 and toggle on click
  *   ArcadeAudio.muted               — current state
+ *   ArcadeAudio.hold(on)            — silence everything for a moment (ad breaks) without changing mute
  *
  * Browsers only allow sound after the player interacts, so the engine wakes on the
  * first tap / key press and quietly ignores calls before that.
@@ -201,6 +202,8 @@
     music: function (name) { if (name) startSong(name); else stopSong(); },
     toggle: function () { wake(); setMuted(!prefs.muted); return prefs.muted; },
     setMuted: setMuted,
+    // temporary silence (ad breaks): leaves the saved mute setting alone
+    hold: function (on) { if (master) master.gain.setTargetAtTime(on || prefs.muted ? 0 : 1, ac.currentTime, 0.02); },
     get muted() { return prefs.muted; },
     bindButton: function (el) { if (!el) return; buttons.push(el); paint(el); el.addEventListener('click', function (e) { e.preventDefault(); window.ArcadeAudio.toggle(); }); },
     _sfxNames: Object.keys(SFX),
