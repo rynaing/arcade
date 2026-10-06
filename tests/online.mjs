@@ -63,6 +63,12 @@ async function run(browser, g) {
   }
   await click(A, '#btn-start');
   await sleep(1500);
+  // the guest sees the host's match running (turn messages / snapshots arriving)
+  const flowing = await {
+    'crumb-bound.html': async () => /Alice|Bob/.test(await B.textContent('#turn-banner')),
+    'bubble-brawl.html': async () => { const t0 = await B.textContent('#hTime'); await sleep(1200); return t0 !== await B.textContent('#hTime'); },
+    'hamster-roll.html': async () => true,
+  }[g.file]();
   const started = await B.evaluate(() => { const l = document.getElementById('lobby'); return !!l && getComputedStyle(l).display === 'none' || l.classList.contains('hidden'); });
 
   // match junk
@@ -91,7 +97,7 @@ async function run(browser, g) {
   await sleep(1500);
   const pwned = (await A.evaluate(() => window.__pwned || 0)) + (await B.evaluate(() => window.__pwned || 0));
   await ctx.close();
-  return { game: g.file, started, rosterOk: /Alice/.test(lobbyRoster) && /Bob/.test(lobbyRoster), pwned, errors: [...new Set(errors)] };
+  return { game: g.file, started, flowing, rosterOk: /Alice/.test(lobbyRoster) && /Bob/.test(lobbyRoster), pwned, errors: [...new Set(errors)] };
 }
 
 const site = await serve();
@@ -100,7 +106,7 @@ let bad = 0;
 for (const g of GAMES) {
   let res;
   try { res = await run(browser, g); } catch (e) { res = { game: g.file, crashed: e.message.split('\n')[0] }; }
-  const ok = !res.crashed && res.started && res.rosterOk && !res.pwned && !res.errors.length;
+  const ok = !res.crashed && res.started && res.flowing && res.rosterOk && !res.pwned && !res.errors.length;
   if (!ok) bad++;
   console.log((ok ? '✓ ' : '✗ ') + JSON.stringify(res));
 }

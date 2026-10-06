@@ -246,15 +246,10 @@ table.res td,table.res th{border-bottom:1px solid #ffd1e2;color:var(--arc-ink)}t
 
 <script src="leaderboard.js?v=2"></script>
 <script src="arcade-audio.js?v=2"></script>
+<script src="arcade-net.js?v=1"></script>
 <script type="module">
 
 /* ================= config ================= */
-const SUPABASE_URL='https://ukrxoqsvyvlyeblubjeo.supabase.co';
-const SUPABASE_KEY='sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
-/* Multiplayer-only client, loaded lazily so the menu and solo play work even
-   if the Supabase CDN is slow or blocked (school networks). Resolves to null then. */
-const sbReady=new Promise(res=>{const s=document.createElement('script');s.src='vendor/supabase-js-2.117.2.umd.js'; // pinned copy in vendor/, see README
-  s.onload=()=>{try{res(window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY));}catch(e){res(null);}};s.onerror=()=>res(null);document.head.appendChild(s);});
 const cv=document.getElementById('cv');let ctx=cv.getContext('2d');
 const VW=960,VH=540;
 function fit(){const s=Math.min(innerWidth/VW,innerHeight/VH);cv.width=VW*s;cv.height=VH*s;cv.style.width=VW*s+'px';cv.style.height=VH*s+'px';ctx.setTransform(s,0,0,s,0,0);
@@ -286,9 +281,7 @@ const FUR_COLORS=new Set(FURS.map(f=>f.color).concat(PALETTE,['#ff9f43']));
 const BALL_IDS=new Set(BALLS.map(b=>b.id));
 const safeColor=c=>(typeof c==='string'&&FUR_COLORS.has(c))?c:PALETTE[0];
 const safeSkin=k=>(typeof k==='string'&&BALL_IDS.has(k))?k:'bubble';
-/* everything on the channel comes from another player's browser: clip strings, require finite numbers */
-const netStr=(v,n)=>(typeof v==='string'?v:'').slice(0,n);
-const netId=v=>/^[\w-]{1,32}$/.test(v)?v:'';
+const {str:netStr,id:netId}=ArcadeNet;   // online rooms + checks on other players' data: arcade-net.js
 /* every hamster in a room is a different colour: earliest joiner keeps their pick, a later player who picked a taken
    colour gets the first free one. Sorted by joinedAt (then id) so every screen computes the same answer. */
 function resolveColors(players){
@@ -1525,45 +1518,41 @@ function sendChat(text){
   S.channel.send({type:'broadcast',event:'chat',payload:{id:myId,name:myName,text}});
 }
 async function joinRoom(code,isHost){
-  code=(code||'').toUpperCase().trim();
   myName=($('name-input').value||'').trim().slice(0,14)||'Hamster';
   try{localStorage.setItem('hr-name',myName);}catch(e){}
-  if(!/^[A-Z2-9]{4}$/.test(code)){setErr('Enter the 4-letter room code.');return;}
   setErr('');
-  const sb=await sbReady;
-  if(!sb){setErr('Online play can\u2019t load right now \u2014 check your connection. Solo still works!');return;}
-  const ch=sb.channel('hr2:'+code,{config:{presence:{key:myId},broadcast:{ack:false}}});
-  S.channel=ch;S.room=code;S.solo=false;S.players={};
-  ch.on('presence',{event:'sync'},renderRoster);
-  ch.on('presence',{event:'join'},({newPresences})=>{for(const p of newPresences)if(p.id!==myId){lobbyChat(null,(netStr(p.name,14)||'Player')+' joined the room',true);if(!window.ArcadeAudio)beep(660,.08);}renderRoster();});
-  ch.on('presence',{event:'leave'},({leftPresences})=>{for(const p of leftPresences){delete S.players[p.id];delete S.remotes[p.id];lobbyChat(null,(netStr(p.name,14)||'Player')+' left',true);}renderRoster();});
-  ch.on('broadcast',{event:'chat'},({payload})=>{const n=netStr(payload.name,14)||'Player',t=netStr(payload.text,120);if(payload.id!==myId&&t){lobbyChat(n,t);raceChat(n,t);}});
-  ch.on('broadcast',{event:'pos'},({payload})=>{if(!payload||!netId(payload.id)||payload.id===myId||!isFinite(payload.x)||!isFinite(payload.y))return;const o=S.remotes[payload.id];S.remotes[payload.id]={...payload,name:netStr(payload.name,14)||'Player',roll:isFinite(payload.roll)?payload.roll:0,color:safeColor(payload.color),skin:safeSkin(payload.skin),rx:o?o.rx:payload.x,ry:o?o.ry:payload.y};});
-  ch.on('broadcast',{event:'finish'},({payload})=>{
-    if(!payload||!netId(payload.id)||!Number.isInteger(payload.track)||payload.track<0||payload.track>=TRACKS.length)return;
-    payload={id:payload.id,name:netStr(payload.name,14)||'Player',track:payload.track,dnf:!!payload.dnf,ms:isFinite(payload.ms)&&payload.ms>=0?payload.ms:0};
-    if(!payload.dnf&&!payload.ms)payload.dnf=true;
-    const arr=S.finishes[payload.track]=S.finishes[payload.track]||[];
-    const ix=arr.findIndex(f=>f.id===payload.id);
-    if(ix>=0)arr[ix]=payload;else arr.push(payload);
-    // late remote finish: refresh the table if it's still on screen for this track
-    if(S.race&&S.race.done&&payload.track===S.track&&$('results').style.display==='flex'){
-      showTrackResults();toast(payload.name+(payload.dnf?' DNF':' finished!'),1500);
-    }
-  });
-  ch.on('broadcast',{event:'start'},()=>{startMatch(false);});
-  const ok=await new Promise(res=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;res(false);}},10000);
-    ch.subscribe(st=>{if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(true);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'){done=true;clearTimeout(to);res(false);}});});
-  if(!ok){setErr('Could not connect. Check your connection and retry.');return;}
-  const existing=Object.values(ch.presenceState()).flat();
-  S.color=furColor()||PALETTE[existing.length%PALETTE.length];
-  await ch.track({id:myId,name:myName,color:S.color,skin:shop.ball,joinedAt:Date.now()});
+  const res=await ArcadeNet.join({prefix:'hr2:',code,id:myId,
+    clean:p=>({color:safeColor(p.color),skin:safeSkin(p.skin)}),
+    onSync:renderRoster,
+    onJoin:ps=>{for(const p of ps)if(p.id!==myId){lobbyChat(null,p.name+' joined the room',true);if(!window.ArcadeAudio)beep(660,.08);}renderRoster();},
+    onLeave:ps=>{for(const p of ps){delete S.players[p.id];delete S.remotes[p.id];lobbyChat(null,p.name+' left',true);}renderRoster();},
+    on:{
+      chat:p=>{if(p.id!==myId){lobbyChat(p.name,p.text);raceChat(p.name,p.text);}},
+      pos:p=>{if(!netId(p.id)||p.id===myId||!isFinite(p.x)||!isFinite(p.y))return;const o=S.remotes[p.id];S.remotes[p.id]={...p,name:netStr(p.name,14)||'Player',roll:isFinite(p.roll)?p.roll:0,color:safeColor(p.color),skin:safeSkin(p.skin),rx:o?o.rx:p.x,ry:o?o.ry:p.y};},
+      finish:p=>{
+        if(!netId(p.id)||!Number.isInteger(p.track)||p.track<0||p.track>=TRACKS.length)return;
+        p={id:p.id,name:netStr(p.name,14)||'Player',track:p.track,dnf:!!p.dnf,ms:isFinite(p.ms)&&p.ms>=0?p.ms:0};
+        if(!p.dnf&&!p.ms)p.dnf=true;
+        const arr=S.finishes[p.track]=S.finishes[p.track]||[];
+        const ix=arr.findIndex(f=>f.id===p.id);
+        if(ix>=0)arr[ix]=p;else arr.push(p);
+        // late remote finish: refresh the table if it's still on screen for this track
+        if(S.race&&S.race.done&&p.track===S.track&&$('results').style.display==='flex'){
+          showTrackResults();toast(p.name+(p.dnf?' DNF':' finished!'),1500);
+        }
+      },
+      start:()=>{startMatch(false);},
+    }});
+  if(!res.ok){setErr({code:'Enter the 4-letter room code.',offline:'Online play can\u2019t load right now \u2014 check your connection. Solo still works!'}[res.error]||'Could not connect. Check your connection and retry.');return;}
+  const room=res.room;
+  S.net=room;S.channel=room.channel;S.room=room.code;S.solo=false;S.players={};
+  S.color=furColor()||PALETTE[room.players().length%PALETTE.length];
+  await room.track({id:myId,name:myName,color:S.color,skin:shop.ball,joinedAt:Date.now()});
   await new Promise(r=>setTimeout(r,600));
   $('menu').style.display='none';$('lobby').style.display='flex';S.screen='lobby';updateTouchVis();
-  $('room-code').textContent=code;$('chat-box').innerHTML='';
-  lobbyChat(null,'Welcome to room '+code+'! Host starts the match.',true);
+  $('room-code').textContent=room.code;$('chat-box').innerHTML='';
+  lobbyChat(null,'Welcome to room '+room.code+'! Host starts the match.',true);
   renderRoster();
-  if(isHost)$('btn-start').style.display='inline-block';
 }
 function isHost(){
   const ps=Object.values(S.players);
@@ -1573,7 +1562,7 @@ function isHost(){
 function renderRoster(){
   if(!S.channel)return;
   S.players={};
-  for(const arr of Object.values(S.channel.presenceState()))for(const p of arr)if(p&&netId(p.id))S.players[p.id]={...p,name:netStr(p.name,14)||'Player',joinedAt:isFinite(p.joinedAt)?p.joinedAt:Date.now(),color:safeColor(p.color),skin:safeSkin(p.skin)};
+  for(const p of S.net.players())S.players[p.id]=p;
   S.col=resolveColors(Object.values(S.players));
   for(const id in S.players)S.players[id].color=S.col[id];
   if(S.col[myId])me.color=S.col[myId];
@@ -1600,7 +1589,7 @@ function copyInvite(){
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Invite link copied! 📋',1500)).catch(()=>{prompt('Copy your invite link:',url);});
 }
 $('btn-copy').onclick=copyInvite;
-async function leaveRoom(){try{await S.channel.unsubscribe();}catch(e){}S.channel=null;S.room=null;S.solo=true;}
+async function leaveRoom(){if(S.net)await S.net.leave();S.net=null;S.channel=null;S.room=null;S.solo=true;}
 function lobbyChat(name,text,sys){const d=document.createElement('div');if(sys)d.className='sys';d.textContent=sys?text:(name+': '+text);const b=$('chat-box');b.appendChild(d);b.scrollTop=b.scrollHeight;}
 function raceChat(name,text){const box=$('race-chat-msgs');const d=document.createElement('div');d.textContent=name+': '+text;box.appendChild(d);setTimeout(()=>d.remove(),7000);while(box.children.length>4)box.firstChild.remove();}
 function raceChatToggle(){
@@ -1683,7 +1672,7 @@ $('btn-shop').onclick=openShop;refreshShopBtn();
 
 /* ================= UI wiring ================= */
 $('btn-practice').onclick=()=>{myName=($('name-input').value||'').trim().slice(0,14)||'Hamster';try{localStorage.setItem('hr-name',myName);}catch(e){}S.screen='race';startMatch(true);};
-$('btn-create').onclick=()=>joinRoom(Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join(''),true);
+$('btn-create').onclick=()=>joinRoom(ArcadeNet.newCode(),true);
 $('btn-join').onclick=()=>{$('join-row').style.display='block';$('code-input').focus();};
 $('btn-go').onclick=()=>joinRoom($('code-input').value,false);
 $('btn-leave').onclick=async()=>{await leaveRoom();location.reload();};

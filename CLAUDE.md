@@ -8,7 +8,13 @@ See README.md for how the games, leaderboards and online play work.
 - Live at https://cakecade.com (GitHub Pages from `main`, custom domain via `CNAME`).
   Every merge to `main` goes live, so test before merging.
 - Static site: one self-contained HTML file per game, shared code in `arcade-ui.js`,
-  `arcade-art.js`, `arcade-audio.js` and `leaderboard.js`. No build step.
+  `arcade-art.js`, `arcade-audio.js`, `arcade-net.js` and `leaderboard.js`. No build step,
+  no game framework: shared behaviour goes into these files instead of being copied per game.
+- Online play (Crumb Bound, Bubble Brawl, Hamster Roll) goes through `arcade-net.js`: Supabase
+  loading, rooms, roster, and checks on everything other players send. Never trust a channel
+  message: clip strings, require finite numbers, accept only known keys.
+- supabase-js is a pinned copy in `vendor/` (same for game-night). Bump it deliberately, never
+  load a floating version from a CDN; upgrade steps are in README.
 
 ## More than one Claude works on this repo
 
