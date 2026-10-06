@@ -308,29 +308,13 @@ function setWallet(n){try{localStorage.setItem('hr-coins',String(Math.max(0,Math
 function furColor(){const f=FURS.find(f=>f.id===shop.fur);return f?f.color:null;}
 
 /* ================= audio ================= */
-let AC=null;
-function beep(f,d,type='sine',v=.12,slide=0){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,AC.currentTime);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),AC.currentTime+d);g.gain.setValueAtTime(v,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d);}catch(e){}}
-/* sound: shared arcade engine when available (falls back to the old beeps) */
-const AA=(name,fallback)=>(...a)=>{if(window.ArcadeAudio)ArcadeAudio.sfx(name);else fallback(...a);};
-const legacySfx={
-  jump:n=>beep(300+n*90,.12,'square',.07,220),
-  wall:()=>beep(240,.1,'square',.08,300),
-  boost:()=>beep(180,.3,'sawtooth',.1,700),
-  coin:()=>{beep(950,.07,'sine',.08);setTimeout(()=>beep(1420,.1,'sine',.08),60);},
-  pickup:()=>beep(520,.12,'triangle',.1,420),
-  land:()=>beep(140,.06,'sine',.06),
-  finish:()=>{[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.16,'triangle',.1),i*95));},
-  dnf:()=>beep(220,.4,'sawtooth',.09,-120),
-  count:()=>beep(660,.12,'square',.1),
-  go:()=>beep(990,.25,'square',.12),
-  bump:()=>beep(180,.05,'square',.05),
-  crumble:()=>beep(180,.25,'sawtooth',.09,-100),
-};
+/* sound: the shared arcade engine (arcade-audio.js) */
+const AA=name=>()=>{if(window.ArcadeAudio)ArcadeAudio.sfx(name);};
 /* jump 1 = hop, 2 = hop + sparkle, 3 = hop + rising power-up arpeggio */
-const jumpSfx=n=>{if(window.ArcadeAudio){ArcadeAudio.sfx('jump');if(n===2)setTimeout(()=>ArcadeAudio.sfx('pickup'),45);else if(n>=3)setTimeout(()=>ArcadeAudio.sfx('powerup'),40);}else legacySfx.jump(n);};
-const sfx={jump:jumpSfx,wall:AA('boing',legacySfx.wall),boost:AA('boost',legacySfx.boost),coin:AA('coin',legacySfx.coin),
-  pickup:AA('pickup',legacySfx.pickup),land:AA('land',legacySfx.land),finish:AA('win',legacySfx.finish),dnf:AA('dnf',legacySfx.dnf),
-  count:AA('count',legacySfx.count),go:AA('go',legacySfx.go),bump:AA('bump',legacySfx.bump),crumble:AA('crumble',legacySfx.crumble)};
+const jumpSfx=n=>{if(window.ArcadeAudio){ArcadeAudio.sfx('jump');if(n===2)setTimeout(()=>ArcadeAudio.sfx('pickup'),45);else if(n>=3)setTimeout(()=>ArcadeAudio.sfx('powerup'),40);}};
+const sfx={jump:jumpSfx,wall:AA('boing'),boost:AA('boost'),coin:AA('coin'),
+  pickup:AA('pickup'),land:AA('land'),finish:AA('win'),dnf:AA('dnf'),
+  count:AA('count'),go:AA('go'),bump:AA('bump'),crumble:AA('crumble')};
 
 /* ================= tracks ================= */
 // solids: [x,y,w,h]  coins/boosts: [x,y]  finish: {x,y,w,h}
@@ -619,7 +603,7 @@ function stepPlayer(p,dt,t){
           const sp=Math.hypot(p.vx,p.vy);
           if(sp<320){p.vx*=320/sp;p.vy*=320/sp;}
           b.flash=6;
-          if(p===me){sfx.bump();addShake(7);if(!window.ArcadeAudio)beep(880,.12,'square',.09,660);}
+          if(p===me){sfx.bump();addShake(7);}
           burst(p.x,p.y,'#ff5964',10);
         }
       }
@@ -1524,7 +1508,7 @@ async function joinRoom(code,isHost){
   const res=await ArcadeNet.join({prefix:'hr2:',code,id:myId,
     clean:p=>({color:safeColor(p.color),skin:safeSkin(p.skin)}),
     onSync:renderRoster,
-    onJoin:ps=>{for(const p of ps)if(p.id!==myId){lobbyChat(null,p.name+' joined the room',true);if(!window.ArcadeAudio)beep(660,.08);}renderRoster();},
+    onJoin:ps=>{for(const p of ps)if(p.id!==myId){lobbyChat(null,p.name+' joined the room',true);}renderRoster();},
     onLeave:ps=>{for(const p of ps){delete S.players[p.id];delete S.remotes[p.id];lobbyChat(null,p.name+' left',true);}renderRoster();},
     on:{
       chat:p=>{if(p.id!==myId){lobbyChat(p.name,p.text);raceChat(p.name,p.text);}},
