@@ -1,0 +1,13 @@
+{
+  "name": "arcade-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "versions": "node check-versions.mjs",
+    "smoke": "node smoke.mjs",
+    "online": "node online.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}
