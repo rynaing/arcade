@@ -73,6 +73,10 @@ analytics script or re-run Cloudflare's setup.
 - Hamster Roll: every player in a room gets a distinct colour.
 - Ryan's Cake TD keeps its own synth and music (it shares the arcade mute setting through its
   🔊 button). Moving it onto `arcade-audio.js` would change how it sounds, so ask Ryan first.
+- Ryan's Cake TD limitless mode: after wave 30 enemy HP also grows by a per-difficulty factor each
+  wave (`late` in `DIFFS`: Chill 1.04, Classic 1.05, Nightmare 1.065), and gold per kill is worked
+  out before that factor so income stays linear. Without it, late waves got easy. Retune `late`
+  if it feels too soft or too brutal.
 
 ## Archived games
 
