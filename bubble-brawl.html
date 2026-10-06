@@ -212,7 +212,7 @@ button.mini:hover{background:#fff0f6}
 <div class="hud hud-bottom">
 <span class="chip" id="hPips" title="Balloons · Range · Speed (max 8 · 8 · 6)"></span>
 </div>
-<script src="leaderboard.js?v=2"></script>
+<script src="leaderboard.js?v=3"></script>
 <script src="arcade-audio.js?v=2"></script>
 <script src="arcade-net.js?v=1"></script>
 <script type="module">
@@ -220,7 +220,7 @@ button.mini:hover{background:#fff0f6}
 function setErr(t){const e=$('menu-err');if(e)e.textContent=t;}
 function toast(t,ms){const d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 18px;border-radius:999px;z-index:9999;font:14px sans-serif';document.body.appendChild(d);setTimeout(()=>d.remove(),ms||1500);}
 async function joinRoom(code,isHost){
-  myName=($('name-input').value||'').trim().slice(0,14)||'Player';
+  myName=($('name-input').value||'').trim().slice(0,14)||(window.ArcadeBoard?ArcadeBoard.friendlyName():'Player');
   try{localStorage.setItem('bb-name',myName);}catch(e){}
   setErr('');
   const res=await ArcadeNet.join({prefix:'bb-v2:',code,id:myId,
@@ -443,7 +443,7 @@ try{
     $('join-row').style.display='block';$('code-input').value=icode;
     setTimeout(()=>{if(state==='menu')joinRoom(icode,false);},600);
   }
-  const saved=localStorage.getItem('bb-name');if(saved)$('name-input').value=saved;
+  const saved=localStorage.getItem('bb-name');$('name-input').value=saved||(window.ArcadeBoard?ArcadeBoard.friendlyName():'Player');
 }catch(e){}
 const myId='b'+Math.random().toString(36).slice(2,10);
 let myName=localStorage.getItem('bb-name')||'';

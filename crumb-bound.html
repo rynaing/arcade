@@ -402,7 +402,7 @@ body.in-menu #rotateHint{display:none!important}
   </div>
 </div>
 </div>
-<script src="leaderboard.js?v=2"></script>
+<script src="leaderboard.js?v=3"></script>
 <script src="arcade-audio.js?v=2"></script>
 <script src="arcade-net.js?v=1"></script>
 <script type="module">
@@ -1058,7 +1058,7 @@ const $ = id => document.getElementById(id);
 
 let myId = 'p' + Math.random().toString(36).slice(2, 9);
 let myName = 'Player';
-try { myName = localStorage.getItem('cb-name') || 'Player'; $('name-input').value = myName; } catch (e) {}
+try { myName = localStorage.getItem('cb-name') || (window.ArcadeBoard ? ArcadeBoard.friendlyName() : 'Player'); $('name-input').value = myName; } catch (e) {}
 
 const Net = { channel: null, room: null, role: 'solo' }; // role: solo|host|guest; net.js fills in
 /* per-match event log (for debugging online games): kept in memory + localStorage 'cb-last-log', copy it with the end-screen button */
@@ -2553,7 +2553,7 @@ function sendChatMsg(text, scope) {
 function setMenuErr(t) { const e = $('menu-err'); if (e) e.textContent = t; }
 
 async function joinRoom(code, asHost) {
-  myName = ($('name-input').value || '').trim().slice(0, 14) || 'Player';
+  myName = ($('name-input').value || '').trim().slice(0, 14) || (window.ArcadeBoard ? ArcadeBoard.friendlyName() : 'Player');
   try { localStorage.setItem('cb-name', myName); } catch (e) {}
   setMenuErr('');
   Net.role = asHost ? 'host' : 'guest';
@@ -2997,7 +2997,7 @@ function refreshBotPick() {
 }
 function startSolo() {
   const mine = resolveMobile(myMobile);
-  myName = ($('name-input').value || '').trim().slice(0, 14) || 'Player';
+  myName = ($('name-input').value || '').trim().slice(0, 14) || (window.ArcadeBoard ? ArcadeBoard.friendlyName() : 'Player');
   try { localStorage.setItem('cb-name', myName); } catch (e) {}
   Net.role = 'solo'; Net.net = null; Net.channel = null;
   const bd = botDefOf(myBot);

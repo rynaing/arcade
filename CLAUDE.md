@@ -51,6 +51,9 @@ analytics script or re-run Cloudflare's setup.
 - Database changes (tables, functions, deleting scores) go to Ryan as SQL he runs himself.
   Keep the source of truth in `supabase/*.sql`.
 - Bump the `?v=` on `leaderboard.js` script tags in every page when the client changes.
+- Players who haven't typed a name get a fun default like "Sunny Otter" (`ArcadeBoard.friendlyName()`,
+  shared by every game). Defaults never post to the world boards (`ArcadeBoard.isDefaultName()`);
+  a player has to type their own name for that. Keep new games on these helpers.
 
 ## Game decisions
 
