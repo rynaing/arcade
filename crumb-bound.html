@@ -2488,6 +2488,22 @@ const sbReady = new Promise(res => {
   document.head.appendChild(s);
 });
 
+/* Everything on the channel comes from another player's browser, so it's checked before use:
+   strings are clipped, numbers must be finite, keys must be ones this page knows. */
+const netStr = (v, n) => (typeof v === 'string' ? v : '').slice(0, n);
+const netNum = (v, d) => (typeof v === 'number' && isFinite(v) ? v : d);
+const netIdx = (v, len) => (Number.isInteger(v) && v >= 0 && v < len ? v : -1);
+const netTeam = t => (t === 'B' ? 'B' : 'A');
+function cleanPresence(p) {
+  return { id: netStr(p.id, 32), name: netStr(p.name, 14) || 'Player',
+    mobile: MOBILES[p.mobile] || p.mobile === RANDOM_MOBILE ? p.mobile : 'shortcake', gear: cleanGear(p.gear),
+    team: netTeam(p.team), ready: p.ready === true, joinedAt: netNum(p.joinedAt, Date.now()) };
+}
+function cleanDef(d) {
+  return { pid: netStr(d.pid, 32), name: netStr(d.name, 14) || 'Player', mobile: MOBILES[d.mobile] ? d.mobile : 'shortcake',
+    gear: cleanGear(d.gear), team: netTeam(d.team), isBot: false };
+}
+
 let lobbyState = {};   // id -> presence {id,name,mobile,team,ready,joinedAt}
 let lastSnap = null;
 let shotAckTimer = null;
@@ -2565,11 +2581,11 @@ async function joinRoom(code, asHost) {
 
   ch.on('presence', { event: 'sync' }, renderRoster);
   ch.on('presence', { event: 'join' }, ({ newPresences }) => {
-    for (const p of newPresences) if (p.id !== myId) lobbyChat(null, p.name + ' joined the room', true);
+    for (const p of newPresences.map(cleanPresence)) if (p.id !== myId) lobbyChat(null, p.name + ' joined the room', true);
     renderRoster();
   });
   ch.on('presence', { event: 'leave' }, ({ leftPresences }) => {
-    for (const p of leftPresences) {
+    for (const p of leftPresences.map(cleanPresence)) {
       const wasHost = hostPid() === p.id;
       delete lobbyState[p.id];
       if (screen === 'play' && st && !st.over) {
@@ -2599,20 +2615,22 @@ async function joinRoom(code, asHost) {
   ch.on('broadcast', { event: 'chat' }, ({ payload }) => {
     if (payload.id === myId) return;
     if (payload.scope === 'team' && payload.team !== myTeam) return; // not for us
-    if (screen === 'play') gchatLog(payload.name, payload.text, false, payload.scope);
-    else lobbyChat(payload.name, payload.text);
+    const name = netStr(payload.name, 14) || 'Player', text = netStr(payload.text, 120);
+    if (!text) return;
+    if (screen === 'play') gchatLog(name, text, false, payload.scope === 'team' ? 'team' : 'all');
+    else lobbyChat(name, text);
   });
   ch.on('broadcast', { event: 'mstart' }, ({ payload }) => {
-    if (Net.role === 'guest') guestStart(payload);
+    if (Net.role === 'guest' && payload && Array.isArray(payload.defs) && payload.defs.length) guestStart(payload);
   });
   ch.on('broadcast', { event: 'turn' }, ({ payload }) => {
-    if (Net.role !== 'guest') return;
+    if (Net.role !== 'guest' || !st || !payload || netIdx(payload.activeIdx, st.mobiles.length) < 0) return;
     onRemoteTurn(payload);
   });
   ch.on('broadcast', { event: 'move' }, ({ payload }) => {
-    if (payload.id === myId || !st || screen !== 'play') return;
-    const m = st.mobiles[payload.idx];
-    if (m && m.alive) { m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); if (payload.face) m.face = payload.face; if (payload.ang != null) m.ang = payload.ang; }
+    if (payload.id === myId || !st || screen !== 'play' || !isFinite(payload.x)) return;
+    const m = st.mobiles[netIdx(payload.idx, st.mobiles.length)];
+    if (m && m.alive && m.pid === payload.id) { m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); if (payload.face) m.face = payload.face < 0 ? -1 : 1; if (isFinite(payload.ang)) m.ang = payload.ang; }
   });
   ch.on('broadcast', { event: 'itemuse' }, ({ payload }) => {
     if (Net.role !== 'host' || !st || screen !== 'play' || turnState !== 'aim') return;
@@ -2620,24 +2638,28 @@ async function joinRoom(code, asHost) {
     applyInstantItem(payload.item, false);
   });
   ch.on('broadcast', { event: 'aim' }, ({ payload }) => {
-    if (payload.id === myId || !st || screen !== 'play') return;
-    const m = st.mobiles[payload.idx];
-    if (m) m.ang = payload.ang;
+    if (payload.id === myId || !st || screen !== 'play' || !isFinite(payload.ang)) return;
+    const m = st.mobiles[netIdx(payload.idx, st.mobiles.length)];
+    if (m && m.pid === payload.id) m.ang = payload.ang;
   });
   ch.on('broadcast', { event: 'shot' }, ({ payload }) => {
     if (Net.role !== 'host' || !st || screen !== 'play' || turnState !== 'aim') return;
     if (payload.id !== st.mobiles[activeIdx].pid) return; // not their turn
     const m = st.mobiles[activeIdx];
-    // validate: move budget + SS charge
+    // validate: numbers, move budget + SS charge
+    if (!isFinite(payload.x) || !isFinite(payload.ang) || !isFinite(payload.power)) return;
+    if (payload.weapon !== 1 && payload.weapon !== 2) payload.weapon = 0;
+    if (!ITEMS[payload.item]) payload.item = null;
+    if (!isFinite(payload.secs)) payload.secs = null;
     if (Math.abs(payload.x - turnStartX) > moveBudgetOf(m) + 2) payload.x = turnStartX;
     if (payload.weapon === 1 && (m.cd1 || 0) > 0) payload.weapon = 0;
     if (payload.weapon === 2 && m.ss < SS_NEED) payload.weapon = 0;
     if (payload.item && payload.weapon === 2) payload.item = null; // OG: no items with SS
-    m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); m.ang = payload.ang; if (payload.face) m.face = payload.face;
+    m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); m.ang = payload.ang; if (payload.face) m.face = payload.face < 0 ? -1 : 1;
     fireShot({ x: m.x, y: m.y, ang: payload.ang, power: Math.max(5, Math.min(100, payload.power)), weapon: payload.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: payload.secs, item: payload.item });
   });
   ch.on('broadcast', { event: 'snap' }, ({ payload }) => {
-    if (Net.role !== 'guest' || screen !== 'play') return;
+    if (Net.role !== 'guest' || screen !== 'play' || !payload || !snapOk(payload.final)) return;
     clearTimeout(shotAckTimer);
     cbLog('snap-recv', { seq: payload.seq, hasShot: !!payload.shot, src: payload.shot && payload.shot.srcIdx, turnState });
     lastSnap = payload;
@@ -2656,7 +2678,7 @@ async function joinRoom(code, asHost) {
   });
   ch.on('broadcast', { event: 'mend' }, ({ payload }) => {
     if (Net.role !== 'guest') return;
-    if (st && !st.over) { st.over = true; st.winner = payload.winner; endMatch(); }
+    if (st && !st.over) { st.over = true; st.winner = ['A', 'B', 'draw'].includes(payload.winner) ? payload.winner : 'draw'; endMatch(); }
   });
   ch.on('broadcast', { event: 'toblobby' }, () => {
     if (Net.role !== 'guest') return;
@@ -2695,7 +2717,7 @@ function migrateHost() {
 function refreshLobbyState() {
   if (!Net.channel) return;
   lobbyState = {};
-  for (const arr of Object.values(Net.channel.presenceState())) for (const p of arr) lobbyState[p.id] = p;
+  for (const arr of Object.values(Net.channel.presenceState())) for (const p of arr) { const c = cleanPresence(p); if (c.id) lobbyState[c.id] = c; }
 }
 
 function renderRoster() {
@@ -2753,7 +2775,12 @@ function hostStartMatch() {
 
 function guestStart(payload) {
   Net.role = 'guest';
-  beginPlay(payload.seed, payload.defs);
+  beginPlay(netNum(payload.seed, 1) | 0, payload.defs.slice(0, 4).map(cleanDef));
+}
+/* a host snapshot must line up with our match before we apply it */
+function snapOk(s) {
+  return !!(s && st && Array.isArray(s.terrain) && s.terrain.length === st.terrain.length &&
+    Array.isArray(s.mobiles) && s.mobiles.length === st.mobiles.length && s.mobiles.every(m => m && isFinite(m.x) && isFinite(m.y) && isFinite(m.hp)));
 }
 
 function beginPlay(seed, defs) {

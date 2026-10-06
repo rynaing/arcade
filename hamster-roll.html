@@ -286,6 +286,9 @@ const FUR_COLORS=new Set(FURS.map(f=>f.color).concat(PALETTE,['#ff9f43']));
 const BALL_IDS=new Set(BALLS.map(b=>b.id));
 const safeColor=c=>(typeof c==='string'&&FUR_COLORS.has(c))?c:PALETTE[0];
 const safeSkin=k=>(typeof k==='string'&&BALL_IDS.has(k))?k:'bubble';
+/* everything on the channel comes from another player's browser: clip strings, require finite numbers */
+const netStr=(v,n)=>(typeof v==='string'?v:'').slice(0,n);
+const netId=v=>/^[\w-]{1,32}$/.test(v)?v:'';
 /* every hamster in a room is a different colour: earliest joiner keeps their pick, a later player who picked a taken
    colour gets the first free one. Sorted by joinedAt (then id) so every screen computes the same answer. */
 function resolveColors(players){
@@ -1532,11 +1535,14 @@ async function joinRoom(code,isHost){
   const ch=sb.channel('hr2:'+code,{config:{presence:{key:myId},broadcast:{ack:false}}});
   S.channel=ch;S.room=code;S.solo=false;S.players={};
   ch.on('presence',{event:'sync'},renderRoster);
-  ch.on('presence',{event:'join'},({newPresences})=>{for(const p of newPresences)if(p.id!==myId){lobbyChat(null,p.name+' joined the room',true);if(!window.ArcadeAudio)beep(660,.08);}renderRoster();});
-  ch.on('presence',{event:'leave'},({leftPresences})=>{for(const p of leftPresences){delete S.players[p.id];delete S.remotes[p.id];lobbyChat(null,p.name+' left',true);}renderRoster();});
-  ch.on('broadcast',{event:'chat'},({payload})=>{if(payload.id!==myId){lobbyChat(payload.name,payload.text);raceChat(payload.name,payload.text);}});
-  ch.on('broadcast',{event:'pos'},({payload})=>{if(!payload||payload.id===myId||!isFinite(payload.x)||!isFinite(payload.y))return;const o=S.remotes[payload.id];S.remotes[payload.id]={...payload,color:safeColor(payload.color),skin:safeSkin(payload.skin),rx:o?o.rx:payload.x,ry:o?o.ry:payload.y};});
+  ch.on('presence',{event:'join'},({newPresences})=>{for(const p of newPresences)if(p.id!==myId){lobbyChat(null,(netStr(p.name,14)||'Player')+' joined the room',true);if(!window.ArcadeAudio)beep(660,.08);}renderRoster();});
+  ch.on('presence',{event:'leave'},({leftPresences})=>{for(const p of leftPresences){delete S.players[p.id];delete S.remotes[p.id];lobbyChat(null,(netStr(p.name,14)||'Player')+' left',true);}renderRoster();});
+  ch.on('broadcast',{event:'chat'},({payload})=>{const n=netStr(payload.name,14)||'Player',t=netStr(payload.text,120);if(payload.id!==myId&&t){lobbyChat(n,t);raceChat(n,t);}});
+  ch.on('broadcast',{event:'pos'},({payload})=>{if(!payload||!netId(payload.id)||payload.id===myId||!isFinite(payload.x)||!isFinite(payload.y))return;const o=S.remotes[payload.id];S.remotes[payload.id]={...payload,name:netStr(payload.name,14)||'Player',roll:isFinite(payload.roll)?payload.roll:0,color:safeColor(payload.color),skin:safeSkin(payload.skin),rx:o?o.rx:payload.x,ry:o?o.ry:payload.y};});
   ch.on('broadcast',{event:'finish'},({payload})=>{
+    if(!payload||!netId(payload.id)||!Number.isInteger(payload.track)||payload.track<0||payload.track>=TRACKS.length)return;
+    payload={id:payload.id,name:netStr(payload.name,14)||'Player',track:payload.track,dnf:!!payload.dnf,ms:isFinite(payload.ms)&&payload.ms>=0?payload.ms:0};
+    if(!payload.dnf&&!payload.ms)payload.dnf=true;
     const arr=S.finishes[payload.track]=S.finishes[payload.track]||[];
     const ix=arr.findIndex(f=>f.id===payload.id);
     if(ix>=0)arr[ix]=payload;else arr.push(payload);
@@ -1567,7 +1573,7 @@ function isHost(){
 function renderRoster(){
   if(!S.channel)return;
   S.players={};
-  for(const arr of Object.values(S.channel.presenceState()))for(const p of arr)if(p&&typeof p.id==='string')S.players[p.id]={...p,color:safeColor(p.color),skin:safeSkin(p.skin)};
+  for(const arr of Object.values(S.channel.presenceState()))for(const p of arr)if(p&&netId(p.id))S.players[p.id]={...p,name:netStr(p.name,14)||'Player',joinedAt:isFinite(p.joinedAt)?p.joinedAt:Date.now(),color:safeColor(p.color),skin:safeSkin(p.skin)};
   S.col=resolveColors(Object.values(S.players));
   for(const id in S.players)S.players[id].color=S.col[id];
   if(S.col[myId])me.color=S.col[myId];
