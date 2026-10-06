@@ -13,7 +13,7 @@ Live at https://cakecade.com/ · Free forever · Kid-friendly
 | **Crumb Bound** (`crumb-bound.html`) | Solo vs bots · online 1v1 / 2v2 | GunBound-style pastry artillery: scrolling map, delay turn order, weather, slopes tilt your cannon, Random pick with a secret legendary |
 | **Bubble Brawl** (`bubble-brawl.html`) | Solo vs bots · online | Balloono-style arena: splashes trap you in a bubble, rivals pop you by touch |
 | **Hamster Roll** (`hamster-roll.html`) | Solo · online race | Ball Racer-style 2D hamster-ball racing across 4 tracks |
-| **Frosted Duel** (`frosted-duel.html`) | Solo vs bot | 1v1 platform arena duel: sprinkle blaster, sword slash and lunge, block and parry, dash, wall-run |
+| **Frosted Duel** (`frosted-duel.html`) | Solo vs bot | 3D third-person arena duel (three.js, vendored in `vendor/`): sprinkle blaster, sword slash and lunge, block and parry, dash, wall-run |
 | **Ryan's Cake TD** (`ryans-cake-td.html`) | Solo | Tower defense: survive 10 waves, then endless |
 
 **Game Night** (party games for the big screen, hosted in the [game-night](https://github.com/rynaing/game-night) repo):
