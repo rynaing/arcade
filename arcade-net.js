@@ -11,7 +11,8 @@
  *      opts.id               this player's id (the presence key)
  *      opts.clean(p, base)   game-specific presence fields: return the extra fields to keep (base = id, name, joinedAt)
  *      opts.on               { event: fn(payload) } broadcast handlers. 'chat' payloads arrive with name/text cleaned.
- *      opts.onJoin/onLeave   fn(players) with cleaned presences;  opts.onSync fn()
+ *      opts.onJoin/onLeave   fn(players) with cleaned presences, only when a player arrives or is gone
+ *                            (not when they re-track);  opts.onSync fn()
  *  - room.channel            the raw channel (send/track/unsubscribe as before)
  *  - room.players()          cleaned presences, oldest first;  room.hostId() the oldest player's id
  *  - room.send(event, p)     best-effort broadcast;  room.track(p);  room.leave()
@@ -66,8 +67,11 @@
     }
 
     if (o.onSync) ch.on('presence', { event: 'sync' }, function () { o.onSync(); });
-    if (o.onJoin) ch.on('presence', { event: 'join' }, function (e) { o.onJoin(cleanAll(e.newPresences)); });
-    if (o.onLeave) ch.on('presence', { event: 'leave' }, function (e) { o.onLeave(cleanAll(e.leftPresences)); });
+    // A player who calls track() again (ready, team, mobile) shows up as a join plus a leave for the
+    // same key. Only a key that wasn't here before is a join, and only a key with nothing left is a leave.
+    function had(e) { return !!(e.currentPresences && e.currentPresences.length); }
+    if (o.onJoin) ch.on('presence', { event: 'join' }, function (e) { if (!had(e)) o.onJoin(cleanAll(e.newPresences)); });
+    if (o.onLeave) ch.on('presence', { event: 'leave' }, function (e) { if (!had(e)) o.onLeave(cleanAll(e.leftPresences)); });
     Object.keys(o.on || {}).forEach(function (ev) {
       ch.on('broadcast', { event: ev }, function (m) {
         var p = m && m.payload;

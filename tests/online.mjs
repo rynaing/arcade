@@ -16,11 +16,13 @@ const click = (p, sel) => p.evaluate(s => document.querySelector(s).click(), sel
 async function evil(page, room, msgs) {
   // a raw BroadcastChannel on the room: learns player ids from presence, then posts whatever it likes
   return page.evaluate(async ({ room, msgs }) => {
-    const bc = new BroadcastChannel('fake:' + room), ids = [];
-    bc.onmessage = e => { if (e.data.k === 'track' && e.data.p && e.data.p.id) ids.push(e.data.p.id); };
+    const bc = new BroadcastChannel('fake:' + room), ids = [], seen = {};
+    bc.onmessage = e => { if (e.data.k === 'track' && e.data.p && e.data.p.id) { ids.push(e.data.p.id); seen[e.data.from] = e.data.p; } };
     bc.postMessage({ k: 'hello', from: 'evil' });
     await new Promise(r => setTimeout(r, 200));
     for (const m of msgs) {
+      // a real player re-tracking (ready, team): same key, same presence
+      if (m.retrack) { for (const k in seen) if (k !== 'evil') bc.postMessage({ k: 'track', from: k, p: seen[k] }); await new Promise(r => setTimeout(r, 150)); continue; }
       const list = m.perId ? ids.map(id => JSON.parse(JSON.stringify(m.msg).replaceAll('$ID', id))) : [m.msg];
       for (const x of list) bc.postMessage(x);
       await new Promise(r => setTimeout(r, 150));
@@ -69,6 +71,10 @@ async function run(browser, g) {
     'bubble-brawl.html': async () => { const t0 = await B.textContent('#hTime'); await sleep(1200); return t0 !== await B.textContent('#hTime'); },
     'hamster-roll.html': async () => true,
   }[g.file]();
+  // players re-track mid-match: nobody may treat that as the host leaving (Crumb Bound's guest used to take over as host)
+  await evil(B, room, [{ retrack: true }]);
+  await sleep(300);
+  const noTakeover = !/you are the host now/.test(await B.evaluate(() => document.body.innerText));
   const started = await B.evaluate(() => { const l = document.getElementById('lobby'); return !!l && getComputedStyle(l).display === 'none' || l.classList.contains('hidden'); });
 
   // match junk
@@ -97,7 +103,28 @@ async function run(browser, g) {
   await sleep(1500);
   const pwned = (await A.evaluate(() => window.__pwned || 0)) + (await B.evaluate(() => window.__pwned || 0));
   await ctx.close();
-  return { game: g.file, started, flowing, rosterOk: /Alice/.test(lobbyRoster) && /Bob/.test(lobbyRoster), pwned, errors: [...new Set(errors)] };
+  return { game: g.file, started, flowing, noTakeover, rosterOk: /Alice/.test(lobbyRoster) && /Bob/.test(lobbyRoster), pwned, errors: [...new Set(errors)] };
+}
+
+// The host starts the moment the guest shows up in the roster, while the guest's join is still settling:
+// the guest must end up in the match, not stuck behind the lobby.
+async function fastStart(browser, g) {
+  const ctx = await offlineContext(browser);
+  const errors = [];
+  const A = await openPage(ctx, site.url(g.file), errors, 'host'), B = await openPage(ctx, site.url(g.file), errors, 'guest');
+  await A.fill('#name-input', 'Alice'); await B.fill('#name-input', 'Bob');
+  await click(A, '#btn-create');
+  await A.waitForFunction(() => /^[A-Z2-9]{4}$/.test((document.getElementById('room-code') || {}).textContent || ''), null, { timeout: 5000 });
+  const code = await A.textContent('#room-code');
+  if (g.joinShow) await click(B, g.joinShow);
+  await B.evaluate(([s, c]) => { document.querySelector(s).value = c; }, [g.codeInput, code]);
+  await click(B, g.joinBtn);
+  await A.waitForFunction(() => /Bob/.test(document.getElementById('roster').textContent), null, { timeout: 5000 });
+  await click(A, '#btn-start');
+  await sleep(1500);
+  const lobbyHidden = await B.evaluate(() => getComputedStyle(document.getElementById('lobby')).display === 'none');
+  await ctx.close();
+  return { game: g.file + ' (fast start)', lobbyHidden, errors: [...new Set(errors)] };
 }
 
 const site = await serve();
@@ -106,7 +133,14 @@ let bad = 0;
 for (const g of GAMES) {
   let res;
   try { res = await run(browser, g); } catch (e) { res = { game: g.file, crashed: e.message.split('\n')[0] }; }
-  const ok = !res.crashed && res.started && res.flowing && res.rosterOk && !res.pwned && !res.errors.length;
+  const ok = !res.crashed && res.started && res.flowing && res.noTakeover && res.rosterOk && !res.pwned && !res.errors.length;
+  if (!ok) bad++;
+  console.log((ok ? '✓ ' : '✗ ') + JSON.stringify(res));
+}
+for (const g of GAMES.filter(g => g.file !== 'crumb-bound.html')) { // Crumb Bound's guest has to ready up first
+  let res;
+  try { res = await fastStart(browser, g); } catch (e) { res = { game: g.file + ' (fast start)', crashed: e.message.split('\n')[0] }; }
+  const ok = !res.crashed && res.lobbyHidden && !res.errors.length;
   if (!ok) bad++;
   console.log((ok ? '✓ ' : '✗ ') + JSON.stringify(res));
 }

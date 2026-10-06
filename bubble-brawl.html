@@ -214,7 +214,7 @@ button.mini:hover{background:#fff0f6}
 </div>
 <script src="leaderboard.js?v=3"></script>
 <script src="arcade-audio.js?v=2"></script>
-<script src="arcade-net.js?v=1"></script>
+<script src="arcade-net.js?v=2"></script>
 <script type="module">
 /* ===== Multiplayer room logic ===== */
 function setErr(t){const e=$('menu-err');if(e)e.textContent=t;}
@@ -258,7 +258,8 @@ async function joinRoom(code,isHost){
   const myColor=PALETTE.find(c=>!usedNow.has(c))||PALETTE[existing.length%PALETTE.length];
   await room.track({id:myId,name:myName,color:myColor,joinedAt:Date.now()});
   await new Promise(r=>setTimeout(r,600));
-  $('menuOv').style.display='none';$('lobby').style.display='flex';S.screen='lobby';
+  // the host may have started while we waited: then the match is already on screen, so keep the lobby hidden
+  $('menuOv').style.display='none';S.screen='lobby';if(state!=='play')$('lobby').style.display='flex';
   $('room-code').textContent=room.code;$('chat-box').innerHTML='';
   lobbyChat(null,'Welcome to room '+room.code+'! Host starts the match.',true);
   renderRoster();
