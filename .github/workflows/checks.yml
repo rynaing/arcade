@@ -1,0 +1,34 @@
+name: Site checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tests
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+      - run: npm ci
+      - name: Script versions (?v=)
+        run: node check-versions.mjs ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+      - run: npx playwright install --with-deps chromium
+      - name: Every page loads without script errors
+        run: node smoke.mjs
+      - name: Online rooms survive bad player data
+        run: node online.mjs

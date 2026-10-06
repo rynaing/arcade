@@ -53,6 +53,15 @@ analytics script or re-run Cloudflare's setup.
 - They stay archived unless Ryan says otherwise. The games themselves live in the
   game-night repo.
 
+## Checks
+
+- `tests/` runs on every PR (`.github/workflows/checks.yml`): `?v=` consistency, every page loads
+  without script errors, and each online game plays a 2-player room while a fake player sends junk.
+  Keep it green; run it locally before merging (see README).
+- The checks block all outside network (ads, Supabase, CDNs) and stub Supabase realtime with
+  `tests/fake-supabase.mjs`, so they never post to the world leaderboard or load real ads.
+  Keep it that way when adding tests.
+
 ## Merging
 
 - Game, content and docs changes: open a PR, test it, and merge it yourself once it's safe.

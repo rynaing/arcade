@@ -42,3 +42,10 @@ path in each online game, and play one online match before merging.
 ## Archived games
 
 Removed but recoverable from git tags: `archive/berrybrook-swordplay`, `archive/word-crumb`.
+
+## Checks
+
+`tests/` runs on every PR (`.github/workflows/checks.yml`): shared-script `?v=` values must
+match across pages and change when the script does, every page must load without script errors,
+and each online game must start a match while a fake player sends bad data. Run them locally with
+`cd tests && npm ci && npx playwright install chromium && node check-versions.mjs && node smoke.mjs && node online.mjs`.
