@@ -24,6 +24,7 @@ export async function serve() {
 
 export async function offlineContext(browser) {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 800 } });
+  // no outside network: never post to the world leaderboard (submit_score), never load real ads
   await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
   // registered last, so it wins over the block above
   await ctx.route(/supabase-js/, r => r.fulfill({ contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' },
