@@ -30,14 +30,16 @@ Bump the `?v=` on `<script src="leaderboard.js?v=…">` in every page when the c
 
 ## Online play
 
-Crumb Bound, Bubble Brawl and Hamster Roll use Supabase Realtime channels (no tables).
+Crumb Bound, Bubble Brawl and Hamster Roll use Supabase Realtime channels (no tables) through the
+shared `arcade-net.js`: it loads the client, joins/leaves rooms, keeps the roster, and checks every
+presence and chat message from other players (each game adds checks for its own message fields).
 Each game's room prefix carries a version (e.g. `cb-v5:`); bump it whenever the match
 simulation or messages change so old cached copies can't join new rooms.
 
 The Supabase client is a pinned copy in `vendor/supabase-js-<version>.umd.js` (from the npm
 package's `dist/umd/supabase.js`), so a new supabase-js release never reaches players untested.
 To upgrade: `npm pack @supabase/supabase-js@<new>`, copy `dist/umd/supabase.js` over, update the
-path in each online game, and play one online match before merging.
+path in `arcade-net.js` (and bump its `?v=`), and play one online match before merging.
 
 ## Archived games
 

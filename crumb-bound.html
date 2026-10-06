@@ -404,6 +404,7 @@ body.in-menu #rotateHint{display:none!important}
 </div>
 <script src="leaderboard.js?v=2"></script>
 <script src="arcade-audio.js?v=2"></script>
+<script src="arcade-net.js?v=1"></script>
 <script type="module">
 /* ================= Crumb Bound core sim (pure logic, no DOM) ================= */
 'use strict';
@@ -1076,7 +1077,7 @@ async function cbUploadLog(reason) {
   try {
     if (!cbLogBuf.length || cbLogSentFor === cbLogT0) return;
     cbLogSentFor = cbLogT0;
-    const sb = await sbReady; if (!sb) return;
+    const sb = await ArcadeNet.client(); if (!sb) return;
     const ev = cbLogBuf.slice(-300);
     await sb.rpc('log_cb_match', { p_client_id: String(myId), p_role: Net.role || 'solo', p_reason: reason, p_events: ev });
   } catch (e) {}
@@ -2472,32 +2473,16 @@ function fit() {
 window.addEventListener('resize', fit);
 
 /* ================= Crumb Bound netcode (Supabase Realtime, host-authoritative) ================= */
-const SUPABASE_URL = 'https://ukrxoqsvyvlyeblubjeo.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_hXr3XBpmRYSDiJNiOzt6yw_DttyIY6y';
 /* Bump when the match simulation or messages change, so players on an old cached
    copy can't join (and desync) a room with the new version. v2: 1600px world. */
 const NET_ROOM_PREFIX = 'cb-v6:'; // v6: every player's gear travels in the match defs
-/* Multiplayer-only client, loaded lazily: the menu, solo mode, and shop must
-   keep working even if the Supabase CDN is unreachable. Resolves to null then. */
-const sbReady = new Promise(res => {
-  // pinned copy in vendor/ (bump by replacing the file and this path; see README)
-  const s = document.createElement('script');
-  s.src = 'vendor/supabase-js-2.117.2.umd.js';
-  s.onload = () => { try { res(window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)); } catch (e) { res(null); } };
-  s.onerror = () => res(null);
-  document.head.appendChild(s);
-});
-
-/* Everything on the channel comes from another player's browser, so it's checked before use:
-   strings are clipped, numbers must be finite, keys must be ones this page knows. */
-const netStr = (v, n) => (typeof v === 'string' ? v : '').slice(0, n);
-const netNum = (v, d) => (typeof v === 'number' && isFinite(v) ? v : d);
+/* Online rooms and the checks on other players' data live in arcade-net.js. */
+const { str: netStr, num: netNum } = ArcadeNet;
 const netIdx = (v, len) => (Number.isInteger(v) && v >= 0 && v < len ? v : -1);
 const netTeam = t => (t === 'B' ? 'B' : 'A');
-function cleanPresence(p) {
-  return { id: netStr(p.id, 32), name: netStr(p.name, 14) || 'Player',
-    mobile: MOBILES[p.mobile] || p.mobile === RANDOM_MOBILE ? p.mobile : 'shortcake', gear: cleanGear(p.gear),
-    team: netTeam(p.team), ready: p.ready === true, joinedAt: netNum(p.joinedAt, Date.now()) };
+function cleanPresence(p) {   // the game's fields; ArcadeNet already checked id, name and joinedAt
+  return { mobile: MOBILES[p.mobile] || p.mobile === RANDOM_MOBILE ? p.mobile : 'shortcake', gear: cleanGear(p.gear),
+    team: netTeam(p.team), ready: p.ready === true };
 }
 function cleanDef(d) {
   return { pid: netStr(d.pid, 32), name: netStr(d.name, 14) || 'Player', mobile: MOBILES[d.mobile] ? d.mobile : 'shortcake',
@@ -2568,137 +2553,129 @@ function sendChatMsg(text, scope) {
 function setMenuErr(t) { const e = $('menu-err'); if (e) e.textContent = t; }
 
 async function joinRoom(code, asHost) {
-  code = (code || '').toUpperCase().trim();
   myName = ($('name-input').value || '').trim().slice(0, 14) || 'Player';
   try { localStorage.setItem('cb-name', myName); } catch (e) {}
-  if (!/^[A-Z2-9]{4}$/.test(code)) { setMenuErr('Enter the 4-letter room code.'); return; }
   setMenuErr('');
-  const sb = await sbReady;
-  if (!sb) { setMenuErr('Multiplayer is unreachable right now — Solo still works.'); return; }
-  const ch = sb.channel(NET_ROOM_PREFIX + code, { config: { presence: { key: myId }, broadcast: { ack: false } } });
-  Net.channel = ch; Net.room = code; Net.role = asHost ? 'host' : 'guest';
+  Net.role = asHost ? 'host' : 'guest';
   lobbyState = {};
-
-  ch.on('presence', { event: 'sync' }, renderRoster);
-  ch.on('presence', { event: 'join' }, ({ newPresences }) => {
-    for (const p of newPresences.map(cleanPresence)) if (p.id !== myId) lobbyChat(null, p.name + ' joined the room', true);
-    renderRoster();
-  });
-  ch.on('presence', { event: 'leave' }, ({ leftPresences }) => {
-    for (const p of leftPresences.map(cleanPresence)) {
-      const wasHost = hostPid() === p.id;
-      delete lobbyState[p.id];
-      if (screen === 'play' && st && !st.over) {
-        if (Net.role === 'host') {
-          const mi = st.mobiles.findIndex(m => m.pid === p.id);
-          if (mi >= 0 && st.mobiles[mi].alive) {
-            st.mobiles[mi].alive = false; st.mobiles[mi].hp = 0;
-            lobbyChatSys(p.name + ' disconnected — their ' + MOBILES[st.mobiles[mi].mobile].name + ' crumbles.');
-            checkWin();
-            const snap = snapState(st);
-            Net.sendSnap({ shot: null, final: snap });
-            if (st.over) { applySnapState(st, snap); endMatch(); }
-            else if (activeIdx === mi) { /* turn passes naturally on next */ }
+  const res = await ArcadeNet.join({ prefix: NET_ROOM_PREFIX, code, id: myId, clean: cleanPresence, onSync: renderRoster,
+    onJoin: ps => {
+      for (const p of ps) if (p.id !== myId) lobbyChat(null, p.name + ' joined the room', true);
+      renderRoster();
+    },
+    onLeave: ps => {
+      for (const p of ps) {
+        const wasHost = hostPid() === p.id;
+        delete lobbyState[p.id];
+        if (screen === 'play' && st && !st.over) {
+          if (Net.role === 'host') {
+            const mi = st.mobiles.findIndex(m => m.pid === p.id);
+            if (mi >= 0 && st.mobiles[mi].alive) {
+              st.mobiles[mi].alive = false; st.mobiles[mi].hp = 0;
+              lobbyChatSys(p.name + ' disconnected — their ' + MOBILES[st.mobiles[mi].mobile].name + ' crumbles.');
+              checkWin();
+              const snap = snapState(st);
+              Net.sendSnap({ shot: null, final: snap });
+              if (st.over) { applySnapState(st, snap); endMatch(); }
+              else if (activeIdx === mi) { /* turn passes naturally on next */ }
+            }
+          } else if (wasHost) {
+            migrateHost();
+          } else {
+            lobbyChatSys(p.name + ' left the match.');
           }
-        } else if (wasHost) {
-          migrateHost();
         } else {
-          lobbyChatSys(p.name + ' left the match.');
+          lobbyChat(null, p.name + ' left', true);
         }
-      } else {
-        lobbyChat(null, p.name + ' left', true);
       }
-    }
-    renderRoster();
-  });
-
-  ch.on('broadcast', { event: 'chat' }, ({ payload }) => {
-    if (payload.id === myId) return;
-    if (payload.scope === 'team' && payload.team !== myTeam) return; // not for us
-    const name = netStr(payload.name, 14) || 'Player', text = netStr(payload.text, 120);
-    if (!text) return;
-    if (screen === 'play') gchatLog(name, text, false, payload.scope === 'team' ? 'team' : 'all');
-    else lobbyChat(name, text);
-  });
-  ch.on('broadcast', { event: 'mstart' }, ({ payload }) => {
-    if (Net.role === 'guest' && payload && Array.isArray(payload.defs) && payload.defs.length) guestStart(payload);
-  });
-  ch.on('broadcast', { event: 'turn' }, ({ payload }) => {
-    if (Net.role !== 'guest' || !st || !payload || netIdx(payload.activeIdx, st.mobiles.length) < 0) return;
-    onRemoteTurn(payload);
-  });
-  ch.on('broadcast', { event: 'move' }, ({ payload }) => {
-    if (payload.id === myId || !st || screen !== 'play' || !isFinite(payload.x)) return;
-    const m = st.mobiles[netIdx(payload.idx, st.mobiles.length)];
-    if (m && m.alive && m.pid === payload.id) { m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); if (payload.face) m.face = payload.face < 0 ? -1 : 1; if (isFinite(payload.ang)) m.ang = payload.ang; }
-  });
-  ch.on('broadcast', { event: 'itemuse' }, ({ payload }) => {
-    if (Net.role !== 'host' || !st || screen !== 'play' || turnState !== 'aim') return;
-    if (payload.id !== st.mobiles[activeIdx].pid) return; // not their turn
-    applyInstantItem(payload.item, false);
-  });
-  ch.on('broadcast', { event: 'aim' }, ({ payload }) => {
-    if (payload.id === myId || !st || screen !== 'play' || !isFinite(payload.ang)) return;
-    const m = st.mobiles[netIdx(payload.idx, st.mobiles.length)];
-    if (m && m.pid === payload.id) m.ang = payload.ang;
-  });
-  ch.on('broadcast', { event: 'shot' }, ({ payload }) => {
-    if (Net.role !== 'host' || !st || screen !== 'play' || turnState !== 'aim') return;
-    if (payload.id !== st.mobiles[activeIdx].pid) return; // not their turn
-    const m = st.mobiles[activeIdx];
-    // validate: numbers, move budget + SS charge
-    if (!isFinite(payload.x) || !isFinite(payload.ang) || !isFinite(payload.power)) return;
-    if (payload.weapon !== 1 && payload.weapon !== 2) payload.weapon = 0;
-    if (!ITEMS[payload.item]) payload.item = null;
-    if (!isFinite(payload.secs)) payload.secs = null;
-    if (Math.abs(payload.x - turnStartX) > moveBudgetOf(m) + 2) payload.x = turnStartX;
-    if (payload.weapon === 1 && (m.cd1 || 0) > 0) payload.weapon = 0;
-    if (payload.weapon === 2 && m.ss < SS_NEED) payload.weapon = 0;
-    if (payload.item && payload.weapon === 2) payload.item = null; // OG: no items with SS
-    m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); m.ang = payload.ang; if (payload.face) m.face = payload.face < 0 ? -1 : 1;
-    fireShot({ x: m.x, y: m.y, ang: payload.ang, power: Math.max(5, Math.min(100, payload.power)), weapon: payload.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: payload.secs, item: payload.item });
-  });
-  ch.on('broadcast', { event: 'snap' }, ({ payload }) => {
-    if (Net.role !== 'guest' || screen !== 'play' || !payload || !snapOk(payload.final)) return;
-    clearTimeout(shotAckTimer);
-    cbLog('snap-recv', { seq: payload.seq, hasShot: !!payload.shot, src: payload.shot && payload.shot.srcIdx, turnState });
-    lastSnap = payload;
-    // a repeat of a result we already animated (resent after a "connection hiccup", or delivered twice): sync state, don't fire the shot again
-    if (payload.seq != null && payload.seq <= lastSnapSeq) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
-    if (payload.seq != null) lastSnapSeq = payload.seq;
-    if (!payload.shot) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
-    const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)), islands: st.islands.map(o => ({ x: o.x, y: o.y, w: o.w, h: o.h })) };
-    turnState = 'anim'; stopTimer();
-    animateShot(pre, payload.final, payload.shot, payload.thor, payload.itemStrikes);
-  });
-  ch.on('broadcast', { event: 'reqsnap' }, () => {
-    if (Net.role === 'host' && lastSnap) {
-      try { Net.channel.send({ type: 'broadcast', event: 'snap', payload: lastSnap }); } catch (e) {}
-    }
-  });
-  ch.on('broadcast', { event: 'mend' }, ({ payload }) => {
-    if (Net.role !== 'guest') return;
-    if (st && !st.over) { st.over = true; st.winner = ['A', 'B', 'draw'].includes(payload.winner) ? payload.winner : 'draw'; endMatch(); }
-  });
-  ch.on('broadcast', { event: 'toblobby' }, () => {
-    if (Net.role !== 'guest') return;
-    $('endOv').classList.add('hidden');
-    showScreen('lobby'); renderRoster();
-  });
-
-  const ok = await new Promise(res => {
-    let done = false;
-    const to = setTimeout(() => { if (!done) { done = true; res(false); } }, 10000);
-    ch.subscribe(st2 => { if (done) return; if (st2 === 'SUBSCRIBED') { done = true; clearTimeout(to); res(true); } else if (st2 === 'CHANNEL_ERROR' || st2 === 'TIMED_OUT') { done = true; clearTimeout(to); res(false); } });
-  });
-  if (!ok) { setMenuErr('Could not connect. Check your connection and retry.'); Net.channel = null; return; }
-  await ch.track({ id: myId, name: myName, mobile: myMobile, gear: gearEquipped.slice(), team: myTeam, ready: false, joinedAt: Date.now() });
+      renderRoster();
+    },
+    on: {
+      chat: payload => {
+        if (payload.id === myId) return;
+        if (payload.scope === 'team' && payload.team !== myTeam) return; // not for us
+        if (screen === 'play') gchatLog(payload.name, payload.text, false, payload.scope === 'team' ? 'team' : 'all');
+        else lobbyChat(payload.name, payload.text);
+      },
+      mstart: payload => {
+        if (Net.role === 'guest' && payload && Array.isArray(payload.defs) && payload.defs.length) guestStart(payload);
+      },
+      turn: payload => {
+        if (Net.role !== 'guest' || !st || !payload || netIdx(payload.activeIdx, st.mobiles.length) < 0) return;
+        onRemoteTurn(payload);
+      },
+      move: payload => {
+        if (payload.id === myId || !st || screen !== 'play' || !isFinite(payload.x)) return;
+        const m = st.mobiles[netIdx(payload.idx, st.mobiles.length)];
+        if (m && m.alive && m.pid === payload.id) { m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); if (payload.face) m.face = payload.face < 0 ? -1 : 1; if (isFinite(payload.ang)) m.ang = payload.ang; }
+      },
+      itemuse: payload => {
+        if (Net.role !== 'host' || !st || screen !== 'play' || turnState !== 'aim') return;
+        if (payload.id !== st.mobiles[activeIdx].pid) return; // not their turn
+        applyInstantItem(payload.item, false);
+      },
+      aim: payload => {
+        if (payload.id === myId || !st || screen !== 'play' || !isFinite(payload.ang)) return;
+        const m = st.mobiles[netIdx(payload.idx, st.mobiles.length)];
+        if (m && m.pid === payload.id) m.ang = payload.ang;
+      },
+      shot: payload => {
+        if (Net.role !== 'host' || !st || screen !== 'play' || turnState !== 'aim') return;
+        if (payload.id !== st.mobiles[activeIdx].pid) return; // not their turn
+        const m = st.mobiles[activeIdx];
+        // validate: numbers, move budget + SS charge
+        if (!isFinite(payload.x) || !isFinite(payload.ang) || !isFinite(payload.power)) return;
+        if (payload.weapon !== 1 && payload.weapon !== 2) payload.weapon = 0;
+        if (!ITEMS[payload.item]) payload.item = null;
+        if (!isFinite(payload.secs)) payload.secs = null;
+        if (Math.abs(payload.x - turnStartX) > moveBudgetOf(m) + 2) payload.x = turnStartX;
+        if (payload.weapon === 1 && (m.cd1 || 0) > 0) payload.weapon = 0;
+        if (payload.weapon === 2 && m.ss < SS_NEED) payload.weapon = 0;
+        if (payload.item && payload.weapon === 2) payload.item = null; // OG: no items with SS
+        m.x = payload.x; m.y = groundAt(st.terrain, st.islands, m.x, m.y); m.ang = payload.ang; if (payload.face) m.face = payload.face < 0 ? -1 : 1;
+        fireShot({ x: m.x, y: m.y, ang: payload.ang, power: Math.max(5, Math.min(100, payload.power)), weapon: payload.weapon, mobile: m.mobile, team: m.team, srcIdx: activeIdx, wind: st.wind, sudden: st.sudden, secs: payload.secs, item: payload.item });
+      },
+      snap: payload => {
+        if (Net.role !== 'guest' || screen !== 'play' || !payload || !snapOk(payload.final)) return;
+        clearTimeout(shotAckTimer);
+        cbLog('snap-recv', { seq: payload.seq, hasShot: !!payload.shot, src: payload.shot && payload.shot.srcIdx, turnState });
+        lastSnap = payload;
+        // a repeat of a result we already animated (resent after a "connection hiccup", or delivered twice): sync state, don't fire the shot again
+        if (payload.seq != null && payload.seq <= lastSnapSeq) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
+        if (payload.seq != null) lastSnapSeq = payload.seq;
+        if (!payload.shot) { applySnapState(st, payload.final); if (st.over) endMatch(); return; }
+        const pre = { terrain: st.terrain.slice(), mobiles: st.mobiles.map(m => Object.assign({}, m)), islands: st.islands.map(o => ({ x: o.x, y: o.y, w: o.w, h: o.h })) };
+        turnState = 'anim'; stopTimer();
+        animateShot(pre, payload.final, payload.shot, payload.thor, payload.itemStrikes);
+      },
+      reqsnap: payload => {
+        if (Net.role === 'host' && lastSnap) {
+          try { Net.channel.send({ type: 'broadcast', event: 'snap', payload: lastSnap }); } catch (e) {}
+        }
+      },
+      mend: payload => {
+        if (Net.role !== 'guest') return;
+        if (st && !st.over) { st.over = true; st.winner = ['A', 'B', 'draw'].includes(payload.winner) ? payload.winner : 'draw'; endMatch(); }
+      },
+      toblobby: payload => {
+        if (Net.role !== 'guest') return;
+        $('endOv').classList.add('hidden');
+        showScreen('lobby'); renderRoster();
+      },
+  } });
+  if (!res.ok) {
+    Net.role = 'solo';
+    setMenuErr({ code: 'Enter the 4-letter room code.', offline: 'Multiplayer is unreachable right now — Solo still works.' }[res.error] || 'Could not connect. Check your connection and retry.');
+    return;
+  }
+  Net.net = res.room; Net.channel = res.room.channel; Net.room = res.room.code;
+  await res.room.track({ id: myId, name: myName, mobile: myMobile, gear: gearEquipped.slice(), team: myTeam, ready: false, joinedAt: Date.now() });
   await new Promise(r => setTimeout(r, 600));
   refreshLobbyState();
   showScreen('lobby');
-  $('room-code').textContent = code;
+  $('room-code').textContent = Net.room;
   $('chat-box').innerHTML = '';
-  lobbyChat(null, 'Welcome to room ' + code + '! Pick a mobile, a team, and ready up.', true);
+  lobbyChat(null, 'Welcome to room ' + Net.room + '! Pick a mobile, a team, and ready up.', true);
   renderRoster();
 }
 
@@ -2717,7 +2694,7 @@ function migrateHost() {
 function refreshLobbyState() {
   if (!Net.channel) return;
   lobbyState = {};
-  for (const arr of Object.values(Net.channel.presenceState())) for (const p of arr) { const c = cleanPresence(p); if (c.id) lobbyState[c.id] = c; }
+  for (const p of Net.net.players()) lobbyState[p.id] = p;
 }
 
 function renderRoster() {
@@ -2844,8 +2821,8 @@ function sendGameChat() {
 
 async function leaveRoom() {
   if (st && !st.over) { cbLog('left-mid-match', {}); cbUploadLog('left'); }
-  try { if (Net.channel) await Net.channel.unsubscribe(); } catch (e) {}
-  Net.channel = null; Net.room = null; Net.role = 'solo';
+  if (Net.net) await Net.net.leave();
+  Net.net = null; Net.channel = null; Net.room = null; Net.role = 'solo';
   snapSeq = 0; lastSnapSeq = 0;
   stopTimer(); st = null; turnState = 'idle'; anim = null;
   showScreen('menu');
@@ -3022,7 +2999,7 @@ function startSolo() {
   const mine = resolveMobile(myMobile);
   myName = ($('name-input').value || '').trim().slice(0, 14) || 'Player';
   try { localStorage.setItem('cb-name', myName); } catch (e) {}
-  Net.role = 'solo'; Net.channel = null;
+  Net.role = 'solo'; Net.net = null; Net.channel = null;
   const bd = botDefOf(myBot);
   let botMob = bd.mobile;
   if (botMob === mine) botMob = MOB_KEYS[(MOB_KEYS.indexOf(myMobile) + 2) % MOB_KEYS.length];
@@ -3038,8 +3015,7 @@ function startSolo() {
 /* ---------- wiring ---------- */
 function wireUI() {
   $('btn-create').onclick = () => {
-    const code = Array.from({ length: 4 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[(Math.random() * 31) | 0]).join('');
-    joinRoom(code, true);
+    joinRoom(ArcadeNet.newCode(), true);
   };
   $('btn-joinb').onclick = () => joinRoom($('room-input').value, false);
   $('room-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom($('room-input').value, false); });
