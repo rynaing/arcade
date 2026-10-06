@@ -463,13 +463,9 @@ function assignColors(wanted){
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 /* ===== audio (tiny synth) ===== */
-let AC=null;
-function audio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
-function tone(f,d,type,vol,slide){const ac=audio();if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,ac.currentTime);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),ac.currentTime+d);g.gain.setValueAtTime(vol||.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}
-/* sound: shared arcade engine when available (falls back to the old beeps) */
+/* sound: the shared arcade engine (arcade-audio.js) */
 const SFX_MAP={place:'place',boom:'splash',pow:'powerup',stun:'trap',pop:'pop',free:'free',win:'win',lose:'lose'};
-function sfx(n,o){if(window.ArcadeAudio){ArcadeAudio.sfx(SFX_MAP[n]||n,o);return}legacySfx(n)}
-function legacySfx(n){if(n==='free'){tone(440,.12,'triangle',.1,500);return}if(n==='place')tone(300,.12,'sine',.15,200);else if(n==='boom'){tone(120,.35,'sawtooth',.2,-70);tone(700,.25,'sine',.08,-500)}else if(n==='pow')tone(660,.12,'square',.08,330);else if(n==='stun'){tone(500,.2,'sine',.12,300);setTimeout(()=>tone(700,.15,'sine',.1,200),120)}else if(n==='pop'){tone(900,.08,'square',.14,-600);setTimeout(()=>tone(1400,.1,'square',.1,-900),70)}else if(n==='win')[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.22,'triangle',.12),i*130));else if(n==='lose')[400,300,220,150].forEach((f,i)=>setTimeout(()=>tone(f,.25,'sawtooth',.1),i*150))}
+function sfx(n,o){if(window.ArcadeAudio)ArcadeAudio.sfx(SFX_MAP[n]||n,o)}
 
 /* ===== constants & state ===== */
 const COLS=19,ROWS=13,CELL=50,W=COLS*CELL,H=ROWS*CELL;
@@ -1351,7 +1347,7 @@ addEventListener('keydown',e=>{
  if(k==='arrowright'||k==='d')prefAxis='x';
  if(k==='arrowup'||k==='w')prefAxis='y';
  if(k==='arrowdown'||k==='s')prefAxis='y';
- if(e.key===' '){audio();if(state==='play'){if(S.netRole==='guest')guestBomb();else dropBomb(mePlayer())}}
+ if(e.key===' '){if(state==='play'){if(S.netRole==='guest')guestBomb();else dropBomb(mePlayer())}}
 });
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 const touch={up:false,down:false,left:false,right:false};
@@ -1368,11 +1364,11 @@ function padMove(e){ // which cell of the 3x3 pad is the finger on? (▲ above, 
  if(col<-1||col>3||row<-1||row>3){setTouchDir(null);return}
  setTouchDir(row<=0?'up':row>=2?'down':col<=0?'left':col>=2?'right':'down');
 }
-tpad.addEventListener('pointerdown',e=>{e.preventDefault();audio();padId=e.pointerId;try{tpad.setPointerCapture(e.pointerId)}catch(x){}padMove(e)});
+tpad.addEventListener('pointerdown',e=>{e.preventDefault();padId=e.pointerId;try{tpad.setPointerCapture(e.pointerId)}catch(x){}padMove(e)});
 tpad.addEventListener('pointermove',e=>{if(e.pointerId===padId){e.preventDefault();padMove(e)}});
 const padEnd=e=>{if(e.pointerId===padId){padId=null;setTouchDir(null)}};
 tpad.addEventListener('pointerup',padEnd);tpad.addEventListener('pointercancel',padEnd);tpad.addEventListener('lostpointercapture',padEnd);
-$('dropBtn').addEventListener('pointerdown',e=>{e.preventDefault();audio();if(state==='play'){if(S.netRole==='guest')guestBomb();else dropBomb(mePlayer())}});
+$('dropBtn').addEventListener('pointerdown',e=>{e.preventDefault();if(state==='play'){if(S.netRole==='guest')guestBomb();else dropBomb(mePlayer())}});
 if('ontouchstart'in window)$('touch').classList.add('on');
 
 /* ===== pause (solo only: online matches can't be paused) ===== */
@@ -1478,9 +1474,8 @@ function startBgTicker(){
   };
  }catch(e){bgWorker=null;}
 }
-$('startBtn').addEventListener('click',()=>{audio();myName=($('name-input').value||'').trim().slice(0,14);try{localStorage.setItem('bb-name',myName);}catch(e){}resetMatch()});
+$('startBtn').addEventListener('click',()=>{myName=($('name-input').value||'').trim().slice(0,14);try{localStorage.setItem('bb-name',myName);}catch(e){}resetMatch()});
 $('againBtn').addEventListener('click',()=>{
-  audio();
   if(S.netRole==='host')hostStartMatch();
   else if(S.netRole==='guest'){$('endOv').classList.add('hidden');$('lobby').style.display='flex';S.screen='lobby';state='lobby';renderRoster();}
   else resetMatch();
