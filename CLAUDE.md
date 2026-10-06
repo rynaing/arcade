@@ -13,6 +13,11 @@ See README.md for how the games, leaderboards and online play work.
 - Online play (Crumb Bound, Bubble Brawl, Hamster Roll) goes through `arcade-net.js`: Supabase
   loading, rooms, roster, and checks on everything other players send. Never trust a channel
   message: clip strings, require finite numbers, accept only known keys.
+- Supabase presence reports a player re-tracking (ready, team, mobile) as a join plus a leave for the
+  same key. `arcade-net.js` only passes on real arrivals and departures, and `tests/fake-supabase.mjs`
+  behaves the same way, so keep both in step if presence handling changes.
+- A guest can receive the host's start before its own join has finished; joining must not cover a
+  running match with the lobby.
 - supabase-js is a pinned copy in `vendor/` (same for game-night). Bump it deliberately, never
   load a floating version from a CDN; upgrade steps are in README.
 

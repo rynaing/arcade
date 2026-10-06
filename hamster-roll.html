@@ -246,7 +246,7 @@ table.res td,table.res th{border-bottom:1px solid #ffd1e2;color:var(--arc-ink)}t
 
 <script src="leaderboard.js?v=3"></script>
 <script src="arcade-audio.js?v=2"></script>
-<script src="arcade-net.js?v=1"></script>
+<script src="arcade-net.js?v=2"></script>
 <script type="module">
 
 /* ================= config ================= */
@@ -1533,7 +1533,8 @@ async function joinRoom(code,isHost){
   S.color=furColor()||PALETTE[room.players().length%PALETTE.length];
   await room.track({id:myId,name:myName,color:S.color,skin:shop.ball,joinedAt:Date.now()});
   await new Promise(r=>setTimeout(r,600));
-  $('menu').style.display='none';$('lobby').style.display='flex';S.screen='lobby';updateTouchVis();
+  // the host may have started while we waited: then we're already racing, so keep the lobby hidden
+  if(S.screen!=='race'){$('menu').style.display='none';$('lobby').style.display='flex';S.screen='lobby';updateTouchVis();}
   $('room-code').textContent=room.code;$('chat-box').innerHTML='';
   lobbyChat(null,'Welcome to room '+room.code+'! Host starts the match.',true);
   renderRoster();
