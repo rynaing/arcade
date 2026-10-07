@@ -197,6 +197,12 @@ button.mini:hover{background:#fff0f6}
 <button class="big" id="againBtn">Play again</button>
 <button class="mini" id="endMenuBtn" style="margin-top:10px">Menu</button>
 </div></div>
+<div class="overlay hidden" id="botsOv"><div class="dialog">
+<h2>🤖 Only bots left</h2>
+<p>Every player is out. End the round?</p>
+<button class="big" id="botsEndBtn">End round</button>
+<button class="mini" id="botsWatchBtn" style="margin-top:10px">Keep watching</button>
+</div></div>
 <div class="overlay hidden" id="pauseOv"><div class="dialog">
 <h2>⏸ Paused</h2>
 <p>Take a breather — the match is waiting.</p>
@@ -248,6 +254,7 @@ async function joinRoom(code,isHost){
       snap:p=>{if(S.netRole==='guest'&&state==='play')applySnap(p);},
       mend:p=>{if(S.netRole==='guest')onGuestMend(p);},
       inp:p=>{if(S.netRole!=='host')return;const pl=players.find(q=>q.pid===p.id);if(pl&&pl.alive&&!pl.isBot)pl.netDir=cleanDir(p.d);},
+      endbots:p=>{if(S.netRole==='host'&&players.some(q=>q.pid===ArcadeNet.id(p.id)&&!q.isBot))endBotsOnly();},
       bomb:p=>{if(S.netRole!=='host')return;const pl=players.find(q=>q.pid===p.id);if(pl)dropBomb(pl);},
     }});
   if(!res.ok){setErr({code:'Enter the 4-letter room code.',offline:'Online play can\u2019t load right now \u2014 check your connection. Solo still works!'}[res.error]||'Could not connect. Check your connection and retry.');return;}
@@ -341,7 +348,7 @@ function hostStartMatch(){
   buildGrid();
   makePlayers(defs);
   timeLeft=MATCH_TIME;score=0;kills=0;stallTimer=-1;stallSpawnT=0;shake=0;snapT=0;
-  S.netRole='host';S.solo=false;
+  S.netRole='host';S.solo=false;botsAsked=false;$('botsOv').classList.add('hidden');
   $('lobby').style.display='none';$('menuOv').classList.add('hidden');$('endOv').classList.add('hidden');
   state='play';
   try{S.channel.send({type:'broadcast',event:'mstart',payload:{grid:gridStr(),th:theme,defs:defs.map(d=>({pid:d.pid,name:d.name,color:d.color,dark:d.dark,isBot:d.isBot,cx:d.cx,cy:d.cy}))}});}catch(e){}
@@ -353,7 +360,7 @@ function guestStart(pl){
   makePlayers(pl.defs.slice(0,4).map(d=>({pid:netStr(d.pid,32),name:netStr(d.name,14)||'Player',color:safeColor(d.color),dark:safeDark(d.dark),isBot:d.isBot===true,isRemote:true,cx:netCell(d.cx,COLS),cy:netCell(d.cy,ROWS)})));
   bombs=[];flames=[];powerups=[];particles=[];
   timeLeft=MATCH_TIME;score=0;kills=0;shake=0;
-  S.netRole='guest';S.solo=false;lastDirK='x';
+  S.netRole='guest';S.solo=false;lastDirK='x';botsAsked=false;$('botsOv').classList.add('hidden');
   $('lobby').style.display='none';$('menuOv').classList.add('hidden');$('endOv').classList.add('hidden');
   state='play';
   toast('Match starting!',1500);updateHud();
@@ -405,10 +412,25 @@ function sendDirIfChanged(){
 }
 function guestBomb(){try{S.channel.send({type:'broadcast',event:'bomb',payload:{id:myId}});}catch(e){}}
 function showEnd(title,html,win){
+  $('botsOv').classList.add('hidden');
   $('eTitle').textContent=title;$('eText').innerHTML=html;
   $('endOv').classList.remove('hidden');sfx(win?'win':'lose');updateHud();
 }
 function showDraw(timeUp){showEnd(timeUp?'\u23F1 Time\u2019s up \u2014 it\u2019s a draw!':'\uD83E\uDD1D It\u2019s a draw!',timeUp?'Nobody was popped for good in time.':'Everyone popped together.',false)}
+/* online: once every real player is popped and 2+ bots are still going, ask the players (all watching now)
+   whether to end the round. Any one of them can end it for the room; the bot with the most pops wins. */
+let botsAsked=false;
+function checkBotsOnly(){
+  if(botsAsked||state!=='play'||S.netRole==='solo')return;
+  const alive=players.filter(p=>p.alive);
+  if(alive.length<2||alive.some(p=>!p.isBot))return;
+  botsAsked=true;$('botsOv').classList.remove('hidden');
+}
+function endBotsOnly(){
+  if(state!=='play')return;
+  const bots=players.filter(p=>p.alive&&p.isBot);if(bots.length<1||players.some(p=>p.alive&&!p.isBot))return;
+  endMultiplayer(bots.reduce((a,b)=>(b.pops||0)>(a.pops||0)?b:a));
+}
 function endMultiplayer(winner,timeUp){
   if(state!=='play')return;state='over';
   const wname=winner?winner.name:'Nobody';
@@ -435,6 +457,12 @@ $('btn-go').onclick=()=>joinRoom($('code-input').value,false);
 $('btn-copy').onclick=copyInvite;
 $('btn-leave').onclick=async()=>{if(S.net)await S.net.leave();S.net=null;S.channel=null;S.room=null;S.solo=true;$('lobby').style.display='none';$('menuOv').style.display='flex';S.screen='menu';};
 $('btn-start').onclick=()=>hostStartMatch();
+$('botsEndBtn').addEventListener('click',()=>{
+  $('botsOv').classList.add('hidden');
+  if(S.netRole==='host')endBotsOnly();
+  else if(S.channel){try{S.channel.send({type:'broadcast',event:'endbots',payload:{id:myId}});}catch(e){}}
+});
+$('botsWatchBtn').addEventListener('click',()=>$('botsOv').classList.add('hidden'));
 $('chat-send').onclick=sendChat;
 $('chat-in').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();e.stopPropagation();});
 try{
@@ -1437,6 +1465,7 @@ let hudT=0,snapT=0;
    to freeze the whole match (for everyone, if the host looked away). */
 function simStep(dt){
  if(state==='play'){
+  checkBotsOnly();
   if(S.netRole==='guest'){
    sendDirIfChanged();updateParticles(dt);
   }else{
