@@ -361,6 +361,7 @@
     for (var i = live.length - 1; i >= 0; i--) {
       var it = live[i];
       if (!it.c.isConnected) { live.splice(i, 1); continue; }
+      if (!it.c.offsetWidth) continue;   // hidden (menu closed during a match): drawing it anyway cost phones a lot of fps
       draw(it.c, it.id, { t: t + it.off, team: it.team, bot: it.bot });
     }
     if (live.length) raf = requestAnimationFrame(frame);
