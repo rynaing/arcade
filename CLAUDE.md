@@ -71,6 +71,8 @@ analytics script or re-run Cloudflare's setup.
   (anon can insert through it, not read). `cb_prune_match_logs()` deletes 30+ day rows only
   when the database nears 400 MB. See `supabase/cb_match_logs.sql`; Ryan runs the SQL.
 - Hamster Roll: every player in a room gets a distinct colour.
+- Bubble Brawl online: once every real player is popped and 2+ bots are left, everyone in the room is
+  asked whether to end the round (any one player can end it; the bot with the most pops wins).
 - Ryan's Cake TD keeps its own synth and music (it shares the arcade mute setting through its
   🔊 button). Moving it onto `arcade-audio.js` would change how it sounds, so ask Ryan first.
 - Ryan's Cake TD limitless mode: after wave 30 enemy HP also grows by a per-difficulty factor each
