@@ -1824,12 +1824,32 @@ const THEMES = {
   sunset: { sky: ['#ff9a6a', '#f76b9a', '#4a2a6e'], hill: ['#8c5a6e', '#684052'], frost: ['#ffb066', '#ffe8c9'], sun: '#ffd166', cloud: '#ffffff70' },
   night:  { sky: ['#0b0e2e', '#2b1f5c', '#5b3a8c'], hill: ['#3a2a6e', '#2a1f55'], frost: ['#9ec6ff', '#e2efff'], sun: '#ffe9a8', cloud: '#ffffff2e' },
 };
+/* the sky gradient and the sun/moon only change with the theme: painted once per theme, copied in each frame */
+const skyLayer = document.createElement('canvas'); skyLayer.width = VIEW_W; skyLayer.height = H;
+const sunLayer = document.createElement('canvas'); sunLayer.width = sunLayer.height = 200;   // around the sun at (830, 80)
+let skyTheme = null;
+function paintSkyLayers(th, night) {
+  const main = ctx;
+  try {
+    ctx = skyLayer.getContext('2d'); ctx.clearRect(0, 0, VIEW_W, H);
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, th.sky[0]); g.addColorStop(0.55, th.sky[1]); g.addColorStop(1, th.sky[2]);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, H);
+    ctx = sunLayer.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, 200, 200); ctx.translate(-730, 20);
+    const halo = ctx.createRadialGradient(830, 80, 8, 830, 80, 95);
+    halo.addColorStop(0, th.sun); halo.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(830, 80, 95, 0, 6.29); ctx.fill();
+    ctx.fillStyle = th.sun; ctx.beginPath(); ctx.arc(830, 80, night ? 30 : 36, 0, 6.29); ctx.fill();
+    if (night) { // crescent cutout
+      ctx.fillStyle = th.sky[0]; ctx.beginPath(); ctx.arc(818, 72, 26, 0, 6.29); ctx.fill();
+    }
+  } finally { ctx = main; }
+}
 function drawSky() {
   const th = THEMES[(st && st.theme) || 'meadow'];
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, th.sky[0]); g.addColorStop(0.55, th.sky[1]); g.addColorStop(1, th.sky[2]);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, H);
   const night = (st && st.theme) === 'night';
+  if (skyTheme !== th) { skyTheme = th; paintSkyLayers(th, night); }
+  ctx.drawImage(skyLayer, 0, 0);
   if (night) {
     // twinkling stars
     const rnd = mulberry32(99), now = performance.now() / 700;
@@ -1841,13 +1861,7 @@ function drawSky() {
     ctx.globalAlpha = 1;
   }
   // sun / moon with halo
-  const halo = ctx.createRadialGradient(830, 80, 8, 830, 80, 95);
-  halo.addColorStop(0, th.sun); halo.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(830, 80, 95, 0, 6.29); ctx.fill();
-  ctx.fillStyle = th.sun; ctx.beginPath(); ctx.arc(830, 80, night ? 30 : 36, 0, 6.29); ctx.fill();
-  if (night) { // crescent cutout
-    ctx.fillStyle = th.sky[0]; ctx.beginPath(); ctx.arc(818, 72, 26, 0, 6.29); ctx.fill();
-  }
+  ctx.drawImage(sunLayer, 730, -20);
   // soft multi-puff clouds
   for (const c of clouds) {
     ctx.fillStyle = th.cloud;
@@ -1886,7 +1900,23 @@ function buildCakeFx() {
   for (let i = 0; i < 30; i++) berries.push([r() * W, 230 + r() * (H - 290), 6 + r() * 4]);
   cakeFx = { holes, chips, berries };
 }
+/* the terrain only changes when a shot carves it (or the theme changes), but painting it is the most
+   expensive part of a frame on phones: paint it into an offscreen canvas and copy that in each frame */
+const terrLayer = document.createElement('canvas'); terrLayer.width = W + 12; terrLayer.height = H + 12;
+let terrSeen = null, terrTheme = null;
 function drawTerrain() {
+  const th = (st && st.theme) || 'meadow';
+  let same = terrSeen && terrTheme === th && terrSeen.length === st.terrain.length;
+  if (same) for (let i = 0; i < terrSeen.length; i++) if (terrSeen[i] !== st.terrain[i]) { same = false; break; }
+  if (!same) {
+    terrSeen = Float32Array.from(st.terrain); terrTheme = th;
+    const main = ctx; ctx = terrLayer.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, terrLayer.width, terrLayer.height); ctx.translate(6, 6);
+    try { paintTerrain(); } finally { ctx = main; }
+  }
+  ctx.drawImage(terrLayer, -6, -6);
+}
+function paintTerrain() {
   if (!cakeFx) buildCakeFx();
   const thf = THEMES[(st && st.theme) || 'meadow'];
   // the hills are a slice cut out of a layered cake
