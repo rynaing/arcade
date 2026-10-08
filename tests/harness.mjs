@@ -9,7 +9,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 export const root = path.resolve(here, '..');
 const FAKE = fs.readFileSync(path.join(here, 'fake-supabase.mjs'), 'utf8');
 const FAKE_UMD = FAKE.replace('export function createClient', 'window.supabase = { createClient }; function createClient');
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.mp4': 'video/mp4' };
 
 export async function serve() {
   const server = http.createServer((q, r) => {
