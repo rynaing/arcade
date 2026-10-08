@@ -18,7 +18,7 @@
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "VideoGame", "name": "Hamster Roll", "url": "https://cakecade.com/hamster-roll.html", "description": "2D hamster-ball racing across 4 tracks — race solo for world times or make a room with friends.", "image": "https://cakecade.com/media/share/hamster-roll.jpg", "genre": "Racing", "gamePlatform": "Web browser", "applicationCategory": "Game", "operatingSystem": "Any", "isAccessibleForFree": true, "playMode": ["SinglePlayer", "MultiPlayer"], "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "publisher": {"@type": "Organization", "name": "Ryan Cake Studios", "url": "https://cakecade.com/"}}</script>
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🐹%3C/text%3E%3C/svg%3E">
-<script src="arcade-art.js?v=2" defer></script>
+<script src="arcade-art.js?v=3" defer></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5048455596508415" crossorigin="anonymous"></script>
 <script src="arcade-ui.js?v=4" data-title="Hamster Roll" data-home="./index.html" data-layout="overlay"></script>
 <style>
@@ -1323,21 +1323,24 @@ const MEDAL_E=['','🥉','🥈','🥇'],MEDAL_N=['No medal','Bronze','Silver','G
 function medalFor(ti,ms){const m=TRACKS[ti].medals;return ms<=m[0]*1000?3:ms<=m[1]*1000?2:ms<=m[2]*1000?1:0;}
 /* the next medal still within reach: {tier, left ms} or null once bronze is gone */
 function nextMedal(ti,elapsed){const m=TRACKS[ti].medals;for(let i=0;i<3;i++)if(elapsed<m[i]*1000)return{tier:3-i,left:m[i]*1000-elapsed};return null;}
+/* runs every frame: only touch the page when a value actually changed (rewriting the same text each frame
+   made the browser redo layout and paint for the HUD 60 times a second) */
+function setText(id,v){const e=$(id);if(e.textContent!==v)e.textContent=v;}
 function updateHud(){
   const racing=S.race&&S.race.phase==='race';
-  $('h-time').textContent=fmt(S.race&&racing?S.race.elapsed:0);
+  setText('h-time',fmt(S.race&&racing?S.race.elapsed:0));
   const mc=$('h-medal');
-  if(S.race&&me.finished){const md=medalFor(S.track,me.finishMs);mc.textContent=md?MEDAL_E[md]+' '+MEDAL_N[md]:'🏁 Done';mc.title='';}
+  if(S.race&&me.finished){const md=medalFor(S.track,me.finishMs);setText('h-medal',md?MEDAL_E[md]+' '+MEDAL_N[md]:'🏁 Done');if(mc.title)mc.title='';}
   else if(S.race&&!S.race.done&&!me.dnf){
     const nm=nextMedal(S.track,racing?S.race.elapsed:0);
-    mc.textContent=nm?MEDAL_E[nm.tier]+' '+(nm.left/1000).toFixed(1)+'s':'🏅 —';
-    mc.title=nm?'Next medal: '+MEDAL_N[nm.tier]+' in '+(nm.left/1000).toFixed(1)+'s':'No medals left on this track — just finish!';
+    setText('h-medal',nm?MEDAL_E[nm.tier]+' '+(nm.left/1000).toFixed(1)+'s':'🏅 —');
+    const tt=nm?'Next medal: '+MEDAL_N[nm.tier]+' in '+(nm.left/1000).toFixed(1)+'s':'No medals left on this track — just finish!';if(mc.title!==tt)mc.title=tt;
   }
-  $('h-boost').textContent='⚡×'+me.boosts;
-  $('h-coins').textContent='🪙'+me.coins;
+  setText('h-boost','⚡×'+me.boosts);
+  setText('h-coins','🪙'+me.coins);
   const lf=racing?S.race.left:1e9;
-  $('hurry').style.display=lf<30000?'flex':'none';
-  if(lf<30000)$('hurry-t').textContent='⏰ '+Math.max(1,Math.ceil(lf/1000))+'s left!';
+  const hd=lf<30000?'flex':'none';if($('hurry').style.display!==hd)$('hurry').style.display=hd;
+  if(lf<30000)setText('hurry-t','⏰ '+Math.max(1,Math.ceil(lf/1000))+'s left!');
 }
 function onFinish(p,dnf){
   if(p.finished||p.dnf)return;
