@@ -36,6 +36,11 @@ visible to the other except through this file and git history.
   About page, How to play page, the home intro and footer links.
 - When trimming in-game text, keep the full rules on `how-to-play.html`. Trim the home
   intro rather than delete it.
+- Keep `contact.html` (AdSense wants a Contact Us page) and its links in every footer and the
+  home top nav. The address it shows is Ryan's call.
+- `updates.html` is the dated "What's new" log. When a player-facing change merges (new game,
+  level, tower, mode or a big fix), add a short plain-language entry at the top. Regular
+  dated updates help the AdSense review.
 - Never click our own ads. To test ads, add `?adtest=1` to the page URL.
 - Between-round ad breaks (`ArcadeUI.adBreak(...)`, solo play only) use H5 Games Ads, a
   separate beta. Until it's approved those slots show nothing, which is expected.
