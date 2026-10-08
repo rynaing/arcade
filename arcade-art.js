@@ -361,7 +361,7 @@
     for (var i = live.length - 1; i >= 0; i--) {
       var it = live[i];
       if (!it.c.isConnected) { live.splice(i, 1); continue; }
-      if (!it.c.offsetWidth) continue;   // hidden (menu closed during a match): drawing it anyway cost phones a lot of fps
+      if (it.hidden) continue;   // hidden (menu closed during a match): drawing it anyway cost phones a lot of fps
       draw(it.c, it.id, { t: t + it.off, team: it.team, bot: it.bot });
     }
     if (live.length) raf = requestAnimationFrame(frame);
@@ -369,13 +369,21 @@
   function kick() { if (!raf && live.length) raf = requestAnimationFrame(frame); }
   document.addEventListener('visibilitychange', kick);
 
+  // whether each canvas is on screen, from an IntersectionObserver: reading its size every frame instead
+  // forced the page to redo layout each frame while a game was running
+  var seen = typeof IntersectionObserver === 'function' ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.target._arcIt) e.target._arcIt.hidden = !e.isIntersecting; });
+  }) : null;
+  function watch(it) { if (seen) { it.c._arcIt = it; seen.observe(it.c); } }
+
   function cast(el, list, o) {
     o = o || {}; el.classList.add('arc-cast');
     (list || ids).forEach(function (id, i) {
       var c = document.createElement('canvas'); c.className = 'arc-cast-c'; c.setAttribute('aria-hidden', 'true');
       c.style.width = c.style.height = (o.size || 84) + 'px';
       el.appendChild(c);
-      live.push({ c: c, id: id, off: i * 1.3, team: o.team || (i % 2 ? 'B' : 'A'), bot: null });
+      var it = { c: c, id: id, off: i * 1.3, team: o.team || (i % 2 ? 'B' : 'A'), bot: null, hidden: false };
+      live.push(it); watch(it);
     });
     kick();
   }

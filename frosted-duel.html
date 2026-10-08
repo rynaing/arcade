@@ -211,7 +211,9 @@ function clear(a,b){const d=b.clone().sub(a),L=d.length();d.divideScalar(L);retu
 /* ===== three.js scene ===== */
 const cv=$('cv');
 const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));
+// phones: 1.5x pixels instead of 2x and a smaller shadow map (about 45% less to draw each frame; hard to tell apart on a small screen)
+const PHONE=matchMedia('(pointer: coarse)').matches;
+renderer.setPixelRatio(Math.min(PHONE?1.5:2,devicePixelRatio||1));
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(68,1,.1,200);
@@ -222,7 +224,7 @@ const toonGrad=(()=>{const t=new THREE.DataTexture(new Uint8Array([90,90,90,255,
 const toon=(color,o={})=>new THREE.MeshToonMaterial(Object.assign({color,gradientMap:toonGrad},o));
 scene.add(new THREE.HemisphereLight(0xfff4fb,0xb79df0,1.6));
 const sun=new THREE.DirectionalLight(0xffffff,2.2);sun.position.set(14,30,10);sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-26,right:26,top:26,bottom:-26,near:1,far:80});sun.shadow.bias=-.0006;
+sun.shadow.mapSize.set(PHONE?1024:2048,PHONE?1024:2048);Object.assign(sun.shadow.camera,{left:-26,right:26,top:26,bottom:-26,near:1,far:80});sun.shadow.bias=-.0006;
 scene.add(sun);
 
 // textures
