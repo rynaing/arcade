@@ -52,11 +52,17 @@ try {
   const pa = await openPage(a, site.url('crumb-bound.html'), errors, 'device A');
   await pa.evaluate(() => { localStorage.setItem('cb-gold', '1234'); localStorage.setItem('cb-name', 'Baker Bob'); });
   await pa.reload(); await sleep(500);
+  check(await pa.evaluate(() => { const i = document.getElementById('chat-in'); return i.readOnly && i.placeholder === 'Sign in to chat'; }), 'guests can\'t type in chat');
+  check(await pa.evaluate(() => ArcadeBoard.record('cake-td', 'classic-0', 5000, { format: 'points', label: 'Classic · Meadow Loop' })), 'a guest\'s new best is recorded');
+  check(await until(() => pa.isVisible('#arc-acct-nudge >> text=New best!')), 'a guest\'s new best offers an account');
+  await pa.click('#arc-acct-nudge .nx');
   await signIn(pa);
   check(await until(async () => (db.arcade_profiles[Object.keys(db.arcade_profiles)[0]] || {}).name === 'Baker Bob'), 'first sign-in keeps the name typed as a guest');
   check(await until(async () => (save('crumb-bound') || { data: {} }).data['cb-gold'] === '1234'), 'guest progress is uploaded to the account');
   check(/Baker Bob/.test(await pa.textContent('#arc-acct')), 'bar button shows the account name');
   check(await until(() => pa.isVisible('text=Hi, Baker Bob!')), 'card switches to the account after the code');
+  check(await until(async () => /cake-td\|classic-0/.test((save('arcade') || { data: {} }).data['arcade-bests'] || '')), 'the guest\'s best is saved to the account');
+  check(await pa.evaluate(() => !document.getElementById('chat-in').readOnly), 'signed in, chat unlocks');
   await pa.keyboard.press('Escape');
 
   // device B: has its own progress → asked which to keep → account wins → page reloads with it
@@ -78,6 +84,11 @@ try {
   // back on A: the newer cloud save replaces A's copy
   await pa.reload();
   check(await until(async () => (await ls(pa, 'cb-gold')) === '2000'), 'other device picks up the newer save on load');
+
+  // my page: the best made as a guest on device A shows on device B
+  const pp = await openPage(b, site.url('profile.html'), errors, 'device B my page');
+  check(await until(async () => /Classic · Meadow Loop\s*5,000/.test(await pp.textContent('#games'))), 'my page shows bests from the account');
+  await pp.close();
 
   // the one name: rejected names stay out, a new name reaches every game's key
   await pb.click('#arc-acct');
