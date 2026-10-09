@@ -318,8 +318,8 @@
     function need() { if (!sb || !sb.auth) { say("Can't reach the server. Check your connection."); return false; } return true; }
 
     if (view === 'start') {
-      card.appendChild(el('h2', {}, 'Save your progress'));
-      card.appendChild(el('p', {}, 'One free account keeps your name, coins and best times in every game, on any device. You can always play without one.'));
+      card.appendChild(el('h2', {}, 'Sign in to save your progress'));
+      card.appendChild(el('p', {}, 'One free account keeps your name, coins and best times in every game, on any device. Been here before? Use the same email to sign back in.'));
       // neutral age screen: pick a birth year (not stored anywhere). Too young → a grown-up makes the account.
       var now = new Date().getFullYear();
       var age = el('select', { class: 'arc-input', id: 'arc-acct-age', 'aria-label': 'Year you were born' });
