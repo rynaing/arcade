@@ -34,7 +34,8 @@
     '#arc-bar a.arc-back:hover,#arc-bar a.arc-back:focus-visible{background:rgba(255,123,169,.28);outline:none}',
     '#arc-bar a.arc-back svg{flex:none}',
     '#arc-bar .arc-name{font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#ffb3cf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw}',
-    '#arc-bar button.arc-snd{justify-self:end;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:14px;line-height:1;width:28px;height:26px;border-radius:999px;cursor:pointer}',
+    '#arc-bar .arc-right{justify-self:end;display:flex;align-items:center;gap:6px;min-width:0}',
+    '#arc-bar button.arc-snd{flex:none;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:14px;line-height:1;width:28px;height:26px;border-radius:999px;cursor:pointer}',
     '#arc-bar button.arc-snd:hover,#arc-bar button.arc-snd:focus-visible{background:rgba(255,123,169,.35);outline:none}',
     '@media (max-width:480px){#arc-bar .arc-name{display:none}#arc-bar{grid-template-columns:1fr auto}}',
     /* shared components */
@@ -83,8 +84,9 @@
     a.innerHTML = '<span aria-hidden="true">←</span>' + MUSH + '<span>Ryan Cake Studios</span>';
     var nm = document.createElement('div'); nm.className = 'arc-name'; nm.textContent = title;
     bar.appendChild(a); bar.appendChild(nm);
+    var right = document.createElement('div'); right.className = 'arc-right';   // arcade-account.js adds its button here
     var snd = document.createElement('button'); snd.type = 'button'; snd.className = 'arc-snd'; snd.id = 'arc-snd'; snd.textContent = '🔊';
-    bar.appendChild(snd);
+    right.appendChild(snd); bar.appendChild(right);
     document.body.insertBefore(bar, document.body.firstChild);
     // one shared mute for the whole arcade (arcade-audio.js, which may load after this script): bind once it exists
     var bound = false;

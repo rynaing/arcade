@@ -32,3 +32,5 @@ jobs:
         run: node smoke.mjs
       - name: Online rooms survive bad player data
         run: node online.mjs
+      - name: Accounts sign in and sync saves
+        run: node accounts.mjs
