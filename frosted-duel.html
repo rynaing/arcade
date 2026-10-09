@@ -84,7 +84,9 @@ body{background:#2a1631;color:#fff3f8;font-family:"Trebuchet MS","Segoe UI",syst
  .keys{display:none}
  .nm{font-size:15px}.timer{font-size:20px;min-width:56px}.bar{height:13px}
 }
-@media (max-height:430px){.tb{width:50px;height:50px}.tbs{grid-template-columns:repeat(3,50px)}#joy{width:110px;height:110px}}
+#tiltBtn{position:absolute;left:14px;bottom:158px;width:auto;height:40px;border-radius:999px;padding:0 14px;flex-direction:row;gap:6px;font-size:13px}
+#tiltBtn span{font-size:16px}
+@media (max-height:430px){.tb{width:50px;height:50px}.tbs{grid-template-columns:repeat(3,50px)}#joy{width:110px;height:110px}#tiltBtn{bottom:134px;height:36px}}
 button:focus-visible{outline:3px solid #ffd23f;outline-offset:2px}
 [hidden]{display:none!important}
 </style>
@@ -106,6 +108,7 @@ button:focus-visible{outline:3px solid #ffd23f;outline-offset:2px}
 <div id="touch" aria-hidden="true">
  <div id="look"></div>
  <div id="joy"><div id="knob"></div></div>
+ <button class="tb" id="tiltBtn" tabindex="-1" hidden><span>🎯</span>Tilt aim</button>
  <div class="tbs">
   <button class="tb" data-k="block" tabindex="-1"><span>🛡</span>Block</button>
   <button class="tb" data-k="slash" tabindex="-1"><span>⚔️</span>Slash</button>
@@ -606,13 +609,55 @@ lookEl.addEventListener('pointerdown',e=>{e.preventDefault();look.id=e.pointerId
 lookEl.addEventListener('pointermove',e=>{if(e.pointerId!==look.id||!playing())return;camYaw-=(e.clientX-look.x)*.006;camPitch=Math.max(-1.1,Math.min(.9,camPitch-(e.clientY-look.y)*.005));look.x=e.clientX;look.y=e.clientY});
 const lookEnd=e=>{if(e.pointerId===look.id)look.id=null};
 lookEl.addEventListener('pointerup',lookEnd);lookEl.addEventListener('pointercancel',lookEnd);
-document.querySelectorAll('#touch .tb').forEach(b=>{
+document.querySelectorAll('#touch .tbs .tb').forEach(b=>{
  const k=b.dataset.k;
  b.addEventListener('pointerdown',e=>{e.preventDefault();b.classList.add('on');if(k==='pause'){setPause(!paused);return}touch[k]=true;if(playing())press(k)});
  const up=e=>{e.preventDefault();b.classList.remove('on');touch[k]=false};
  b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up);
 });
 if(TOUCH)$('touch').classList.add('on');
+// tilt aim: turning the phone turns the camera (gyroscope rotation rate, mapped to the screen's current orientation)
+const tilt={on:false,last:0,got:false};
+const tiltBtn=$('tiltBtn');
+function tiltMotion(e){
+ const r=e.rotationRate;if(!r||r.beta==null||r.gamma==null)return;
+ tilt.got=true;
+ const now=performance.now(),dt=tilt.last?Math.min(.1,(now-tilt.last)/1000):0;tilt.last=now;
+ if(!tilt.on||!playing()||!dt)return;
+ let a=screen.orientation&&screen.orientation.angle!=null?screen.orientation.angle:(window.orientation||0);a=((a%360)+360)%360;
+ const b=r.beta,g=r.gamma;
+ let px=b,py=g;// rotation about the screen's right and up axes, deg/s
+ if(a===90){px=-g;py=b}else if(a===180){px=-b;py=-g}else if(a===270){px=g;py=-b}
+ const dz=v=>Math.abs(v)<1.5?0:v;
+ camYaw+=dz(py)*Math.PI/180*dt;
+ camPitch=Math.max(-1.1,Math.min(.9,camPitch+dz(px)*Math.PI/180*dt));
+}
+function setTilt(on){
+ tilt.on=on;tiltBtn.classList.toggle('on',on);
+ try{localStorage.setItem('fd-tilt',on?'1':'0')}catch(_){}
+ if(on){
+  tilt.got=false;tilt.last=0;addEventListener('devicemotion',tiltMotion);
+  setTimeout(()=>{if(tilt.on&&!tilt.got){setTilt(false);setBanner('No motion sensor found',1.6)}},1500);
+ }else removeEventListener('devicemotion',tiltMotion);
+}
+function askTilt(){// iOS needs a tap before motion events flow
+ const D=window.DeviceMotionEvent;
+ if(D&&typeof D.requestPermission==='function')return D.requestPermission().then(p=>p==='granted').catch(()=>false);
+ return Promise.resolve(true);
+}
+if(TOUCH&&'DeviceMotionEvent' in window){
+ tiltBtn.hidden=false;
+ tiltBtn.addEventListener('pointerdown',e=>e.preventDefault());
+ tiltBtn.addEventListener('pointerup',e=>{e.preventDefault();// pointerup, not pointerdown: iOS only lets a finished tap ask for motion access
+  if(tilt.on){setTilt(false);return}
+  askTilt().then(ok=>{if(ok){setTilt(true);setBanner('Turn your phone to aim',1.6)}else setBanner('Motion access was turned down',1.6)});
+ });
+ let saved=false;try{saved=localStorage.getItem('fd-tilt')==='1'}catch(_){}
+ if(saved){
+  if(typeof DeviceMotionEvent.requestPermission==='function')addEventListener('pointerup',function once(){removeEventListener('pointerup',once);if(!tilt.on)askTilt().then(ok=>{if(ok)setTilt(true)})});
+  else setTilt(true);
+ }
+}
 
 function turnKeys(dt){
  camYaw-=((keys.turnR?1:0)-(keys.turnL?1:0))*2.6*dt;
