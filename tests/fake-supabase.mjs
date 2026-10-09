@@ -30,4 +30,52 @@ class FakeChannel {
   }
   _emit(t, e, arg) { for (const h of this.h) if (h.type === t && h.event === e) h.cb(arg); }
 }
-export function createClient() { return { channel: (name, opts) => new FakeChannel(name, opts) }; }
+
+// Stand-in for supabase auth + the arcade_profiles / arcade_saves tables (accounts.mjs). The "server" is
+// /__fakedb on the test server (harness.mjs), so two browser contexts act like two devices on one account.
+// Sign-in: any email, code 123456. Names containing "badword" are rejected like arcade_name_ok would.
+const AUTH_KEY = 'sb-ukrxoqsvyvlyeblubjeo-auth-token';
+function fakeAuth() {
+  const subs = [];
+  const get = () => { try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch { return null; } };
+  const emit = (ev, s) => subs.forEach(cb => setTimeout(() => cb(ev, s), 0));
+  return {
+    getSession: async () => ({ data: { session: get() }, error: null }),
+    onAuthStateChange(cb) { subs.push(cb); setTimeout(() => cb('INITIAL_SESSION', get()), 0); return { data: { subscription: { unsubscribe() {} } } }; },
+    signInWithOtp: async () => ({ data: {}, error: null }),
+    signInWithOAuth: async () => ({ data: {}, error: null }),
+    async verifyOtp({ email, token }) {
+      if (token !== '123456') return { data: {}, error: { message: 'Token has expired or is invalid' } };
+      const id = 'u-' + [...email].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(16);
+      const s = { access_token: 'fake', user: { id, email } };
+      localStorage.setItem(AUTH_KEY, JSON.stringify(s)); emit('SIGNED_IN', s);
+      return { data: { session: s, user: s.user }, error: null };
+    },
+    async signOut() { localStorage.removeItem(AUTH_KEY); emit('SIGNED_OUT', null); return { error: null }; },
+    _uid: () => (get() || { user: {} }).user.id,
+  };
+}
+class FakeQuery {
+  constructor(auth, table) { this.q = { table, uid: auth._uid(), filters: {} }; }
+  select() { if (!this.q.op) this.q.op = 'select'; return this; }
+  insert(row) { this.q.op = 'insert'; this.q.row = row; return this; }
+  update(row) { this.q.op = 'update'; this.q.row = row; return this; }
+  upsert(row) { this.q.op = 'upsert'; this.q.row = row; return this; }
+  eq(k, v) { this.q.filters[k] = v; return this; }
+  single() { this.q.one = 'single'; return this; }
+  maybeSingle() { this.q.one = 'maybe'; return this; }
+  then(ok, bad) { return fakeDb(this.q).then(ok, bad); }
+}
+async function fakeDb(q) {
+  const r = await fetch('/__fakedb', { method: 'POST', body: JSON.stringify(q) });
+  return r.json();
+}
+export function createClient() {
+  const auth = fakeAuth();
+  return {
+    channel: (name, opts) => new FakeChannel(name, opts),
+    auth,
+    from: table => new FakeQuery(auth, table),
+    rpc: fn => fakeDb({ op: 'rpc', fn, uid: auth._uid() }),
+  };
+}

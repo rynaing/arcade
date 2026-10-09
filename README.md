@@ -28,6 +28,16 @@ Each has its own card here and opens straight into that game (`game-night/?game=
 (ranges, name filter, rate limits); the public key can't read or edit the table directly.
 Bump the `?v=` on `<script src="leaderboard.js?v=…">` in every page when the client changes.
 
+## Accounts (optional)
+
+`arcade-account.js` (on every page, right after `arcade-ui.js`) adds a Sign in button to the studio bar and
+the hub's top nav. Sign-in is Supabase Auth: an emailed link or 6-digit code, plus Google when it's turned
+on in Supabase. Signed in, the account is the one source of truth: its name (`arcade_profiles`) is written
+into every game's name key on load, and each game's save keys (the `SAVES` list in `arcade-account.js`) are
+mirrored to `arcade_saves`. A newer cloud save is written to localStorage and the page reloads once, so
+games need no account code. Guests never load Supabase for this. Tables and rules: [`supabase/accounts.sql`](supabase/accounts.sql).
+New game with saved progress? Add its keys to `SAVES` and its id to the `arcade_saves_game` check.
+
 ## Online play
 
 Crumb Bound, Bubble Brawl and Hamster Roll use Supabase Realtime channels (no tables) through the
@@ -50,4 +60,4 @@ Removed but recoverable from git tags: `archive/berrybrook-swordplay`, `archive/
 `tests/` runs on every PR (`.github/workflows/checks.yml`): shared-script `?v=` values must
 match across pages and change when the script does, every page must load without script errors,
 and each online game must start a match while a fake player sends bad data. Run them locally with
-`cd tests && npm ci && npx playwright install chromium && node check-versions.mjs && node smoke.mjs && node online.mjs`.
+`cd tests && npm ci && npx playwright install chromium && node check-versions.mjs && node smoke.mjs && node online.mjs && node accounts.mjs`.

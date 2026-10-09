@@ -34,6 +34,7 @@
 
   var ready = null;
   function client() {
+    if (!ready && window.ArcadeAccount) ready = ArcadeAccount.client();   // one shared client (and sign-in session)
     if (!ready) ready = new Promise(function (res) {
       var s = document.createElement('script');
       s.src = SUPABASE_JS;

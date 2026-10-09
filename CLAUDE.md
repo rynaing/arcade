@@ -8,7 +8,7 @@ See README.md for how the games, leaderboards and online play work.
 - Live at https://cakecade.com (GitHub Pages from `main`, custom domain via `CNAME`).
   Every merge to `main` goes live, so test before merging.
 - Static site: one self-contained HTML file per game, shared code in `arcade-ui.js`,
-  `arcade-art.js`, `arcade-audio.js`, `arcade-net.js` and `leaderboard.js`. No build step,
+  `arcade-account.js`, `arcade-art.js`, `arcade-audio.js`, `arcade-net.js` and `leaderboard.js`. No build step,
   no game framework: shared behaviour goes into these files instead of being copied per game.
 - Online play (Crumb Bound, Bubble Brawl, Hamster Roll) goes through `arcade-net.js`: Supabase
   loading, rooms, roster, and checks on everything other players send. Never trust a channel
@@ -65,6 +65,20 @@ analytics script or re-run Cloudflare's setup.
 - Players who haven't typed a name get a fun default like "Sunny Otter" (`ArcadeBoard.friendlyName()`,
   shared by every game). Defaults never post to the world boards (`ArcadeBoard.isDefaultName()`);
   a player has to type their own name for that. Keep new games on these helpers.
+
+## Accounts
+
+- Accounts are optional; every game must keep working for guests. Guests never load Supabase
+  for accounts (`arcade-account.js` only loads it with a saved session or when the card opens).
+- Signed in, the account is the one source of truth for the player name and saved progress.
+  A game's saved progress is the list of localStorage keys in `SAVES` in `arcade-account.js`.
+  When a game adds a save key, add it there too, or it won't follow the player between devices.
+- Accounts are for 13+ or a grown-up setting one up for a child. The sign-in card asks a neutral
+  birth-year question (Ryan's choice over a checkbox), never stores it, and after an under-13 answer
+  keeps refusing for a day. The privacy page says the same. Don't add anything that asks a child for personal details.
+- Saves come from the browser, so they're not trusted. Anything bought with real money must be
+  granted server-side, never read from `arcade_saves`.
+- There's one Supabase client per page, `ArcadeAccount.client()`; `arcade-net.js` reuses it.
 
 ## Game decisions
 

@@ -5,7 +5,8 @@
   "scripts": {
     "versions": "node check-versions.mjs",
     "smoke": "node smoke.mjs",
-    "online": "node online.mjs"
+    "online": "node online.mjs",
+    "accounts": "node accounts.mjs"
   },
   "devDependencies": {
     "playwright": "1.56.1"
