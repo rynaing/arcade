@@ -15,7 +15,7 @@ async function until(fn, ms = 8000) { const end = Date.now() + ms; while (Date.n
 
 async function signIn(p) {
   await p.click('#arc-acct');
-  await p.check('#arc-acct-age');
+  await p.selectOption('#arc-acct-age', '1990');
   await p.fill('.arc-acct-ov input[type=email]', 'player@example.com');
   await p.click('text=Email me a sign-in link');
   await p.fill('.arc-acct-ov input[autocomplete=one-time-code]', '123456');
@@ -32,6 +32,20 @@ try {
   check(!loaded, 'guest on the hub never loads Supabase');
   check((await gp.textContent('[data-arc-account]')) === 'Sign in', 'hub nav shows Sign in');
   await g.close();
+
+  // age screen: too young is turned away, and stays turned away after picking another year
+  const k = await offlineContext(browser);
+  const pk = await openPage(k, site.url('crumb-bound.html'), errors, 'kid');
+  await pk.click('#arc-acct');
+  await pk.selectOption('#arc-acct-age', String(new Date().getFullYear() - 10));
+  await pk.fill('.arc-acct-ov input[type=email]', 'kid@example.com');
+  await pk.click('text=Email me a sign-in link');
+  check(await until(() => pk.isVisible('text=Please ask a grown-up')), 'under 13 is asked to get a grown-up');
+  await pk.selectOption('#arc-acct-age', '1990');
+  await pk.click('text=Email me a sign-in link');
+  check(!(await pk.isVisible('text=Check your email')) && await pk.isVisible('text=Please ask a grown-up'), 'changing the year after that still says no');
+  check((await pk.evaluate(() => Object.keys(localStorage).filter(x => /1990|birth/.test(x + localStorage.getItem(x))).length)) === 0, 'birth year is not stored');
+  await k.close();
 
   // device A: guest progress, then sign in → account takes the name and the save
   const a = await offlineContext(browser);

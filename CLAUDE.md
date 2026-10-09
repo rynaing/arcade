@@ -73,8 +73,9 @@ analytics script or re-run Cloudflare's setup.
 - Signed in, the account is the one source of truth for the player name and saved progress.
   A game's saved progress is the list of localStorage keys in `SAVES` in `arcade-account.js`.
   When a game adds a save key, add it there too, or it won't follow the player between devices.
-- Accounts are for 13+ or a grown-up setting one up for a child (checkbox on the sign-in card,
-  privacy page says the same). Don't add anything that asks a child for personal details.
+- Accounts are for 13+ or a grown-up setting one up for a child. The sign-in card asks a neutral
+  birth-year question (Ryan's choice over a checkbox), never stores it, and after an under-13 answer
+  keeps refusing for a day. The privacy page says the same. Don't add anything that asks a child for personal details.
 - Saves come from the browser, so they're not trusted. Anything bought with real money must be
   granted server-side, never read from `arcade_saves`.
 - There's one Supabase client per page, `ArcadeAccount.client()`; `arcade-net.js` reuses it.

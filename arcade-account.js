@@ -242,13 +242,18 @@
     '.arc-acct-ov .arc-input{width:100%;margin:6px 0}',
     '.arc-acct-ov .arc-btn{width:100%;margin-top:8px}',
     '.arc-acct-ov .x{position:absolute;top:8px;right:10px;border:0;background:none;font-size:22px;cursor:pointer;color:var(--arc-muted,#8a7f95)}',
-    '.arc-acct-ov label.age{display:flex;gap:8px;align-items:flex-start;text-align:left;font-size:13px;margin:8px 0;color:var(--arc-ink,#3d3448)}',
+    '.arc-acct-ov select.arc-input{appearance:auto;cursor:pointer}',
     '.arc-acct-ov .msg{min-height:1.2em;font-size:13px;font-weight:800;color:var(--arc-pink-dark,#b0396a)}',
     '.arc-acct-ov .small{font-size:12px;color:var(--arc-muted,#8a7f95)}',
     '.arc-acct-ov .linkish{border:0;background:none;color:var(--arc-muted,#8a7f95);text-decoration:underline;cursor:pointer;font:inherit;font-size:12px;margin-top:10px}',
     '#arc-acct-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483600;background:#3a1a40;color:#fff;font:800 14px var(--arc-font,system-ui);',
     'padding:10px 18px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.3)}',
   ].join('');
+
+  // after an under-age answer, keep saying no for a day so going back and picking another year doesn't work
+  var LS_AGE = 'arcade-age-check';
+  function ageBlocked() { var t = +lsGet(LS_AGE) || 0; return Date.now() - t < 864e5; }
+  function blockAge() { lsSet(LS_AGE, String(Date.now())); }
 
   var ov = null, view = 'start', email = '', googleOn = false;
   function el(tag, attrs, text) {
@@ -315,15 +320,26 @@
     if (view === 'start') {
       card.appendChild(el('h2', {}, 'Save your progress'));
       card.appendChild(el('p', {}, 'One free account keeps your name, coins and best times in every game, on any device. You can always play without one.'));
-      var age = el('input', { type: 'checkbox', id: 'arc-acct-age' });
-      var lab = el('label', { class: 'age', for: 'arc-acct-age' });
-      lab.appendChild(age); lab.appendChild(el('span', {}, "I'm 13 or older, or I'm a grown-up setting this up for my child."));
+      // neutral age screen: pick a birth year (not stored anywhere). Too young → a grown-up makes the account.
+      var now = new Date().getFullYear();
+      var age = el('select', { class: 'arc-input', id: 'arc-acct-age', 'aria-label': 'Year you were born' });
+      age.appendChild(el('option', { value: '' }, 'Year you were born'));
+      for (var y = now; y >= now - 100; y--) age.appendChild(el('option', { value: String(y) }, String(y)));
+      var lab = el('p', { class: 'small' }, 'Setting this up for your child? Use your own birth year and email.');
+      function tooYoung() {
+        if (ageBlocked()) return true;
+        var y = +age.value;
+        if (!y) { say('Pick the year you were born.'); return null; }
+        if (now - y < 14) { blockAge(); return true; }   // born this recently could still be 12, so a grown-up signs up
+        return false;
+      }
+      var KID = 'Please ask a grown-up to make the account with their own email.';
       var inp = el('input', { class: 'arc-input', type: 'email', placeholder: 'Your email', autocomplete: 'email', 'aria-label': 'Email' });
       inp.value = email;
       var go = el('button', { class: 'arc-btn', type: 'button' }, 'Email me a sign-in link');
       go.addEventListener('click', async function () {
         email = inp.value.trim();
-        if (!age.checked) return say('Please ask a grown-up to set up the account.');
+        var t = tooYoung(); if (t === null) return; if (t) return say(KID);
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return say('That email doesn’t look right.');
         if (!need()) return;
         go.disabled = true; say('Sending…');
@@ -333,11 +349,11 @@
         view = 'sent'; render();
       });
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') go.click(); });
-      card.appendChild(lab); card.appendChild(inp); card.appendChild(go);
+      card.appendChild(age); card.appendChild(lab); card.appendChild(inp); card.appendChild(go);
       if (googleOn) {
         var g = el('button', { class: 'arc-btn ghost', type: 'button' }, 'Continue with Google');
         g.addEventListener('click', function () {
-          if (!age.checked) return say('Please ask a grown-up to set up the account.');
+          var t = tooYoung(); if (t === null) return; if (t) return say(KID);
           if (need()) sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
         });
         card.appendChild(g);
