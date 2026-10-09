@@ -1,6 +1,6 @@
 # Ryan Cake Studios Arcade
 
-A free hub of party and solo games for all ages — no sign-up, just pick a game and play.
+A free hub of party and solo games for all ages — no sign-up needed, just pick a game and play.
 
 Live at https://cakecade.com/ · Free forever · Kid-friendly
 
