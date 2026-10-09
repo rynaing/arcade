@@ -53,7 +53,13 @@
   /* ---------------- name: the account's name wins, before any game reads it ---------------- */
   var acct = jget(LS_ACCT, null);
   if (acct && !acct.id) acct = null;
-  function applyName(n) { n = cleanName(n); if (n) NAME_KEYS.forEach(function (k) { lsSet(k, n); }); }
+  function applyName(n) {
+    n = cleanName(n); if (!n) return;
+    NAME_KEYS.forEach(function (k) { lsSet(k, n); });
+    // a game already on screen shows its name box from load; keep it in step unless the player is typing in it
+    var box = document.getElementById('name-input');
+    if (box && box !== document.activeElement && box.value !== n) box.value = n;
+  }
   if (acct) applyName(acct.name);
 
   /* ---------------- shared Supabase client ---------------- */
@@ -318,8 +324,8 @@
     function need() { if (!sb || !sb.auth) { say("Can't reach the server. Check your connection."); return false; } return true; }
 
     if (view === 'start') {
-      card.appendChild(el('h2', {}, 'Save your progress'));
-      card.appendChild(el('p', {}, 'One free account keeps your name, coins and best times in every game, on any device. You can always play without one.'));
+      card.appendChild(el('h2', {}, 'Sign in to save your progress'));
+      card.appendChild(el('p', {}, 'One free account keeps your name, coins and best times in every game, on any device. Been here before? Use the same email to sign back in.'));
       // neutral age screen: pick a birth year (not stored anywhere). Too young → a grown-up makes the account.
       var now = new Date().getFullYear();
       var age = el('select', { class: 'arc-input', id: 'arc-acct-age', 'aria-label': 'Year you were born' });

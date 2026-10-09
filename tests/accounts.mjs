@@ -87,6 +87,7 @@ try {
   await pb.fill('.arc-acct-ov input[aria-label="Player name"]', 'Cake Boss');
   await pb.click('text=Save name');
   check(await until(() => pb.isVisible('text=Saved! It shows in every game.')), 'new name saves');
+  check((await pb.inputValue('#name-input')) === 'Cake Boss', 'the game\'s name box on screen updates too');
   const ph = await openPage(a, site.url('hamster-roll.html'), errors, 'device A hamster');
   check(await until(async () => (await ls(ph, 'hr-name')) === 'Cake Boss' && (await ls(ph, 'cb-name')) === 'Cake Boss'), 'new name reaches every game on the other device');
 
