@@ -53,7 +53,13 @@
   /* ---------------- name: the account's name wins, before any game reads it ---------------- */
   var acct = jget(LS_ACCT, null);
   if (acct && !acct.id) acct = null;
-  function applyName(n) { n = cleanName(n); if (n) NAME_KEYS.forEach(function (k) { lsSet(k, n); }); }
+  function applyName(n) {
+    n = cleanName(n); if (!n) return;
+    NAME_KEYS.forEach(function (k) { lsSet(k, n); });
+    // a game already on screen shows its name box from load; keep it in step unless the player is typing in it
+    var box = document.getElementById('name-input');
+    if (box && box !== document.activeElement && box.value !== n) box.value = n;
+  }
   if (acct) applyName(acct.name);
 
   /* ---------------- shared Supabase client ---------------- */
