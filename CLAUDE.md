@@ -98,6 +98,8 @@ analytics script or re-run Cloudflare's setup.
   wave (`late` in `DIFFS`: Chill 1.04, Classic 1.05, Nightmare 1.065), and gold per kill is worked
   out before that factor so income stays linear. Without it, late waves got easy. Retune `late`
   if it feels too soft or too brutal.
+- Ryan's Cake TD maps: a path point with a third value of 1 (`[x,y,1]`) is a portal; enemies jump from it
+  straight to the next point (no road drawn between, nothing can be planted on a portal). Sugar Serpent uses it.
 
 ## Archived games
 
