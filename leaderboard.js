@@ -11,6 +11,10 @@
  *   ArcadeBoard.name() / ArcadeBoard.setName(n)           -> remembered player name
  *   ArcadeBoard.friendlyName(fresh) / isDefaultName(n)    -> fun default name, and
  *                                    whether a name is a default (defaults don't post)
+ *   ArcadeBoard.record(game, board, score, {lower, add, format, label}) -> true on a new personal best
+ *                                    Kept in localStorage 'arcade-bests' for every player, named or not, so
+ *                                    it follows a signed-in player (arcade-account.js) and a guest's bests
+ *                                    are kept when they sign up. ArcadeBoard.bests() reads them.
  *
  * Submissions that fail because of the network are queued in localStorage and
  * retried on the next page load, so an offline win isn't lost.
@@ -152,6 +156,28 @@
     });
   }
 
+  // Personal bests: { 'game|board': { s: score, lo: 1 if lower is better, add: 1 if a running total, f: format, l: label, at } }
+  var LS_BESTS = 'arcade-bests';
+  function bests() { try { var o = JSON.parse(lsGet(LS_BESTS, '{}')); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+  function record(game, board, score, opts) {
+    opts = opts || {}; score = Number(score);
+    if (!game || !isFinite(score)) return false;
+    var all = bests(), k = game + '|' + board, cur = all[k];
+    var s = opts.add ? ((cur && +cur.s) || 0) + score : score;
+    var better = opts.add || !cur || !isFinite(+cur.s) || (opts.lower ? s < +cur.s : s > +cur.s);
+    if (!better) return false;
+    all[k] = { s: s, at: Date.now() };
+    if (opts.lower) all[k].lo = 1;
+    if (opts.add) all[k].add = 1;
+    if (opts.format) all[k].f = String(opts.format).slice(0, 12);
+    if (opts.label) all[k].l = String(opts.label).slice(0, 40);
+    lsSet(LS_BESTS, JSON.stringify(all));
+    // a guest who just did well is the best moment to offer an account
+    if (window.ArcadeAccount && ArcadeAccount.nudge && !ArcadeAccount.user())
+      ArcadeAccount.nudge(opts.add ? 'Nice win! Sign in to keep your wins on every device.' : 'New best! Sign in to keep it on every device.');
+    return true;
+  }
+
   // Win-count boards (vs bots): post one win if the player won and has a real
   // name, then show the top 5. Default names and `placeholder` matches don't post.
   function winBoard(o) {
@@ -161,6 +187,7 @@
     note('');
     var n = cleanName(o.name);
     if (!o.won) return show();
+    record(o.game, 'wins', 1, { add: true, format: 'wins', label: 'Wins vs bots' });
     if (isDefaultName(n) || (o.placeholder && o.placeholder.test(n))) { note('Type your name on the menu to count your wins worldwide.'); return show(); }
     AB.setName(n);
     return AB.submit(o.game, 'wins', n, 1, {}).then(function (res) {
@@ -179,7 +206,9 @@
     name: function () { return cleanName(lsGet(LS_NAME, '')); },
     setName: function (n) { n = cleanName(n); if (n && !isDefaultName(n)) lsSet(LS_NAME, n); return n; },
     friendlyName: friendlyName,
-    isDefaultName: isDefaultName
+    isDefaultName: isDefaultName,
+    record: record,
+    bests: bests
   };
 
   if (document.readyState === 'complete') setTimeout(flushQueue, 1500);

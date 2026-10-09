@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My page · Ryan Cake Studios</title>
+<meta name="description" content="Your name, best scores and wins across every game at Ryan Cake Studios Arcade.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🍰%3C/text%3E%3C/svg%3E">
+<script src="arcade-ui.js?v=5" data-title="My page" data-home="./index.html"></script>
+<script src="leaderboard.js?v=4"></script>
+<script src="arcade-account.js?v=5"></script>
+<style>
+  body{margin:0;background:var(--arc-cream,#fdf8ef);color:var(--arc-ink,#3d3448);font-family:"Trebuchet MS","Segoe UI",-apple-system,sans-serif;line-height:1.5}
+  .doc{max-width:720px;margin:0 auto;padding:28px 16px 60px}
+  h1{font-size:1.8rem;margin:10px 0 2px}
+  .muted{color:var(--arc-muted,#8a7f95);font-size:.9rem}
+  .who{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:6px 0 18px}
+  .who .pill{background:var(--arc-pink-deep,#e0548b);color:#fff;font-weight:800;border-radius:999px;padding:6px 16px;text-decoration:none;font-size:.9rem}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .game{background:#fff;border:2px solid #f6d6e3;border-radius:16px;padding:12px 14px}
+  .game h2{font-size:1rem;margin:0 0 6px}
+  .game h2 a{color:inherit;text-decoration:none}
+  .game ul{list-style:none;margin:0;padding:0;font-size:.92rem}
+  .game li{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+  .game li b{white-space:nowrap}
+  .game .none{color:var(--arc-muted,#8a7f95);font-size:.88rem}
+  .foot{margin-top:40px;font-size:.9rem}
+  a{color:var(--arc-pink-deep,#e0548b)}
+</style>
+</head>
+<body>
+<main class="doc">
+<h1 id="hi">My page</h1>
+<div class="who"><span id="who" class="muted">Loading…</span><a href="#" class="pill" data-arc-account hidden>Sign in</a></div>
+<div class="grid" id="games"></div>
+<p class="foot muted"><a href="./index.html">All games</a> · <a href="about.html">About</a> · <a href="how-to-play.html">How to play</a> · <a href="updates.html">What's new</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a></p>
+</main>
+<script>
+(function () {
+  var GAMES = [
+    { id: 'crumb-bound', name: 'Crumb Bound', href: 'crumb-bound.html' },
+    { id: 'bubble-brawl', name: 'Bubble Brawl', href: 'bubble-brawl.html' },
+    { id: 'hamster-roll', name: 'Hamster Roll', href: 'hamster-roll.html' },
+    { id: 'frosted-duel', name: 'Frosted Duel', href: 'frosted-duel.html' },
+    { id: 'cake-td', save: 'ryans-cake-td', name: 'Ryan’s Cake TD', href: 'ryans-cake-td.html' }
+  ];
+  var TRACKS = ['Meadow Dash', 'Pogo Cliffs', 'Gusher Gulch', 'Sky Steps'];
+  function $(id) { return document.getElementById(id); }
+  function local(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function json(v, d) { try { var o = JSON.parse(v); return o && typeof o === 'object' ? o : d; } catch (e) { return d; } }
+  function fmt(s, f) { return window.ArcadeBoard ? ArcadeBoard.format(s, f || 'points') : String(s); }
+  function li(label, value) {
+    var l = document.createElement('li'), a = document.createElement('span'), b = document.createElement('b');
+    a.textContent = label; b.textContent = value; l.appendChild(a); l.appendChild(b); return l;
+  }
+
+  function draw(get) {
+    var bests = json(get('arcade', 'arcade-bests'), {});
+    var box = $('games'); box.innerHTML = '';
+    GAMES.forEach(function (g) {
+      var rows = [];
+      if (g.id === 'crumb-bound') {
+        var w = Math.max(+get(g.id, 'cb-wins') || 0, +((bests['crumb-bound|wins'] || {}).s) || 0);
+        if (w) rows.push(['Wins', fmt(w, 'wins')]);
+        var gold = +get(g.id, 'cb-gold') || 0; if (gold) rows.push(['Gold', gold.toLocaleString()]);
+      } else if (g.id === 'hamster-roll') {
+        var hb = json(get(g.id, 'hr2-best'), {});
+        TRACKS.forEach(function (t, i) { if (hb['t' + i]) rows.push([t, fmt(hb['t' + i], 'ms') + ['', ' 🥉', ' 🥈', ' 🥇'][hb['m' + i] || 0]]); });
+        var c = +get(g.id, 'hr-coins') || 0; if (c) rows.push(['Coins', c.toLocaleString()]);
+      } else if (g.id === 'frosted-duel') {
+        var r = json(get(g.id, 'fd-record'), {});
+        if (r.wins) rows.push(['Wins', fmt(r.wins, 'wins')]);
+        if (r.best) rows.push(['Best win streak', String(r.best)]);
+      }
+      Object.keys(bests).forEach(function (k) {
+        if (k.split('|')[0] !== g.id || g.id === 'hamster-roll' || k === 'crumb-bound|wins') return;
+        var b = bests[k]; if (!b || !isFinite(+b.s)) return;
+        rows.push([b.l || k.split('|')[1], fmt(+b.s, b.f)]);
+      });
+      var card = document.createElement('section'); card.className = 'game';
+      var h = document.createElement('h2'), a = document.createElement('a'); a.href = g.href; a.textContent = g.name; h.appendChild(a); card.appendChild(h);
+      if (rows.length) { var ul = document.createElement('ul'); rows.forEach(function (x) { ul.appendChild(li(x[0], x[1])); }); card.appendChild(ul); }
+      else { var p = document.createElement('p'); p.className = 'none'; p.textContent = 'Nothing yet. Go play!'; card.appendChild(p); }
+      box.appendChild(card);
+    });
+  }
+
+  function who() {
+    var u = window.ArcadeAccount && ArcadeAccount.user();
+    var name = (u && u.name) || (window.ArcadeBoard && ArcadeBoard.name()) || '';
+    $('hi').textContent = name ? 'Hi, ' + name + '!' : 'My page';
+    $('who').textContent = u ? 'Signed in' + (u.email ? ' as ' + u.email : '') + '. Your bests follow you to every device.'
+      : 'You’re playing as a guest, so these are saved in this browser only.';
+    document.querySelector('[data-arc-account]').hidden = !!u;
+    return u;
+  }
+
+  function load() {
+    var u = who();
+    draw(function (game, k) { return local(k); });
+    if (!u || !window.ArcadeAccount || !ArcadeAccount.cloudSaves) return;
+    ArcadeAccount.cloudSaves().then(function (cloud) {
+      if (!cloud) return;
+      draw(function (game, k) {
+        var c = cloud[game === 'cake-td' ? 'ryans-cake-td' : game] || {};
+        if (game === 'arcade' && k === 'arcade-bests') {   // this device may hold a best that hasn't synced yet
+          var a = json(c[k], {}), b = json(local(k), {});
+          Object.keys(b).forEach(function (x) { var p = a[x], q = b[x]; if (q && (!p || (q.lo ? +q.s < +p.s : +q.s > +p.s))) a[x] = q; });
+          return JSON.stringify(a);
+        }
+        return k in c ? c[k] : local(k);
+      });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
+  window.addEventListener('storage', function (e) { if (e.key === 'arcade-account') load(); });
+  setInterval(function () { var u = window.ArcadeAccount && ArcadeAccount.user(); if (!!u !== !!who.last) { who.last = u; load(); } }, 1500);
+})();
+</script>
+</body>
+</html>

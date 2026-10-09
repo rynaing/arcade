@@ -26,7 +26,7 @@
 
   // localStorage keys that make up each game's saved progress ('arcade' = shared across games)
   var SAVES = {
-    'arcade': ['arcade-audio'],
+    'arcade': ['arcade-audio', 'arcade-bests'],
     'crumb-bound': ['cb-gold', 'cb-inv', 'cb-loadout', 'cb-gear-owned', 'cb-gear-equipped', 'cb-wins', 'cb-tp-gift', 'cb-bot'],
     'hamster-roll': ['hr-coins', 'hr-shop', 'hr2-best'],
     'bubble-brawl': ['bb-diff'],
@@ -53,7 +53,13 @@
   /* ---------------- name: the account's name wins, before any game reads it ---------------- */
   var acct = jget(LS_ACCT, null);
   if (acct && !acct.id) acct = null;
-  function applyName(n) { n = cleanName(n); if (n) NAME_KEYS.forEach(function (k) { lsSet(k, n); }); }
+  function applyName(n) {
+    n = cleanName(n); if (!n) return;
+    NAME_KEYS.forEach(function (k) { lsSet(k, n); });
+    // a game already on screen shows its name box from load; keep it in step unless the player is typing in it
+    var box = document.getElementById('name-input');
+    if (box && box !== document.activeElement && box.value !== n) box.value = n;
+  }
   if (acct) applyName(acct.name);
 
   /* ---------------- shared Supabase client ---------------- */
@@ -91,6 +97,23 @@
     if (data && typeof data === 'object') SAVES[game].forEach(function (k) { if (typeof data[k] === 'string') o[k] = data[k]; });
     return o;
   }
+  // personal bests (leaderboard.js) from this device and the account: keep the better of each
+  function mergeBests(cloud, local) {
+    var a, b;
+    try { a = JSON.parse(cloud['arcade-bests'] || '{}') || {}; } catch (e) { a = {}; }
+    try { b = JSON.parse(local['arcade-bests'] || '{}') || {}; } catch (e) { b = {}; }
+    var out = {}, changed = false;
+    Object.keys(a).forEach(function (k) { out[k] = a[k]; });
+    Object.keys(b).forEach(function (k) {
+      var x = out[k], y = b[k];
+      if (!y || typeof y !== 'object' || !isFinite(+y.s)) return;
+      if (!x || !isFinite(+x.s) || (y.lo ? +y.s < +x.s : +y.s > +x.s)) { out[k] = y; changed = true; }
+    });
+    if (!changed) return cloud;
+    var c = {}; Object.keys(cloud).forEach(function (k) { c[k] = cloud[k]; });
+    c['arcade-bests'] = JSON.stringify(out);
+    return c;
+  }
   function applyCloud(game, data) {
     SAVES[game].forEach(function (k) { lsSet(k, Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null); });
   }
@@ -115,14 +138,20 @@
     var local = snapshot(game), m = syncMeta(user.id, game);
     if (!r.data) { if (!empty(local)) await upload(game); return false; }
     var cloud = cleanCloud(game, r.data.data), rev = r.data.updated_at;
-    if (hash(cloud) === hash(local)) { syncMeta(user.id, game, { rev: rev, hash: hash(local) }); return false; }
+    var raw = cloud;
+    if (game === 'arcade') cloud = mergeBests(cloud, local);   // a new object only when this device had a better best
+    if (hash(cloud) === hash(local)) {
+      if (cloud !== raw) { syncMeta(user.id, game, { rev: rev, hash: '' }); await upload(game); }
+      else syncMeta(user.id, game, { rev: rev, hash: hash(local) });
+      return false;
+    }
     if (m && m.rev === rev) { await upload(game); return false; }          // only this device changed: push it
     if (!m && !empty(local) && game !== 'arcade') {                         // first sign-in here, both have progress
       var keepCloud = await choose(game);
       if (!keepCloud) { syncMeta(user.id, game, { rev: rev, hash: '' }); await upload(game); return false; }
     }
     applyCloud(game, cloud);
-    syncMeta(user.id, game, { rev: rev, hash: hash(cloud) });
+    syncMeta(user.id, game, { rev: rev, hash: cloud === raw ? hash(cloud) : '' });   // '' → next tick uploads the merge
     if (game === 'arcade' || !GAME) return false;
     var key = SS_RELOAD + ':' + game + ':' + rev;
     try { if (sessionStorage.getItem(key)) return false; sessionStorage.setItem(key, '1'); } catch (e) {}
@@ -248,6 +277,11 @@
     '.arc-acct-ov .linkish{border:0;background:none;color:var(--arc-muted,#8a7f95);text-decoration:underline;cursor:pointer;font:inherit;font-size:12px;margin-top:10px}',
     '#arc-acct-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483600;background:#3a1a40;color:#fff;font:800 14px var(--arc-font,system-ui);',
     'padding:10px 18px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.3)}',
+    '#arc-acct-nudge{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483600;display:flex;align-items:center;gap:10px;',
+    'max-width:calc(100vw - 32px);background:#3a1a40;color:#fff;font:800 14px var(--arc-font,system-ui);padding:8px 8px 8px 16px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.3)}',
+    '#arc-acct-nudge button{border:0;border-radius:999px;font:900 13px var(--arc-font,system-ui);padding:7px 14px;cursor:pointer;background:var(--arc-pink,#ff7ba9);color:#fff;white-space:nowrap}',
+    '#arc-acct-nudge .nx{background:none;padding:4px 6px;font-size:16px;color:#d9c6e0}',
+    'input.arc-chat-locked{cursor:pointer}',
   ].join('');
 
   // after an under-age answer, keep saying no for a day so going back and picking another year doesn't work
@@ -266,12 +300,42 @@
     var d = el('div', { id: 'arc-acct-toast', role: 'status' }, t);
     document.body.appendChild(d); setTimeout(function () { d.remove(); }, 3200);
   }
+  // a friendly offer to sign in (e.g. after a guest's new best); at most once per visit, never over the card
+  function nudge(text) {
+    if (acct || !document.body) return;
+    try { if (sessionStorage.getItem('arcade-nudged')) return; sessionStorage.setItem('arcade-nudged', '1'); } catch (e) {}
+    if (!document.getElementById('arc-acct-css')) mount();
+    var d = el('div', { id: 'arc-acct-nudge', role: 'status' });
+    d.appendChild(el('span', {}, text));
+    d.appendChild(el('button', { type: 'button', on: { click: function () { d.remove(); open(); } } }, 'Sign in'));
+    d.appendChild(el('button', { type: 'button', class: 'nx', 'aria-label': 'Close', on: { click: function () { d.remove(); } } }, '✕'));
+    document.body.appendChild(d);
+    setTimeout(function () { d.remove(); }, 9000);
+  }
+
+  // chat is for signed-in players: lock every chat box for guests (clicking one opens the sign-in card)
+  var CHAT_SEL = '#chat-in,#gchat-in,#race-chat-in,[data-arc-chat]';
+  function gateChat() {
+    [].forEach.call(document.querySelectorAll(CHAT_SEL), function (i) {
+      if (!i._arcChat) {
+        i._arcChat = { ph: i.getAttribute('placeholder') || '' };
+        i.addEventListener('mousedown', function () { if (!acct) open(); });
+        i.addEventListener('touchstart', function () { if (!acct) open(); }, { passive: true });
+      }
+      var locked = !acct;
+      i.readOnly = locked;
+      i.classList.toggle('arc-chat-locked', locked);
+      i.setAttribute('placeholder', locked ? 'Sign in to chat' : i._arcChat.ph);
+      if (locked) i.value = '';
+    });
+  }
   function label() { return acct ? '👤 ' + (acct.name || 'My account') : '👤 Sign in'; }
   function paint() {
     var b = document.getElementById('arc-acct');
     if (b) b.textContent = label();
     [].forEach.call(document.querySelectorAll('[data-arc-account]'), function (a) { a.textContent = acct ? 'My account' : 'Sign in'; });
     // re-render the open card only when signing in or out changes which card it should be
+    gateChat();
     var want = acct ? 'me' : view === 'me' ? 'start' : view;
     if (ov && !ov.hidden && want !== view) { view = want; render(); }
   }
@@ -318,8 +382,8 @@
     function need() { if (!sb || !sb.auth) { say("Can't reach the server. Check your connection."); return false; } return true; }
 
     if (view === 'start') {
-      card.appendChild(el('h2', {}, 'Save your progress'));
-      card.appendChild(el('p', {}, 'One free account keeps your name, coins and best times in every game, on any device. You can always play without one.'));
+      card.appendChild(el('h2', {}, 'Sign in to save your progress'));
+      card.appendChild(el('p', {}, 'One free account keeps your name, coins and best times in every game, on any device. Been here before? Use the same email to sign back in.'));
       // neutral age screen: pick a birth year (not stored anywhere). Too young → a grown-up makes the account.
       var now = new Date().getFullYear();
       var age = el('select', { class: 'arc-input', id: 'arc-acct-age', 'aria-label': 'Year you were born' });
@@ -407,7 +471,9 @@
         if (r.error) return say('Couldn’t delete it. Email hello@cakecade.com and we’ll do it.');
         await sb.auth.signOut(); signedOut(); view = 'start'; render(); toast('Account deleted');
       });
-      card.appendChild(nm); card.appendChild(save); card.appendChild(out); card.appendChild(msg); card.appendChild(del);
+      var page = el('a', { class: 'arc-btn', href: 'profile.html' }, 'My page: bests & stats');
+      page.style.display = 'block'; page.style.textDecoration = 'none'; page.style.boxSizing = 'border-box';
+      card.appendChild(nm); card.appendChild(save); card.appendChild(page); card.appendChild(out); card.appendChild(msg); card.appendChild(del);
     }
     ov.innerHTML = ''; ov.appendChild(card);
   }
@@ -437,6 +503,16 @@
     user: function () { return acct ? { id: acct.id, email: acct.email, name: acct.name } : null; },
     open: open,
     setName: setName,
+    nudge: nudge,
+    // every game's saved progress from the account (signed in) → { game: { key: value } }, or null
+    cloudSaves: async function () {
+      if (!acct) return null;
+      var c = sb || (await client()); if (!c) return null; sb = c;
+      var r = await c.from('arcade_saves').select('game,data');
+      if (r.error || !r.data) return null;
+      var o = {}; r.data.forEach(function (row) { if (SAVES[row.game]) o[row.game] = cleanCloud(row.game, row.data); });
+      return o;
+    },
     _games: SAVES,
   };
   function boot() { mount(); setTimeout(mount, 400); start(); }

@@ -54,6 +54,12 @@
     var sb = await client();
     if (!sb) return { ok: false, error: 'offline' };
     var ch = sb.channel(o.prefix + code, { config: { presence: { key: o.id }, broadcast: { ack: false } } });
+    // chat is for signed-in players: a guest's chat never leaves the page (the chat box itself is locked by arcade-account.js)
+    var rawSend = ch.send.bind(ch);
+    ch.send = function (m) {
+      if (m && m.event === 'chat' && window.ArcadeAccount && !ArcadeAccount.user()) return Promise.resolve('blocked');
+      return rawSend(m);
+    };
 
     function clean(p) {
       if (!p || !id(p.id)) return null;
