@@ -100,6 +100,10 @@ analytics script or re-run Cloudflare's setup.
   if it feels too soft or too brutal.
 - Ryan's Cake TD maps: a path point with a third value of 1 (`[x,y,1]`) is a portal; enemies jump from it
   straight to the next point (no road drawn between, nothing can be planted on a portal). Sugar Serpent uses it.
+- Large Human Model is a web prototype for a possible Steam game (the plan is in Ryan's Financial Freedom
+  project). Bests are local only (`lhm-best-shift`, `lhm-best-captcha`): no world leaderboard and no
+  `SAVES` entry yet, since both need database changes Ryan runs. Keep it family-friendly: trick requests
+  are harmless pranks, never anything unsafe.
 
 ## Archived games
 
