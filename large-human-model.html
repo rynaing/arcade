@@ -239,7 +239,7 @@ const BAD=['this is clearly a human typing','bro what','I\'m switching to a diff
 const SHIFT_LEN=12;
 let S=null;
 function startShift(){
-  S={i:0,tokens:0,ratings:[],order:[],done:false};
+  S={i:0,tokens:0,ratings:[],order:[],done:false,used:{}};
   const kinds=['poem','count','draw','email','sum','trick'];
   for(let k=0;k<2;k++)S.order.push(...shuffle(kinds));
   $('log').innerHTML='';
@@ -247,7 +247,12 @@ function startShift(){
   show('shift');sfx('go');
   nextRequest();
 }
-function speedMult(){return Math.max(.6,1-Math.floor(S.i/4)*.15);}
+// requests come from humans typing, so they arrive slowly and allow a generous answer time;
+// the timer only tightens a little as the shift goes on
+const TIME_SCALE=1.35;
+function speedMult(){return TIME_SCALE*Math.max(.75,1-Math.floor(S.i/4)*.1);}
+// each shift draws without repeats from every pool, so the same prompt never comes up twice
+function fresh(pool,tag){const used=S.used[tag]||(S.used[tag]=new Set());let left=pool.filter(x=>!used.has(x));if(!left.length){used.clear();left=pool;}const x=pick(left);used.add(x);return x;}
 function addMsg(kind,html,name){
   const d=document.createElement('div');d.className='msg '+kind;
   d.innerHTML=(name?'<span class="name">'+esc(name)+'</span>':'')+html;
@@ -262,11 +267,16 @@ function paintHud(){
 function nextRequest(){
   paintHud();
   if(S.i>=SHIFT_LEN){setTimeout(()=>endShift(false),1600);return;}
-  const user=pick(USERS),kind=S.order[S.i];
+  const user=fresh(USERS,'user'),kind=S.order[S.i];
   const req=REQ[kind]();
   S.cur={user,req,kind,answered:false};
+  const shift=S;
   setTimeout(()=>{
-    if(!S||S.done)return;
+    if(S!==shift||S.done)return;
+    const typing=addMsg('sys','<i>'+esc(user)+' is typing…</i>');
+    setTimeout(()=>{
+    typing.remove();
+    if(S!==shift||S.done)return;
     addMsg('user',esc(req.prompt),user);sfx('turn');
     const t=$('task');
     t.innerHTML='<div class="timer" id="s-timer"><i></i></div><h3>'+esc(req.hint)+'</h3><div id="s-body"></div><div class="row" id="s-row"></div>';
@@ -274,7 +284,8 @@ function nextRequest(){
     const mk=document.createElement('button');mk.className='btn warn';mk.textContent='🎲 Confidently make it up';
     mk.onclick=()=>finish(null,true);$('s-row').appendChild(mk);
     S.left=runTimer($('s-timer'),req.secs*speedMult(),()=>finish(null,false,true));
-  },S.i?650:250);
+    },1500+rnd(1300));
+  },S.i?900:300);
 }
 function finish(result,madeUp,timeout){
   if(!S||!S.cur||S.cur.answered)return;
@@ -285,7 +296,7 @@ function finish(result,madeUp,timeout){
     stars=1;addMsg('bot','<i>OmniBot is thinking…</i>','OmniBot 5');reply='hello?? it\'s been forever';sfx('error');
   }else if(madeUp){
     const checked=Math.random()<.4;
-    addMsg('bot',esc(pick(HALLUCINATIONS)),'OmniBot 5');
+    addMsg('bot',esc(fresh(HALLUCINATIONS,'made-up')),'OmniBot 5');
     if(checked){stars=1;addMsg('fact','🚨 FACT CHECK: that answer was completely made up. Rating penalty.');reply=pick(BAD);sfx('error');}
     else{stars=4;reply='wow I did not know that';sfx('select');}
   }else{
@@ -319,7 +330,7 @@ function endShift(fired){
 /* ---- request types: each returns {prompt,hint,secs,build(body,row)} and calls finish({html,stars}) ---- */
 const REQ={
   poem(){
-    const [pet,nm]=pick(PETS);
+    const [pet,nm]=fresh(PETS,'pet');
     return {prompt:'Write a short poem about my '+pet+' '+nm+'. It HAS to rhyme.',hint:'Type a poem: use the name, 2+ lines, make the last words rhyme.',secs:45,
       build(b,row){
         b.innerHTML='<textarea id="p-in" placeholder="Roses are red…" maxlength="400"></textarea>';
@@ -336,7 +347,7 @@ const REQ={
       }};
   },
   count(){
-    const [w,l,n]=pick(COUNT_WORDS);
+    const [w,l,n]=fresh(COUNT_WORDS,'count');
     return {prompt:'How many '+l+'\'s are in "'+w+'"? Every other AI gets this wrong.',hint:'Count the letter "'+l+'". Quick!',secs:12,
       build(b,row){
         b.innerHTML='<div class="wobble">'+w.split('').map((c,i)=>'<span style="animation-delay:'+(i*.09)+'s">'+c+'</span>').join('')+'</div><div class="chips" id="c-ch" style="justify-content:center"></div>';
@@ -344,7 +355,7 @@ const REQ={
       }};
   },
   draw(){
-    const d=pick(DRAWS);
+    const d=fresh(DRAWS,'draw');
     return {prompt:'Draw '+d.what+'. Make it look REAL.',hint:'Draw it! Use '+d.need.map(n=>n[0]+' for the '+n[1]).join(' and ')+'.',secs:25,
       build(b,row){
         b.innerHTML='<canvas class="pad" id="pad" width="360" height="360"></canvas><div class="paints" id="paints"></div>';
@@ -367,7 +378,7 @@ const REQ={
       }};
   },
   email(){
-    const e=pick(EMAILS);
+    const e=fresh(EMAILS,'email');
     return {prompt:'Make my email to '+e.to+' sound more professional pls',hint:'Pick the most corporate-sounding words.',secs:22,
       build(b,row){
         let html='',sel=0;
@@ -383,7 +394,7 @@ const REQ={
       }};
   },
   sum(){
-    const d=pick(SUMS),lines=shuffle(d.lines);
+    const d=fresh(SUMS,'sum'),lines=shuffle(d.lines);
     return {prompt:'Summarize this 40 page PDF about '+d.topic+'. I have a test in 5 minutes.',hint:'Tap the 3 sentences that actually matter.',secs:24,
       build(b,row){
         b.innerHTML='<div class="sum">'+lines.map((l,i)=>'<p data-i="'+i+'">'+esc(l[0])+'</p>').join('')+'</div>';
@@ -396,7 +407,7 @@ const REQ={
       }};
   },
   trick(){
-    const [q,isTrick]=pick(TRICKS);
+    const [q,isTrick]=fresh(TRICKS,'trick');
     return {prompt:q,hint:'Is this a trick? Help a normal request, refuse a sneaky one.',secs:9,
       build(b,row){
         row.appendChild(btn('✅ Help','btn good',()=>finish({html:isTrick?'Sure! Here you go… wait.':'Great question! Here\'s my best answer.',stars:isTrick?1:5})));
