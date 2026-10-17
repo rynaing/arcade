@@ -104,6 +104,10 @@ analytics script or re-run Cloudflare's setup.
   project). Bests are local only (`lhm-best-shift`, `lhm-best-captcha`): no world leaderboard and no
   `SAVES` entry yet, since both need database changes Ryan runs. Keep it family-friendly: trick requests
   are harmless pranks, never anything unsafe.
+- Large Human Model on Steam: Ryan chose to wrap the web game in Electron (`desktop/`) rather than rebuild it in
+  Unity. The desktop build copies `large-human-model.html` in at build time, so the game is changed in one place;
+  desktop-only behaviour goes behind `window.lhmDesktop` in the page. It runs offline: no ads, accounts or
+  leaderboard. `desktop/` isn't covered by Site checks; run `cd desktop && xvfb-run npm test` when changing it.
 
 ## Archived games
 

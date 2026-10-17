@@ -298,7 +298,7 @@ function finish(result,madeUp,timeout){
     const checked=Math.random()<.4;
     addMsg('bot',esc(fresh(HALLUCINATIONS,'made-up')),'OmniBot 5');
     if(checked){stars=1;addMsg('fact','🚨 FACT CHECK: that answer was completely made up. Rating penalty.');reply=pick(BAD);sfx('error');}
-    else{stars=4;reply='wow I did not know that';sfx('select');}
+    else{stars=4;S.fooled=(S.fooled||0)+1;reply='wow I did not know that';sfx('select');}
   }else{
     addMsg('bot',result.html,'OmniBot 5');
     stars=Math.max(1,Math.min(5,Math.round(result.stars)));
@@ -324,6 +324,7 @@ function endShift(fired){
   else if(avg>=4.2){face='🏆';title='Employee of the month';line='Nobody suspects a thing. The CEO wants to demo you on stage next week.';}
   else if(avg>=3){face='🤖';title='Shift complete';line='Users are mostly convinced you\'re a machine. A few have questions.';}
   else{face='😬';title='Shift complete, barely';line='Several users now think OmniBot 5 is "just a guy". Legal is looking into it.';}
+  deskEvent('shift-end',{fired,avg,tokens:S.tokens,fooled:S.fooled||0});
   showResult({face,title,line,score:S.tokens+' tokens',sub:'Rating '+starStr(avg)+' ('+avg.toFixed(1)+')',best:isBest,again:startShift,share:'I worked a shift as the human inside OmniBot 5 and earned '+S.tokens+' tokens with a '+avg.toFixed(1)+' star rating.'});
 }
 
@@ -451,6 +452,7 @@ function endCap(){
   if(!C||C.done)return;C.done=true;stopTimer();
   const best=store.get(BEST_CAP),isBest=C.n>best;if(isBest)store.set(BEST_CAP,C.n);
   const line=C.n>=20?'The bots are thrilled. You may be the fastest human on the internet.':C.n>=10?'Solid work. The bots will send you more tomorrow.':'You were flagged as suspiciously human.';
+  deskEvent('captcha-end',{solved:C.n});
   showResult({face:C.n>=10?'🧩':'🚩',title:'Flagged as human',line,score:C.n+' CAPTCHAs',sub:'',best:isBest,again:startCap,share:'I solved '+C.n+' CAPTCHAs for the bots before getting flagged as human.'});
 }
 const CAP={
@@ -512,6 +514,15 @@ const CAP={
   }
 };
 
+/* ---- Steam desktop build (desktop/): its preload sets window.lhmDesktop; on the web this is all a no-op ---- */
+const DESK=window.lhmDesktop||null;
+function deskEvent(name,data){try{if(DESK)DESK.event(name,data);}catch(e){}}
+if(DESK){
+  const how=document.querySelector('#menu .small a');if(how)how.href='https://cakecade.com/how-to-play.html#large-human-model';
+  const q=document.createElement('button');q.className='btn ghost';q.textContent='Quit to desktop';q.style.margin='14px auto 0';q.style.display='block';
+  q.onclick=()=>DESK.quit();$('menu').appendChild(q);
+}
+
 /* ================= results ================= */
 function showResult(o){
   const b=$('result-box');
@@ -520,12 +531,12 @@ function showResult(o){
   $('r-again').onclick=()=>{sfx('click');o.again();};
   $('r-menu').onclick=()=>{sfx('click');paintMenu();show('menu');};
   $('r-share').onclick=()=>{
-    const text=o.share+' Can you beat it? '+location.origin+location.pathname;
+    const text=o.share+' Can you beat it? '+(DESK?DESK.storeUrl:location.origin+location.pathname);
     if(navigator.share)navigator.share({title:'Large Human Model',text}).catch(()=>{});
     else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>toast('Copied! Paste it anywhere.'),()=>toast(text));
     else toast(text);
   };
-  if(window.ArcadeUI&&ArcadeUI.adBreak)ArcadeUI.adBreak('lhm-results');
+  if(!DESK&&window.ArcadeUI&&ArcadeUI.adBreak)ArcadeUI.adBreak('lhm-results');
 }
 
 $('go-shift').onclick=()=>{sfx('click');startShift();};

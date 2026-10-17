@@ -15,7 +15,7 @@ Live at https://cakecade.com/ · Free forever · Kid-friendly
 | **Hamster Roll** (`hamster-roll.html`) | Solo · online race | Ball Racer-style 2D hamster-ball racing across 4 tracks |
 | **Frosted Duel** (`frosted-duel.html`) | Solo vs bot | 3D third-person arena duel (three.js, vendored in `vendor/`): sprinkle blaster, sword slash and lunge, block and parry, dash, wall-run |
 | **Ryan's Cake TD** (`ryans-cake-td.html`) | Solo | Tower defense: survive 10 waves, then endless |
-| **Large Human Model** (`large-human-model.html`) | Solo | Prototype: you're the human hidden inside an AI chatbot. A 12-request shift of timed mini-games, plus an endless CAPTCHA farm |
+| **Large Human Model** (`large-human-model.html`) | Solo | Prototype: you're the human hidden inside an AI chatbot. A 12-request shift of timed mini-games, plus an endless CAPTCHA farm. Its Steam desktop build is in `desktop/` (see `desktop/README.md`) |
 
 **Game Night** (party games for the big screen, hosted in the [game-night](https://github.com/rynaing/game-night) repo):
 Trivia. (Most Likely To, Math Sprint, Guesstimate, Anagrams and Common Threads are archived: their cards are commented out in index.html.)

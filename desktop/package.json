@@ -1,0 +1,56 @@
+{
+  "name": "large-human-model",
+  "productName": "Large Human Model",
+  "version": "0.1.0",
+  "description": "Desktop (Steam) build of Large Human Model, wrapping the cakecade.com web game.",
+  "private": true,
+  "main": "main.js",
+  "author": "Ryan Cake Studios",
+  "scripts": {
+    "copy": "node scripts/copy-game.mjs",
+    "start": "npm run copy && electron .",
+    "dist": "npm run copy && electron-builder",
+    "test": "npm run copy && node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "steamworks.js": "0.4.0"
+  },
+  "devDependencies": {
+    "electron": "44.1.1",
+    "electron-builder": "26.15.3",
+    "playwright": "^1.56.1"
+  },
+  "build": {
+    "publish": null,
+    "appId": "com.ryancakestudios.largehumanmodel",
+    "productName": "Large Human Model",
+    "files": [
+      "main.js",
+      "preload.js",
+      "steam.js",
+      "app/**",
+      "node_modules/steamworks.js/**"
+    ],
+    "asarUnpack": [
+      "node_modules/steamworks.js/dist/**"
+    ],
+    "extraFiles": [
+      {
+        "from": "steam_appid.txt",
+        "to": "steam_appid.txt",
+        "filter": [
+          "steam_appid.txt"
+        ]
+      }
+    ],
+    "win": {
+      "target": "dir"
+    },
+    "linux": {
+      "target": "dir"
+    },
+    "mac": {
+      "target": "dir"
+    }
+  }
+}

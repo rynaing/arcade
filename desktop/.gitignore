@@ -1,0 +1,5 @@
+node_modules/
+app/
+dist/
+steam_appid.txt
+dist-smoke.png
