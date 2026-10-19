@@ -36,6 +36,10 @@ visible to the other except through this file and git history.
   About page, How to play page, the home intro and footer links.
 - When trimming in-game text, keep the full rules on `how-to-play.html`. Trim the home
   intro rather than delete it.
+- Every game has a long guide page, `<game>-guide.html` (how it works, controls, items, tips, FAQ), linked from
+  the home page's Game guides list, How to play and `sitemap.xml`. AdSense first rejected the site (Oct 19) for
+  low value content because the game pages are almost all canvas. When a game gains or changes a vehicle,
+  tower, weapon, map or mode, update its guide in the same PR. A new game gets a guide too.
 - Keep `contact.html` (AdSense wants a Contact Us page) and its links in every footer and the
   home top nav. The address it shows is Ryan's call.
 - `updates.html` is the dated "What's new" log. When a player-facing change merges (new game,
