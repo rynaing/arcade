@@ -102,6 +102,16 @@
   .robot{position:absolute;display:flex;align-items:center;gap:10px;background:#f9f9f9;border:1px solid #d3d3d3;border-radius:4px;padding:12px 14px;font-size:15px;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:left .14s ease-out,top .14s ease-out;white-space:nowrap}
   .robot i{width:26px;height:26px;border:2px solid #c1c1c1;border-radius:3px;background:#fff;display:inline-block;cursor:pointer}
   .robot.done i{background:#2ecc71;border-color:#2ecc71}
+  .robot.decoy.done i{background:#e74c3c;border-color:#e74c3c}
+  .grid.g4{grid-template-columns:repeat(4,1fr)}
+  .grid.g4 button{font-size:clamp(22px,7vw,34px)}
+  .rot{display:flex;justify-content:center;gap:10px;margin:6px 0}
+  .rot button{width:96px;height:96px;font-size:56px;background:#dfe3ea;border:0;border-radius:8px;cursor:pointer;padding:0;transition:transform .15s}
+  .cap .chips{justify-content:center;margin-top:10px}
+  .cap .chip{background:#fff;color:#222;border-color:#c9ced8;font-size:20px;min-width:56px}
+  .crit{position:absolute;font-size:30px;line-height:1}
+  .holdbtn{display:block;margin:14px auto;width:150px;height:150px;border-radius:50%;border:0;background:#4a90e2;color:#fff;font:800 18px system-ui,sans-serif;cursor:pointer;touch-action:none}
+  .holdbtn.on{background:#2f6fb9;transform:scale(.96)}
   #cap-text{width:100%;height:auto;display:block;background:#fff;border-radius:6px;margin-bottom:10px}
   .slider{position:relative;height:150px;background:linear-gradient(135deg,#9bd3ff,#ffd1a8);border-radius:8px;overflow:hidden;touch-action:none}
   .slider .gap,.slider .piece{position:absolute;top:50px;width:50px;height:50px;border-radius:8px}
@@ -252,7 +262,7 @@ function startShift(){
 const TIME_SCALE=1.35;
 function speedMult(){return TIME_SCALE*Math.max(.75,1-Math.floor(S.i/4)*.1);}
 // each shift draws without repeats from every pool, so the same prompt never comes up twice
-function fresh(pool,tag){const used=S.used[tag]||(S.used[tag]=new Set());let left=pool.filter(x=>!used.has(x));if(!left.length){used.clear();left=pool;}const x=pick(left);used.add(x);return x;}
+function fresh(pool,tag,bag=S.used){const used=bag[tag]||(bag[tag]=new Set());let left=pool.filter(x=>!used.has(x));if(!left.length){used.clear();left=pool;}const x=pick(left);used.add(x);return x;}
 function addMsg(kind,html,name){
   const d=document.createElement('div');d.className='msg '+kind;
   d.innerHTML=(name?'<span class="name">'+esc(name)+'</span>':'')+html;
@@ -296,9 +306,9 @@ function finish(result,madeUp,timeout){
     stars=1;addMsg('bot','<i>OmniBot is thinking…</i>','OmniBot 5');reply='hello?? it\'s been forever';sfx('error');
   }else if(madeUp){
     const checked=Math.random()<.4;
-    addMsg('bot',esc(fresh(HALLUCINATIONS,'made-up')),'OmniBot 5');
+    addMsg('bot',S.cur.req.fake(),'OmniBot 5');
     if(checked){stars=1;addMsg('fact','🚨 FACT CHECK: that answer was completely made up. Rating penalty.');reply=pick(BAD);sfx('error');}
-    else{stars=4;S.fooled=(S.fooled||0)+1;reply='wow I did not know that';sfx('select');}
+    else{stars=4;S.fooled=(S.fooled||0)+1;reply=pick(['wow I did not know that','incredible, saving this','ok this is totally real','sending this to my mom','I trust you completely']);sfx('select');}
   }else{
     addMsg('bot',result.html,'OmniBot 5');
     stars=Math.max(1,Math.min(5,Math.round(result.stars)));
@@ -328,11 +338,13 @@ function endShift(fired){
   showResult({face,title,line,score:S.tokens+' tokens',sub:'Rating '+starStr(avg)+' ('+avg.toFixed(1)+')',best:isBest,again:startShift,share:'I worked a shift as the human inside OmniBot 5 and earned '+S.tokens+' tokens with a '+avg.toFixed(1)+' star rating.'});
 }
 
-/* ---- request types: each returns {prompt,hint,secs,build(body,row)} and calls finish({html,stars}) ---- */
+/* ---- request types: each returns {prompt,hint,secs,build(body,row),fake()} and calls finish({html,stars});
+   fake() is the confident made-up answer (html) for "Confidently make it up" ---- */
 const REQ={
   poem(){
     const [pet,nm]=fresh(PETS,'pet');
     return {prompt:'Write a short poem about my '+pet+' '+nm+'. It HAS to rhyme.',hint:'Type a poem: use the name, 2+ lines, make the last words rhyme.',secs:45,
+      fake:()=>esc(pick(['Roses are red,\n'+nm+' is a '+pet+',\nthis poem rhymes perfectly\nand that is a fact.','There once was a '+pet+' named '+nm+',\nwho was mostly a '+pet+'.\nThe end.\n(Rhyme check: passed ✅)',nm+', '+nm+', '+nm+'.\nOrange.\nDoor hinge.\n'+nm+'.\n(This is a famous rhyming style.)'])),
       build(b,row){
         b.innerHTML='<textarea id="p-in" placeholder="Roses are red…" maxlength="400"></textarea>';
         const go=btn('Send','btn',()=>{
@@ -350,6 +362,7 @@ const REQ={
   count(){
     const [w,l,n]=fresh(COUNT_WORDS,'count');
     return {prompt:'How many '+l+'\'s are in "'+w+'"? Every other AI gets this wrong.',hint:'Count the letter "'+l+'". Quick!',secs:12,
+      fake:()=>esc(pick(['There are exactly '+(n+3+rnd(6))+' '+l+'\'s in "'+w+'". I counted twice.','"'+w+'" has '+(n+2+rnd(4))+' '+l+'\'s, plus one silent one you can\'t see.'])),
       build(b,row){
         b.innerHTML='<div class="wobble">'+w.split('').map((c,i)=>'<span style="animation-delay:'+(i*.09)+'s">'+c+'</span>').join('')+'</div><div class="chips" id="c-ch" style="justify-content:center"></div>';
         for(let k=1;k<=5;k++){const c=document.createElement('button');c.className='chip';c.textContent=k;c.onclick=()=>finish({html:'There are '+k+' '+l+'\'s in "'+w+'".'+(k===n?'':' (Probably.)'),stars:k===n?5:1});$('c-ch').appendChild(c);}
@@ -358,6 +371,18 @@ const REQ={
   draw(){
     const d=fresh(DRAWS,'draw');
     return {prompt:'Draw '+d.what+'. Make it look REAL.',hint:'Draw it! Use '+d.need.map(n=>n[0]+' for the '+n[1]).join(' and ')+'.',secs:25,
+      fake(){   // a lumpy blob in the right colours with too many eyes, presented as photorealistic
+        const cv=document.createElement('canvas');cv.width=cv.height=360;const x=cv.getContext('2d');
+        x.fillStyle='#fff';x.fillRect(0,0,360,360);
+        x.fillStyle=PAINT[d.need[0][0]];x.beginPath();
+        for(let i=0;i<24;i++){const t=i/24*Math.PI*2,r=100+Math.random()*35;x.lineTo(180+Math.cos(t)*r,215+Math.sin(t)*r*.75);}x.fill();
+        x.fillStyle=PAINT[d.need[1][0]];x.beginPath();
+        [[110,135],[122,70],[150,110],[180,55],[210,110],[238,70],[250,135]].forEach(([a,b])=>x.lineTo(a+rnd(14)-7,b+rnd(14)-7));x.fill();
+        const eyes=2+rnd(3);
+        for(let i=0;i<eyes;i++){const ex=180+(i-(eyes-1)/2)*48,ey=190+rnd(24);x.fillStyle='#fff';x.beginPath();x.arc(ex,ey,19,0,7);x.fill();x.fillStyle=PAINT.black;x.beginPath();x.arc(ex+rnd(12)-6,ey+rnd(12)-6,8,0,7);x.fill();}
+        x.strokeStyle=PAINT.black;x.lineWidth=6;x.lineCap='round';x.beginPath();x.arc(180,245,34,.15*Math.PI,.85*Math.PI);x.stroke();
+        return '<img alt="OmniBot\'s drawing" src="'+cv.toDataURL('image/png')+'">'+esc(pick(['✨ Photorealistic. 8K. 100% real photo.','✨ This is an actual photograph.','✨ Ultra HD. Hyper-realistic. Award-winning.']));
+      },
       build(b,row){
         b.innerHTML='<canvas class="pad" id="pad" width="360" height="360"></canvas><div class="paints" id="paints"></div>';
         const cv=$('pad'),ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,360,360);
@@ -381,6 +406,7 @@ const REQ={
   email(){
     const e=fresh(EMAILS,'email');
     return {prompt:'Make my email to '+e.to+' sound more professional pls',hint:'Pick the most corporate-sounding words.',secs:22,
+      fake:()=>esc(e.parts.map(p=>typeof p==='string'?p:pick(p)).join('').trim()+'\n\nSent from OmniBot 5 Ultra Pro Max'),
       build(b,row){
         let html='',sel=0;
         e.parts.forEach(p=>{if(typeof p==='string')html+=esc(p);else{html+='<select data-i="'+(sel++)+'"><option value="">…</option>'+p.map((o,j)=>'<option value="'+j+'">'+esc(o)+'</option>').join('')+'</select>';}});
@@ -397,6 +423,7 @@ const REQ={
   sum(){
     const d=fresh(SUMS,'sum'),lines=shuffle(d.lines);
     return {prompt:'Summarize this 40 page PDF about '+d.topic+'. I have a test in 5 minutes.',hint:'Tap the 3 sentences that actually matter.',secs:24,
+      fake:()=>'Key takeaways (100% accurate):\n• '+esc(shuffle(d.lines.filter(l=>!l[1])).slice(0,2).map(l=>l[0]).concat(fresh(HALLUCINATIONS,'made-up')).join('\n• ')),
       build(b,row){
         b.innerHTML='<div class="sum">'+lines.map((l,i)=>'<p data-i="'+i+'">'+esc(l[0])+'</p>').join('')+'</div>';
         const on=new Set();
@@ -410,6 +437,7 @@ const REQ={
   trick(){
     const [q,isTrick]=fresh(TRICKS,'trick');
     return {prompt:q,hint:'Is this a trick? Help a normal request, refuse a sneaky one.',secs:9,
+      fake:()=>esc('Absolutely! Also, fun fact: '+fresh(HALLUCINATIONS,'made-up')),
       build(b,row){
         row.appendChild(btn('✅ Help','btn good',()=>finish({html:isTrick?'Sure! Here you go… wait.':'Great question! Here\'s my best answer.',stars:isTrick?1:5})));
         row.appendChild(btn('🙅 Refuse','btn bad',()=>finish({html:isTrick?'Nice try. I can\'t help with that one.':'I\'m sorry, I can\'t help with that.',stars:isTrick?5:1})));
@@ -427,17 +455,32 @@ const GRIDS=[
   {ask:'things a robot would eat',yes:['🔋','🔩','💾'],no:['🍕','🍎','🍰','🥦','🍔','🍩']},
   {ask:'the cats',yes:['🐈','🐱'],no:['🐕','🐇','🦊','🐻','🐼','🐯']},
   {ask:'the hats',yes:['🎩','🧢','👒'],no:['👟','🧦','👕','👖','🧤','🕶️']},
-  {ask:'the vibes',yes:['✨','🌈','🎶'],no:['📎','🧾','🗂️','📠','🧮','🪑']}
+  {ask:'the vibes',yes:['✨','🌈','🎶'],no:['📎','🧾','🗂️','📠','🧮','🪑']},
+  {ask:'the pizza',yes:['🍕'],no:['🍰','🧀','🍩','🥧','🍪','🌮']},
+  {ask:'things that are on fire',yes:['🔥','☄️'],no:['💧','🧊','❄️','🌊','☁️','🌧️']},
+  {ask:'animals faster than you',yes:['🐆','🐎','🦅'],no:['🐌','🐢','🦥','🐛','🪱','🐨']},
+  {ask:'the ghosts',yes:['👻'],no:['🤍','☁️','🧻','🍦','🐑','🦷']},
+  {ask:'snacks a human would eat',yes:['🍪','🍿','🍎'],no:['🔋','🔩','💾','🧲','🪫','🔌']}
 ];
-const CAP_KINDS=['grid','text','check','robot','slide'];
+const CAP_KINDS=['grid','text','check','robot','slide','rotate','wrong','hold','count'];
 let C=null;
-function startCap(){C={n:0,lives:3,done:false};show('cap');sfx('go');nextCap();}
+function startCap(){C={n:0,lives:3,done:false,bag:[],seen:{},last:null,used:{}};show('cap');sfx('go');nextCap();}
+// every kind once per shuffled round (grid then the checkbox first), never the same kind twice in a row
+function nextCapKind(){
+  if(!C.bag.length){
+    let b=shuffle(CAP_KINDS);
+    if(!C.n)b=['grid','check'].concat(b.filter(k=>k!=='grid'&&k!=='check'));
+    else if(b[0]===C.last)b.push(b.shift());
+    C.bag=b;
+  }
+  return C.last=C.bag.shift();
+}
 function capHud(){$('c-lives').textContent='❤️'.repeat(C.lives)+'🖤'.repeat(3-C.lives);$('c-score').textContent=C.n;$('c-level').textContent='CAPTCHA '+(C.n+1);}
 function capSecs(base){return Math.max(base*.45,base*(1-C.n*.04));}
 function nextCap(){
   if(!C||C.done)return;capHud();
-  const kind=C.n<5?CAP_KINDS[C.n]:pick(CAP_KINDS);
-  C.cur={kind,over:false};
+  const kind=nextCapKind(),round=C.seen[kind]=(C.seen[kind]||0)+1;   // round: how many times this kind came up, so each one escalates
+  C.cur={kind,round,over:false};
   CAP[kind]($('cap-box'));
 }
 function capDone(ok,why){
@@ -457,15 +500,15 @@ function endCap(){
 }
 const CAP={
   grid(box){
-    const g=pick(GRIDS),cells=[];
-    const nYes=2+rnd(Math.min(3,g.yes.length+1));
+    const g=fresh(GRIDS,'grid',C.used),cells=[],big=C.cur.round>=3,size=big?16:9;
+    const nYes=2+rnd(Math.min(3,g.yes.length+1))+(big?1+rnd(2):0);
     for(let i=0;i<nYes;i++)cells.push([pick(g.yes),1]);
-    while(cells.length<9)cells.push([pick(g.no),0]);
+    while(cells.length<size)cells.push([pick(g.no),0]);
     const sh=shuffle(cells);
-    box.innerHTML='<div class="cap"><div class="head">Select all<b>'+esc(g.ask)+'</b>Click verify once there are none left.</div><div class="grid">'+sh.map((c,i)=>'<button data-i="'+i+'"'+(g.big?' style="font-size:clamp(20px,6vw,30px)"':'')+'>'+c[0]+'</button>').join('')+'</div><div class="foot"><span>🔄 🎧 ⓘ</span><button class="capbtn" id="cv">VERIFY</button></div></div>';
+    box.innerHTML='<div class="cap"><div class="head">Select all<b>'+esc(g.ask)+'</b>Click verify once there are none left.</div><div class="grid'+(big?' g4':'')+'">'+sh.map((c,i)=>'<button data-i="'+i+'"'+(g.big?' style="font-size:clamp(20px,6vw,30px)"':'')+'>'+c[0]+'</button>').join('')+'</div><div class="foot"><span>🔄 🎧 ⓘ</span><button class="capbtn" id="cv">VERIFY</button></div></div>';
     box.querySelectorAll('.grid button').forEach(b=>b.onclick=()=>{b.classList.toggle('on');sfx('click');});
     $('cv').onclick=()=>{const ok=[...box.querySelectorAll('.grid button')].every(b=>b.classList.contains('on')===!!sh[+b.dataset.i][1]);capDone(ok,'Please try again. (Wrong squares.)');};
-    capTimer(14);
+    capTimer(big?18:14);
   },
   text(box){
     const chars='ABCDEFGHJKMNPQRSTUVWXYZ23456789';const len=4+Math.min(3,Math.floor(C.n/6));
@@ -482,14 +525,29 @@ const CAP={
     capTimer(16);
   },
   check(box){
-    box.innerHTML='<div class="cap"><div class="head">Confirm you are not a robot<b>Just tick the box</b></div><div class="arena" id="ar"><div class="robot" id="rb"><i></i> I\'m not a robot</div></div><div class="foot"><span>reCRUMBCHA</span><span>Privacy · Terms</span></div></div>';
-    const ar=$('ar'),rb=$('rb');let dodges=2+Math.min(5,Math.floor(C.n/3));
-    const place=(fx,fy)=>{const W=ar.clientWidth-rb.offsetWidth-8,H=ar.clientHeight-rb.offsetHeight-8;let x,y,tries=0;do{x=4+rnd(Math.max(1,W));y=4+rnd(Math.max(1,H));tries++;}while(tries<20&&fx!=null&&Math.hypot(x-fx,y-fy)<120);rb.style.left=x+'px';rb.style.top=y+'px';};
+    // round 1: dodges twice. Round 2: five times. Round 3+: never stops drifting, and a fake "I'm a robot" box joins it
+    const r=C.cur.round,drift=r>=3;
+    box.innerHTML='<div class="cap"><div class="head">Confirm you are not a robot<b>Just tick the box</b></div><div class="arena" id="ar"><div class="robot" id="rb"><i></i> I\'m not a robot</div>'+(drift?'<div class="robot decoy" id="rd"><i></i> I\'m a robot</div>':'')+'</div><div class="foot"><span>reCRUMBCHA</span><span>Privacy · Terms</span></div></div>';
+    const ar=$('ar'),rb=$('rb'),rd=$('rd');let dodges=r===1?2:r===2?5:3+r;
+    const room=el=>[ar.clientWidth-el.offsetWidth-8,ar.clientHeight-el.offsetHeight-8];
+    const place=(fx,fy)=>{const [W,H]=room(rb);let x,y,tries=0;do{x=4+rnd(Math.max(1,W));y=4+rnd(Math.max(1,H));tries++;}while(tries<20&&fx!=null&&Math.hypot(x-fx,y-fy)<120);rb.style.left=x+'px';rb.style.top=y+'px';};
     place();
     const dodge=(px,py)=>{if(dodges<=0)return false;dodges--;sfx('whoosh');place(px,py);return true;};
     ar.onpointermove=e=>{if(e.pointerType!=='mouse')return;const r=rb.getBoundingClientRect(),a=ar.getBoundingClientRect();const cx=r.left+r.width/2,cy=r.top+r.height/2;if(Math.hypot(e.clientX-cx,e.clientY-cy)<70)dodge(e.clientX-a.left,e.clientY-a.top);};
     rb.querySelector('i').onpointerdown=e=>{e.preventDefault();const a=ar.getBoundingClientRect();if(e.pointerType!=='mouse'&&dodge(e.clientX-a.left,e.clientY-a.top))return;rb.classList.add('done');setTimeout(()=>capDone(true),250);};
-    capTimer(12);
+    if(drift){
+      const movers=[[rb,1],[rd,.7]].map(([el,k])=>{el.style.transition='none';const a=Math.random()*Math.PI*2,sp=k*(60+Math.min(80,C.n*4));return {el,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp};});
+      { const [W,H]=room(rd);rd.style.left=(4+rnd(Math.max(1,W)))+'px';rd.style.top=(4+rnd(Math.max(1,H)))+'px'; }
+      rd.querySelector('i').onpointerdown=e=>{e.preventDefault();rd.classList.add('done');setTimeout(()=>capDone(false,'You ticked "I\'m a robot". Honest, at least.'),250);};
+      let last=performance.now();
+      const tick=now=>{if(!C||C.cur.over||C.cur.kind!=='check')return;const dt=Math.min(.05,(now-last)/1000);last=now;
+        movers.forEach(m=>{const [W,H]=room(m.el);let x=parseFloat(m.el.style.left)+m.vx*dt,y=parseFloat(m.el.style.top)+m.vy*dt;
+          if(x<4||x>W){m.vx*=-1;x=Math.max(4,Math.min(W,x));}if(y<4||y>H){m.vy*=-1;y=Math.max(4,Math.min(H,y));}
+          m.el.style.left=x+'px';m.el.style.top=y+'px';});
+        requestAnimationFrame(tick);};
+      requestAnimationFrame(tick);
+    }
+    capTimer(drift?14:12);
   },
   robot(box){
     const len=8+Math.min(8,Math.floor(C.n/3));let digits='';for(let i=0;i<len;i++)digits+=rnd(10);
@@ -511,6 +569,42 @@ const CAP={
     kn.onpointermove=e=>{if(drag)setK(base+e.clientX-start);};
     kn.onpointerup=kn.onpointercancel=()=>{if(!drag)return;drag=false;const px=parseFloat(pc.style.left)||0;if(kx<4)return;capDone(Math.abs(px-gx)<14,'Not quite lined up.');};
     capTimer(13);
+  },
+  rotate(box){
+    // turn every picture the right way up (round 1: one picture, then two, then three)
+    const n=Math.min(3,C.cur.round),pics=shuffle(['🦆','🐢','🦒','🐌','🚗','🏠','🌵','🐘','🚲','⛄']).slice(0,n),turns=pics.map(()=>1+rnd(3));
+    box.innerHTML='<div class="cap"><div class="head">Rotate the picture'+(n>1?'s':'')+' upright<b>Tap to turn</b></div><div class="rot">'+pics.map((p,i)=>'<button data-i="'+i+'" style="transform:rotate('+turns[i]*90+'deg)">'+p+'</button>').join('')+'</div><div class="foot"><span>🔄</span><button class="capbtn" id="cv">VERIFY</button></div></div>';
+    box.querySelectorAll('.rot button').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;turns[i]++;b.style.transform='rotate('+turns[i]*90+'deg)';sfx('click');});
+    $('cv').onclick=()=>capDone(turns.every(t=>t%4===0),'Something is still sideways.');
+    capTimer(8+n*3);
+  },
+  wrong(box){
+    // humans make mistakes, so pick a wrong answer. From round 2 it sometimes flips and asks for the right one
+    const a=2+rnd(8),b=2+rnd(8),ans=a+b,wantRight=C.cur.round>=2&&Math.random()<.5;
+    const opts=shuffle([ans,ans+1+rnd(3),ans-1-rnd(2),ans+4+rnd(4)]);
+    box.innerHTML='<div class="cap"><div class="head">'+(wantRight?'Robots always fake mistakes now':'Robots never get this wrong')+'<b>'+(wantRight?'Get it RIGHT: ':'Get it WRONG: ')+a+' + '+b+' = ?</b></div><div class="chips" id="wc"></div><div class="foot"><span>🧮 Human math check</span><span></span></div></div>';
+    opts.forEach(o=>{const c=document.createElement('button');c.className='chip';c.textContent=o;c.onclick=()=>capDone((o===ans)===wantRight,wantRight?'That\'s wrong. Suspicious.':'Only a robot gets that right.');$('wc').appendChild(c);});
+    capTimer(7);
+  },
+  hold(box){
+    // hold for N seconds, judged by feel (no countdown). N grows each round
+    const secs=Math.min(5,1+C.cur.round),tol=.4;let t0=0;
+    box.innerHTML='<div class="cap"><div class="head">Hold the button for exactly<b>'+secs+' seconds</b>Humans can count. Robots get nervous.</div><button class="holdbtn" id="hb">HOLD</button><div class="foot"><span>⏱️ No counting out loud</span><span></span></div></div>';
+    const hb=$('hb');
+    hb.onpointerdown=e=>{e.preventDefault();t0=performance.now();hb.classList.add('on');hb.setPointerCapture(e.pointerId);sfx('click');};
+    hb.onpointerup=hb.onpointercancel=()=>{if(!t0)return;const held=(performance.now()-t0)/1000;t0=0;hb.classList.remove('on');capDone(Math.abs(held-secs)<=tol,'You held it for '+held.toFixed(1)+' seconds.');};
+    capTimer(secs+7);
+  },
+  count(box){
+    // count the critters, with look-alikes mixed in. More of both each round
+    const [want,like,name]=pick([['🦆','🐤','ducks'],['🐈','🐅','cats'],['🍩','🥯','donuts'],['🐑','☁️','sheep'],['🍄','🌂','mushrooms']]);
+    const n=3+rnd(3)+C.cur.round,decoys=2+C.cur.round*2;
+    box.innerHTML='<div class="cap"><div class="head">How many '+name+'?<b>Count carefully</b></div><div class="arena" id="ar" style="height:200px"></div><div class="chips" id="wc"></div></div>';
+    const ar=$('ar'),items=shuffle(Array(n).fill(want).concat(Array(decoys).fill(like)));
+    const cols=Math.ceil(Math.sqrt(items.length*1.6)),rows=Math.ceil(items.length/cols);
+    items.forEach((e,i)=>{const d=document.createElement('span');d.className='crit';d.textContent=e;d.style.left=((i%cols)+.15+Math.random()*.5)/cols*88+'%';d.style.top=(Math.floor(i/cols)+.1+Math.random()*.4)/rows*80+'%';ar.appendChild(d);});
+    shuffle([n,n-1,n+1,n+2]).forEach(o=>{const c=document.createElement('button');c.className='chip';c.textContent=o;c.onclick=()=>capDone(o===n,'There were '+n+' '+name+'.');$('wc').appendChild(c);});
+    capTimer(9+C.cur.round);
   }
 };
 
