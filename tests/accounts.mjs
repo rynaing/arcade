@@ -30,7 +30,7 @@ try {
   const gp = await openPage(g, site.url('index.html'), errors, 'guest hub');
   await sleep(800);
   check(!loaded, 'guest on the hub never loads Supabase');
-  check((await gp.textContent('[data-arc-account]')) === 'Sign in', 'hub nav shows Sign in');
+  check(/Sign in/.test(await gp.textContent('#arc-acct')), 'hub bar shows Sign in');
   await g.close();
 
   // age screen: too young is turned away, and stays turned away after picking another year
