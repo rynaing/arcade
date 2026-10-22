@@ -8,6 +8,8 @@
  *   ArcadeArt.draw(canvas, id, opts)    -> paint one character (opts: t seconds, team 'A'|'B', bot 'baker'|...)
  *   ArcadeArt.cast(el, ids, opts)       -> fill an element with animated (blinking, bobbing) portraits;
  *                                          pauses automatically while the tab is hidden
+ *   ArcadeArt.roam(ids, opts)           -> let the characters wander the whole screen and play with the cursor
+ *                                          (pastries aim and fire at it, the hamster rolls); false if reduced motion
  */
 (function () {
   'use strict';
@@ -336,18 +338,19 @@
       if (PASTRIES.indexOf(id) >= 0) {
         var m = canvas._m || (canvas._m = { mobile: id, team: o.team || 'A', bot: o.bot || null, isBot: !!o.bot, alive: true, hp: 999, hpMax: 999, face: o.face || 1, ang: 38, x: 0 });
         m.mobile = id; m.team = o.team || 'A'; m.bot = o.bot || null; m.isBot = !!o.bot; m.face = o.face || 1;
+        if (o.ang != null) m.ang = o.ang; if (o.x != null) m.x = o.x;
         c.setTransform(k, 0, 0, k, cx - 2 * dpr, base); PAST.drawBody(m, canvas._i || (canvas._i = (Math.random() * 6) | 0), 0);
       } else if (id.indexOf('blob') === 0) {
         var n = +id.slice(4) % BLOBS.PALETTE.length;
         var p = canvas._p || (canvas._p = { id: n, x: 0, y: 0, r: 16, moving: false, walkPh: 0, knocked: 0, invuln: 0, face: 1, name: '', isBot: false });
-        p.color = BLOBS.PALETTE[n]; p.dark = BLOBS.PALETTE_D[n]; p.face = o.face || 1;
+        p.color = BLOBS.PALETTE[n]; p.dark = BLOBS.PALETTE_D[n]; p.face = o.face || 1; p.moving = !!o.moving; p.walkPh = o.walkPh || 0;
         var s = (h / 66) * dpr;
         c.setTransform(s, 0, 0, s, cx, h * 0.62 * dpr); p.x = 0; p.y = 0;
         BLOBS.drawBlob(p, t);
       } else if (id === 'hamster') {
         var s2 = (h / 54) * dpr;
         c.setTransform(s2, 0, 0, s2, cx, h * 0.55 * dpr);
-        HAM.drawHamster(0, 0, Math.sin(t * 2) * 0.25, 1, '#ff9f43', '', false, t * 1000);
+        HAM.drawHamster(0, 0, o.roll != null ? o.roll : Math.sin(t * 2) * 0.25, 1, '#ff9f43', '', false, t * 1000);
       }
     } catch (e) { /* a drawing problem must never break a menu */ }
     ctx = null;
@@ -388,5 +391,129 @@
     kick();
   }
 
-  window.ArcadeArt = { ids: ids, draw: draw, cast: cast };
+
+  /* ---------- roaming cast (home page) ----------
+     Each character wanders the screen. Near the cursor some come closer and some back off, a fast swipe
+     makes them hop away, pastries aim their piping bags at it and fire frosting, and the hamster rolls. */
+  function roam(list, o) {
+    o = o || {};
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    var S = o.size || 56, layer = document.createElement('div');
+    layer.className = 'arc-roam'; layer.setAttribute('aria-hidden', 'true');
+    layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden';
+    var fx = document.createElement('canvas'); fx.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+    layer.appendChild(fx); document.body.appendChild(layer);
+    var fc = fx.getContext('2d'), W = 0, H = 0, top = 0, dpr = 1;
+    function size() {
+      dpr = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+      fx.width = Math.round(W * dpr); fx.height = Math.round(H * dpr);
+      top = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--arc-bar')) || 0) + 4;
+    }
+    size(); addEventListener('resize', size);
+    var from = o.from && o.from.getBoundingClientRect(), n = list.length;
+    var cs = list.map(function (id, i) {
+      var c = document.createElement('canvas'); c.style.cssText = 'position:absolute;left:0;top:0;width:' + S + 'px;height:' + S + 'px;will-change:transform';
+      layer.appendChild(c);
+      var x = from ? from.left + from.width * (i + 0.5) / n - S / 2 : Math.random() * (W - S), y = from ? from.top + from.height / 2 - S / 2 : top + Math.random() * (H - top - S);
+      return { c: c, id: id, x: x, y: y, vx: 0, vy: 0, tx: x, ty: y, wait: 0.6 + i * 0.25, face: 1, hop: 0, team: i % 2 ? 'B' : 'A',
+        shy: Math.random() < 0.35, pastry: PASTRIES.indexOf(id) >= 0, ham: id === 'hamster', ang: 38, wx: 0, roll: 0, walk: 0, cool: 1 + Math.random() * 2, off: i * 1.3 };
+    });
+    var mx = -1e4, my = -1e4, mv = 0, active = 0, lastMove = 0, shots = [], bits = [];
+    addEventListener('pointermove', function (e) {
+      var now = performance.now(), dt = Math.max(1, now - lastMove);
+      mv = mv * 0.6 + Math.hypot(e.clientX - mx, e.clientY - my) / dt * 1000 * 0.4;
+      mx = e.clientX; my = e.clientY; lastMove = now; active = e.pointerType === 'mouse' ? 3 : 2;
+    }, { passive: true });
+    addEventListener('pointerdown', function (e) {
+      mx = e.clientX; my = e.clientY; active = 2;
+      cs.forEach(function (k) {
+        var d = Math.hypot(k.x + S / 2 - mx, k.y + S / 2 - my);
+        if (d < 200 && !k.hop) k.hop = 0.001;
+        if (k.pastry && d < 520) k.cool = Math.min(k.cool, Math.random() * 0.25);
+      });
+    }, { passive: true });
+    document.addEventListener('pointerleave', function () { active = 0; });
+    function pick(k) { k.tx = 10 + Math.random() * (W - S - 20); k.ty = top + Math.random() * Math.max(10, H - top - S - 10); }
+    function fire(k, a) {
+      var px = k.x + S / 2, py = k.y + S * 0.9 - 17 * S / 82, r = 28 * S / 82;
+      shots.push({ x0: px + Math.cos(a) * r, y0: py - Math.sin(a) * r, x1: mx, y1: my, t: 0, col: k.team === 'A' ? '#4dabf7' : '#ff7aa2' });
+    }
+    var COL = ['#ff7aa2', '#ffd43b', '#69db7c', '#4dabf7', '#b197fc', '#fff'];
+    var raf = 0, last = performance.now();
+    function frame(now) {
+      raf = 0; if (document.hidden) return;
+      var dt = Math.min(0.05, (now - last) / 1000), t = now / 1000; last = now;
+      active = Math.max(0, active - dt); mv *= Math.pow(0.02, dt);
+      var on = active > 0;
+      cs.forEach(function (k, i) {
+        var cx = k.x + S / 2, cy = k.y + S / 2, dx = mx - cx, dy = my - cy, d = Math.hypot(dx, dy), want = 38, sp = 42, gx = 0, gy = 0;
+        if (on && mv > 1400 && d < 150 && !k.hop) k.hop = 0.001;
+        if (on && d < 240) {
+          if (k.shy || k.hop) { if (d < 170) { gx = -dx / d; gy = -dy / d; sp = 210; } }
+          else if (d > 95) { gx = dx / d; gy = dy / d; sp = 75; }
+          if (Math.abs(dx) > 6) k.face = dx > 0 ? 1 : -1;
+        }
+        if (!gx && !gy) {
+          if (k.wait > 0) k.wait -= dt;
+          else {
+            var ex = k.tx - k.x, ey = k.ty - k.y, ed = Math.hypot(ex, ey);
+            if (ed < 8) { if (k.ham) pick(k); else { k.wait = 0.8 + Math.random() * 2.5; pick(k); } }
+            else { gx = ex / ed; gy = ey / ed; }
+          }
+          if (k.ham) sp = 90;
+        }
+        // keep a little personal space
+        cs.forEach(function (q) {
+          if (q === k) return; var ox = k.x - q.x, oy = k.y - q.y, od = Math.hypot(ox, oy);
+          if (od > 0 && od < S * 0.8) { gx += ox / od * 0.8; gy += oy / od * 0.8; }
+        });
+        var a = 1 - Math.pow(0.004, dt);
+        k.vx += (gx * sp - k.vx) * a; k.vy += (gy * sp - k.vy) * a;
+        k.x += k.vx * dt; k.y += k.vy * dt;
+        k.x = Math.max(4, Math.min(W - S - 4, k.x)); k.y = Math.max(top, Math.min(H - S - 4, k.y));
+        var speed = Math.hypot(k.vx, k.vy);
+        if (!(on && d < 240) && Math.abs(k.vx) > 8) k.face = k.vx > 0 ? 1 : -1;
+        k.walk += speed * dt * 0.18; k.wx += k.vx * dt * 0.35; k.roll += k.vx * dt / (S * 0.3);
+        if (k.ham) k.roll += (speed < 10 ? 2.4 : 0) * dt;   // never sits still: spins in place between rolls
+        var yo = 0;
+        if (k.hop) { k.hop += dt / 0.45; if (k.hop >= 1) k.hop = 0; else yo = -Math.sin(Math.PI * k.hop) * S * 0.45; }
+        if (k.pastry) {
+          if (on && d < 520) {
+            var aim = Math.atan2(-(my - (k.y + S * 0.9 - 17 * S / 82)), mx - cx) * 180 / Math.PI;
+            if (aim < -90) aim += 360; want = Math.max(-15, Math.min(195, aim));
+            k.cool -= dt;
+            if (k.cool <= 0 && Math.abs(k.ang - want) < 12) { fire(k, k.ang * Math.PI / 180); k.cool = 1.4 + Math.random() * 2.2; }
+          } else want = k.face > 0 ? 38 : 142;
+          k.ang += (want - k.ang) * (1 - Math.pow(0.001, dt));
+        }
+        k.c.style.transform = 'translate3d(' + k.x.toFixed(1) + 'px,' + (k.y + yo).toFixed(1) + 'px,0)';
+        draw(k.c, k.id, { t: t + k.off, team: k.team, face: k.face, ang: k.pastry ? k.ang : null, x: k.wx, roll: k.ham ? k.roll : null, moving: speed > 12, walkPh: k.walk });
+      });
+      // frosting shots and the sprinkles they burst into
+      fc.setTransform(dpr, 0, 0, dpr, 0, 0); fc.clearRect(0, 0, W, H);
+      for (var s = shots.length - 1; s >= 0; s--) {
+        var h = shots[s]; h.t += dt / 0.55;
+        if (h.t >= 1) {
+          for (var b = 0; b < 10; b++) { var ba = Math.random() * 6.28, bs = 60 + Math.random() * 120; bits.push({ x: h.x1, y: h.y1, vx: Math.cos(ba) * bs, vy: Math.sin(ba) * bs - 80, r: Math.random() * 6.28, life: 0.7, col: COL[b % COL.length] }); }
+          shots.splice(s, 1); continue;
+        }
+        var lx = h.x0 + (h.x1 - h.x0) * h.t, ly = h.y0 + (h.y1 - h.y0) * h.t - Math.sin(Math.PI * h.t) * 60;
+        fc.fillStyle = h.col; fc.strokeStyle = '#5b3446'; fc.lineWidth = 1.5;
+        fc.beginPath(); fc.arc(lx, ly, 5, 0, 6.29); fc.fill(); fc.stroke();
+        fc.fillStyle = 'rgba(255,255,255,.7)'; fc.beginPath(); fc.arc(lx - 1.5, ly - 1.5, 1.6, 0, 6.29); fc.fill();
+      }
+      for (var j = bits.length - 1; j >= 0; j--) {
+        var p = bits[j]; p.life -= dt; if (p.life <= 0) { bits.splice(j, 1); continue; }
+        p.vy += 420 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.r += dt * 8;
+        fc.save(); fc.globalAlpha = Math.min(1, p.life * 2); fc.translate(p.x, p.y); fc.rotate(p.r);
+        fc.fillStyle = p.col; fc.fillRect(-3.5, -1.2, 7, 2.4); fc.restore();
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    function go() { if (!raf && !document.hidden) { last = performance.now(); raf = requestAnimationFrame(frame); } }
+    document.addEventListener('visibilitychange', go); go();
+    return true;
+  }
+
+  window.ArcadeArt = { ids: ids, draw: draw, cast: cast, roam: roam };
 })();

@@ -18,26 +18,29 @@
   var title = (me && me.dataset.title) || '';
   var home = (me && me.dataset.home) || './index.html';
   var layout = (me && me.dataset.layout) || 'flow';
-  var barOff = !!(me && me.dataset.bar === 'off');   // the hub itself: shared palette + cast, no back bar
+  var barOff = !!(me && me.dataset.bar === 'off');   // shared palette + cast, no bar
+  var barHome = !!(me && me.dataset.bar === 'home'); // the hub itself: same bar, but no back arrow or title
 
   var CSS = [
-    ':root{--arc-bar:32px;--arc-pink:#ff7ba9;--arc-pink-deep:#e0548b;--arc-pink-dark:#b0396a;--arc-lav:#b79df0;--arc-lav-deep:#7d5fd6;',
+    ':root{--arc-bar:44px;--arc-pink:#e58aa9;--arc-pink-deep:#c45c84;--arc-pink-dark:#96405f;--arc-lav:#b79df0;--arc-lav-deep:#7d5fd6;',
     '--arc-mint:#8fd6a8;--arc-mint-deep:#3f9f6a;--arc-sun:#ffc46b;--arc-sun-deep:#e8861a;--arc-sky:#9ecdf2;--arc-cream:#fdf8ef;',
     '--arc-ink:#3d3448;--arc-plum:#5b3446;--arc-muted:#8a7f95;--arc-font:"Baloo 2","Trebuchet MS","Segoe UI",system-ui,sans-serif}',
     'html.arc-flow body{padding-top:var(--arc-bar)}',
     /* the bar */
     '#arc-bar{position:fixed;top:0;left:0;right:0;height:var(--arc-bar);z-index:2147483000;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;',
     'padding:0 8px;padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));',
-    'background:linear-gradient(180deg,#4a2250,#3a1a40);border-bottom:3px solid var(--arc-pink);font-family:var(--arc-font);box-shadow:0 3px 12px rgba(40,10,50,.35)}',
-    '#arc-bar a.arc-back{justify-self:start;display:inline-flex;align-items:center;gap:6px;color:#ffe3ef;text-decoration:none;font-weight:800;font-size:13px;',
-    'padding:3px 11px 3px 8px;border-radius:999px;white-space:nowrap;min-height:26px}',
-    '#arc-bar a.arc-back:hover,#arc-bar a.arc-back:focus-visible{background:rgba(255,123,169,.28);outline:none}',
+    'background:linear-gradient(180deg,#4a2250,#3a1a40);border-bottom:2px solid rgba(229,138,169,.75);font-family:var(--arc-font);box-shadow:0 3px 12px rgba(40,10,50,.35)}',
+    '#arc-bar a.arc-back{justify-self:start;display:inline-flex;align-items:center;gap:6px;color:#f7e9ef;text-decoration:none;font-weight:800;font-size:16px;',
+    'padding:4px 14px 4px 10px;border-radius:999px;white-space:nowrap;min-height:34px}',
+    '#arc-bar a.arc-back:hover,#arc-bar a.arc-back:focus-visible{background:rgba(229,138,169,.22);outline:none}',
     '#arc-bar a.arc-back svg{flex:none}',
-    '#arc-bar .arc-name{font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#ffb3cf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw}',
+    '#arc-bar .arc-name{font-weight:800;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#e8c6d5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw}',
     '#arc-bar .arc-right{justify-self:end;display:flex;align-items:center;gap:6px;min-width:0}',
-    '#arc-bar button.arc-snd{flex:none;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:14px;line-height:1;width:28px;height:26px;border-radius:999px;cursor:pointer}',
-    '#arc-bar button.arc-snd:hover,#arc-bar button.arc-snd:focus-visible{background:rgba(255,123,169,.35);outline:none}',
+    '#arc-bar button.arc-snd{flex:none;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:17px;line-height:1;width:36px;height:34px;border-radius:999px;cursor:pointer}',
+    '#arc-bar button.arc-snd:hover,#arc-bar button.arc-snd:focus-visible{background:rgba(229,138,169,.3);outline:none}',
     '@media (max-width:480px){#arc-bar .arc-name{display:none}#arc-bar{grid-template-columns:1fr auto}}',
+    '@media (max-height:500px){:root{--arc-bar:36px}#arc-bar a.arc-back{font-size:14px;min-height:28px}}',   /* phones held sideways: keep game room */
+    '#arc-bar.arc-home{grid-template-columns:1fr auto}',
     /* shared components */
     '.arc-title{font-family:var(--arc-font);font-weight:900;letter-spacing:.05em;color:#fff6e8;-webkit-text-stroke:2px #8a4a6a;paint-order:stroke fill;',
     'text-shadow:0 3px 0 #ff8fb8,0 6px 0 #b0567e,0 10px 18px rgba(60,20,60,.45);text-transform:uppercase;line-height:1.05}',
@@ -71,7 +74,7 @@
   document.head.appendChild(st);
   if (layout !== 'overlay' && !barOff) document.documentElement.classList.add('arc-flow');
 
-  var MUSH = '<svg width="20" height="20" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8C28 8 12 26 12 44c0 5 4 8 9 8h58c5 0 9-3 9-8C88 26 72 8 50 8z" fill="#ff7ba9"/>' +
+  var MUSH = '<svg width="26" height="26" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8C28 8 12 26 12 44c0 5 4 8 9 8h58c5 0 9-3 9-8C88 26 72 8 50 8z" fill="#e58aa9"/>' +
     '<circle cx="32" cy="32" r="6" fill="#fff"/><circle cx="56" cy="24" r="4.5" fill="#fff"/><circle cx="70" cy="38" r="5" fill="#fff"/><rect x="40" y="50" width="20" height="32" rx="9" fill="#f7ecd9"/></svg>';
 
   function build() {
@@ -80,10 +83,11 @@
     bar.id = 'arc-bar';
     bar.setAttribute('role', 'banner');
     var a = document.createElement('a');
-    a.className = 'arc-back'; a.href = home; a.setAttribute('aria-label', 'Back to Ryan Cake Studios Arcade');
-    a.innerHTML = '<span aria-hidden="true">←</span>' + MUSH + '<span>Ryan Cake Studios</span>';
+    a.className = 'arc-back'; a.href = home; a.setAttribute('aria-label', barHome ? 'Ryan Cake Studios Arcade home' : 'Back to Ryan Cake Studios Arcade');
+    a.innerHTML = (barHome ? '' : '<span aria-hidden="true">←</span>') + MUSH + '<span>Ryan Cake Studios</span>';
+    if (barHome) bar.className = 'arc-home';
     var nm = document.createElement('div'); nm.className = 'arc-name'; nm.textContent = title;
-    bar.appendChild(a); bar.appendChild(nm);
+    bar.appendChild(a); if (!barHome) bar.appendChild(nm);
     var right = document.createElement('div'); right.className = 'arc-right';   // arcade-account.js adds its button here
     var snd = document.createElement('button'); snd.type = 'button'; snd.className = 'arc-snd'; snd.id = 'arc-snd'; snd.textContent = '🔊';
     right.appendChild(snd); bar.appendChild(right);

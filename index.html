@@ -21,7 +21,7 @@
 <style>
   :root{
     --cream:#fdf8ef; --ink:#3d3448; --muted:#8a7f95;
-    --pink:#ff7ba9; --pink-deep:#e0548b; --lav:#b79df0; --mint:#8fd6a8;
+    --pink:#e58aa9; --pink-deep:#c45c84; --lav:#b79df0; --mint:#8fd6a8;
     --sun:#ffc46b; --sky:#9ecdf2; --card:#ffffff;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -53,8 +53,8 @@
   .intro p{margin:0}
   .intro-lead{font-weight:800;font-size:1.05rem;color:var(--ink)}
   .intro-sub{margin-top:4px!important;color:var(--muted);font-size:.92rem;line-height:1.5}
-  .intro-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:10px!important}
-  .intro-chips span,.intro-chips a{font-size:.75rem;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--card);border:1px solid #f1e3ea;color:var(--muted);text-decoration:none}
+  .intro-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:10px!important}
+  .intro-chips span,.intro-chips a{font-size:.95rem;font-weight:800;padding:8px 18px;border-radius:999px;background:var(--card);border:1px solid #f1e3ea;color:var(--muted);text-decoration:none}
   .intro-chips a{color:var(--pink-deep);border-color:var(--pink)}
   .tagline{color:var(--muted);font-size:1.02rem;margin-top:6px}
   .pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
@@ -72,8 +72,9 @@
         box-shadow:0 6px 18px rgba(90,70,110,.10);
         transition:transform .15s ease, box-shadow .15s ease}
   .card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(90,70,110,.16)}
-  .art{flex:0 0 64px;width:64px;height:64px;border-radius:18px;
+  .art{flex:0 0 112px;width:112px;height:84px;border-radius:14px;
         display:flex;align-items:center;justify-content:center}
+  .art.thumb{object-fit:cover;box-shadow:0 3px 10px rgba(90,70,110,.18)}
   .info{flex:1;min-width:0}
   .info h2{font-size:1.15rem;margin-bottom:3px}
   .info p{font-size:.92rem;color:var(--muted);line-height:1.4;margin-bottom:8px}
@@ -96,7 +97,7 @@
   .c-name::before{content:"👑 "}
   .c-stat{font-size:.85rem;color:var(--muted)}
   @media (max-width:700px){.champ-row{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px}.champ{flex:0 0 72%;scroll-snap-align:start}}
-  .hub-cast{margin:8px auto 0;max-width:640px}
+  .hub-cast{margin:8px auto 0;max-width:640px;min-height:66px}
   @media (max-width:560px){.hub-cast canvas:nth-child(n+6){display:none}}
   .joincode{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;flex-wrap:wrap}
   .joincode label{font-weight:800;color:var(--muted);font-size:.9rem}
@@ -109,8 +110,6 @@
   footer{text-align:center;color:var(--muted);font-size:.85rem;margin-top:34px;line-height:1.7}
   footer a,.topnav a{color:var(--pink-deep);font-weight:700;text-decoration:none}
   footer a:hover,.topnav a:hover{text-decoration:underline}
-  .topnav .nav-signin{background:var(--pink-deep);color:#fff;padding:3px 14px;border-radius:999px}
-  .topnav .nav-signin:hover{text-decoration:none;filter:brightness(1.08)}
   .topnav{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:4px 18px;font-size:.88rem;margin:-14px 0 10px}
   footer .shrooms{font-size:1.3rem;letter-spacing:6px}
   @media (max-width:700px){
@@ -124,23 +123,25 @@
     .topnav{justify-content:center;margin-top:-20px}
     h1{font-size:1.9rem}
     .play{padding:9px 16px;font-size:.85rem}
-    .art{flex-basis:54px;width:54px;height:54px}
+    .art{flex-basis:84px;width:84px;height:63px;border-radius:12px}
+    .card{padding:14px;gap:12px}
+    .card .play{display:none}
   }
 </style>
-<script src="arcade-art.js?v=3" defer></script>
+<script src="arcade-art.js?v=4" defer></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5048455596508415" crossorigin="anonymous"></script>
-<script src="arcade-ui.js?v=5" data-bar="off"></script>
-<script src="arcade-account.js?v=5"></script>
+<script src="arcade-ui.js?v=6" data-bar="home"></script>
+<script src="arcade-account.js?v=6"></script>
 </head>
 <body>
 <div class="wrap">
 
-  <nav class="topnav" aria-label="Site"><a href="about.html">About</a><a href="how-to-play.html">How to play</a><a href="updates.html">What&rsquo;s new</a><a href="contact.html">Contact</a><a href="#" class="nav-signin" data-arc-account>Sign in</a></nav>
+  <nav class="topnav" aria-label="Site"><a href="about.html">About</a><a href="how-to-play.html">How to play</a><a href="updates.html">What&rsquo;s new</a><a href="contact.html">Contact</a></nav>
 
   <header>
     <svg class="logo" viewBox="0 0 100 100" fill="none" aria-hidden="true">
       <ellipse cx="50" cy="90" rx="30" ry="6" fill="#e8dcc8"/>
-      <path d="M50 8C28 8 12 26 12 44c0 5 4 8 9 8h58c5 0 9-3 9-8C88 26 72 8 50 8z" fill="#ff7ba9"/>
+      <path d="M50 8C28 8 12 26 12 44c0 5 4 8 9 8h58c5 0 9-3 9-8C88 26 72 8 50 8z" fill="#e58aa9"/>
       <circle cx="32" cy="32" r="6" fill="#fff"/>
       <circle cx="56" cy="24" r="4.5" fill="#fff"/>
       <circle cx="70" cy="38" r="5" fill="#fff"/>
@@ -156,7 +157,7 @@
       <p class="intro-sub">Race hamster balls, trap rivals in water-balloon bubbles, duel with pastry tanks, sword-fight a cupcake rival or defend a cake from the Gloom, solo against bots or online with friends.</p>
       <p class="intro-chips"><span>No downloads</span><span>No sign-up needed</span><a href="how-to-play.html">How to play →</a></p>
     </div>
-    <div class="hub-cast" data-arc-cast="shortcake,blob0,blob1,hamster,blob4,eclair,blob3,blob6,fudge" data-size="62" aria-hidden="true"></div>
+    <div class="hub-cast" id="hubCast" aria-hidden="true"></div>
     <form class="joincode" id="joincode" action="https://rynaing.github.io/game-night/" method="get">
       <label for="joinroom">Got a room code?</label>
       <input id="joinroom" name="room" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" pattern="[A-Za-z0-9]{4}" required>
@@ -187,15 +188,7 @@
       <div class="section-label">Start playing</div>
 
   <a class="card" data-tags="solo new" href="./large-human-model.html">
-    <div class="art" style="background:linear-gradient(135deg,#cfe3ff,#6f8fd8)">
-      <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-        <rect x="22" y="30" width="56" height="44" rx="12" fill="#eef3f8" stroke="#2b3a5c" stroke-width="4"/>
-        <line x1="50" y1="30" x2="50" y2="16" stroke="#2b3a5c" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="50" cy="14" r="5" fill="#ff8fb8" stroke="#2b3a5c" stroke-width="3"/>
-        <circle cx="39" cy="48" r="5" fill="#2b3a5c"/><circle cx="61" cy="48" r="5" fill="#2b3a5c"/>
-        <path d="M38 62q12 8 24 0" stroke="#2b3a5c" stroke-width="4" stroke-linecap="round"/>
-      </svg>
-    </div>
+    <img class="art thumb" src="media/thumbs/large-human-model.jpg" alt="" width="240" height="180" decoding="async">
     <div class="info">
       <h2>Large Human Model</h2>
       <p>You're the human secretly hidden inside an AI chatbot &mdash; answer silly requests fast, or solve CAPTCHAs for the bots.</p>
@@ -205,15 +198,7 @@
   </a>
 
   <a class="card" data-tags="solo new" href="./frosted-duel.html">
-    <div class="art" style="background:linear-gradient(135deg,#ffc2d8,#9b7fe0)">
-      <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-        <path d="M30 62h40l-6 28H36z" fill="#ffd98f" stroke="#5b3446" stroke-width="4" stroke-linejoin="round"/>
-        <ellipse cx="50" cy="56" rx="26" ry="13" fill="#ff8fb8" stroke="#5b3446" stroke-width="4"/>
-        <ellipse cx="49" cy="41" rx="18" ry="10" fill="#ffc2d8" stroke="#5b3446" stroke-width="4"/>
-        <rect x="64" y="10" width="8" height="40" rx="4" transform="rotate(35 68 30)" fill="#eef3f8" stroke="#5b3446" stroke-width="3"/>
-        <circle cx="43" cy="56" r="2.6" fill="#5b3446"/><circle cx="55" cy="56" r="2.6" fill="#5b3446"/>
-      </svg>
-    </div>
+    <img class="art thumb" src="media/thumbs/frosted-duel.jpg" alt="" width="240" height="180" decoding="async">
     <div class="info">
       <h2>Frosted Duel</h2>
       <p>3D third-person arena duel &mdash; blast sprinkles, slash, dash and wall-run to beat a grumpy cupcake rival.</p>
@@ -223,16 +208,7 @@
   </a>
 
   <a class="card" data-tags="solo party" href="./hamster-roll.html">
-    <div class="art" style="background:linear-gradient(135deg,#ffe9b8,#ffb43c)">
-      <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-        <circle cx="50" cy="50" r="34" fill="#cfe8ff" opacity=".45" stroke="#ffffff" stroke-width="4"/>
-        <ellipse cx="50" cy="58" rx="16" ry="13" fill="#d9a066"/>
-        <circle cx="50" cy="46" r="10" fill="#d9a066"/>
-        <circle cx="43" cy="38" r="4" fill="#d9a066"/><circle cx="57" cy="38" r="4" fill="#d9a066"/>
-        <circle cx="46" cy="45" r="2.4" fill="#1a1a1a"/><circle cx="54" cy="45" r="2.4" fill="#1a1a1a"/>
-        <circle cx="50" cy="51" r="1.8" fill="#ff8fa0"/>
-      </svg>
-    </div>
+    <img class="art thumb" src="media/thumbs/hamster-roll.jpg" alt="" width="240" height="180" decoding="async">
     <div class="info">
       <h2>Hamster Roll</h2>
       <p>2D hamster-ball racing &mdash; make a room, chat, and race your friends across 4 tracks.</p>
@@ -242,15 +218,7 @@
   </a>
 
   <a class="card" data-tags="solo party" href="./bubble-brawl.html">
-    <div class="art" style="background:linear-gradient(135deg,#bfe9ff,#5db9ff)">
-      <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-        <ellipse cx="46" cy="40" rx="24" ry="28" fill="#2b7fd4"/>
-        <ellipse cx="38" cy="30" rx="7" ry="10" fill="#fff" opacity=".5"/>
-        <path d="M42 68h8l-4 7z" fill="#1a4f86"/>
-        <circle cx="72" cy="64" r="11" fill="none" stroke="#fff" stroke-width="3" opacity=".7"/>
-        <circle cx="68" cy="60" r="3" fill="#fff" opacity=".8"/>
-      </svg>
-    </div>
+    <img class="art thumb" src="media/thumbs/bubble-brawl.jpg" alt="" width="240" height="180" decoding="async">
     <div class="info">
       <h2>Bubble Brawl</h2>
       <p>Water-balloon arena battler &mdash; trap three rival blobs in bubbles and pop them.</p>
@@ -260,18 +228,7 @@
   </a>
 
   <a class="card" data-tags="solo party" href="./crumb-bound.html">
-    <div class="art" style="background:linear-gradient(135deg,#ffd166,#e8590c)">
-      <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-        <path d="M8 78 Q50 58 92 78 L92 92 L8 92 Z" fill="#8a5a33"/>
-        <path d="M8 78 Q50 58 92 78" stroke="#ffe3ee" stroke-width="6" fill="none"/>
-        <circle cx="34" cy="56" r="14" fill="#ffb3c7"/>
-        <circle cx="34" cy="48" r="9" fill="#fff" opacity=".85"/>
-        <rect x="30" y="18" width="8" height="26" rx="4" transform="rotate(38 34 31)" fill="#3a2a3a"/>
-        <circle cx="64" cy="30" r="4" fill="#fff"/>
-        <circle cx="74" cy="21" r="3" fill="#fff" opacity=".7"/>
-        <circle cx="55" cy="18" r="2.5" fill="#fff" opacity=".5"/>
-      </svg>
-    </div>
+    <img class="art thumb" src="media/thumbs/crumb-bound.jpg" alt="" width="240" height="180" decoding="async">
     <div class="info">
       <h2>Crumb Bound</h2>
       <p>Turn-based artillery duel &mdash; aim your pastry mobile, ride the wind, and crumble the other team in 1v1 or 2v2.</p>
@@ -281,13 +238,7 @@
   </a>
 
   <a class="card" data-tags="solo" href="./ryans-cake-td.html">
-    <div class="art" style="background:linear-gradient(135deg,#ffd9e8,#cdb4f2)">
-      <svg width="38" height="38" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-        <path d="M50 8C28 8 12 26 12 44c0 5 4 8 9 8h58c5 0 9-3 9-8C88 26 72 8 50 8z" fill="#ff7ba9"/>
-        <circle cx="32" cy="32" r="6" fill="#fff"/><circle cx="56" cy="24" r="4.5" fill="#fff"/><circle cx="70" cy="38" r="5" fill="#fff"/>
-        <rect x="40" y="50" width="20" height="32" rx="9" fill="#fff"/>
-      </svg>
-    </div>
+    <img class="art thumb" src="media/thumbs/ryans-cake-td.jpg" alt="" width="240" height="180" decoding="async">
     <div class="info">
       <h2>Ryan's Cake TD</h2>
       <p>Defend the cake from waves of grumbly critters in this tower-defense adventure.</p>
@@ -463,6 +414,21 @@
   var tiles=[].slice.call(strip.querySelectorAll('.champ')), data={};
   Promise.all(tiles.map(function(t){ return best(t.dataset.game,t.dataset.board.split(',')).then(function(r){ if(r) data[t.dataset.game]=r; }); }))
     .then(function(){ paint(data); if(Object.keys(data).length) save(data); });
+})();
+</script>
+<script>
+// the studio cast: let them loose on the page (they wander, follow or dodge the cursor, pastries fire frosting);
+// with reduced motion they stay put in their row
+(function () {
+  function start() {
+    var row = document.getElementById('hubCast');
+    if (!window.ArcadeArt || !row || row._on) return; row._on = true;
+    var ids = ['shortcake','blob0','blob1','hamster','blob4','eclair','blob3','blob6','fudge','meringue','blob2','blob5','blob7'];
+    var small = innerWidth < 560;
+    if (!ArcadeArt.roam(small ? ids.slice(0, 8) : ids, { from: row, size: small ? 48 : 58 }))
+      ArcadeArt.cast(row, ids.slice(0, 9), { size: 62 });
+  }
+  if (document.readyState === 'complete') start(); else addEventListener('load', start);
 })();
 </script>
 </body>
